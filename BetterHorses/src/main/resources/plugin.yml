@@ -1,0 +1,8 @@
+name: BetterHorses
+main: BetterHorses
+version: 1.0
+api-version: 1.20
+commands:
+  horse:
+    description: Manage horse actions like spawn and despawn
+    usage: /<command> <spawn|despawn>
