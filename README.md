@@ -72,7 +72,7 @@ max-stats:
 |------------------------------------------|---------------------------------------------|
 | `/horse spawn`                           | Spawn a horse using the item                |
 | `/horse despawn`                         | Turn the horse you're riding into an item   |
-| `/horse create 30 0.3 1.0`               | Spawn a custom horse item                   |
+| `/horse create`                          | Spawn a custom horse item                   |
 | `/horse create 100 1.0 2.0 male Zeus`    | Superhorse with custom name "Zeus"          |
 
 ---
