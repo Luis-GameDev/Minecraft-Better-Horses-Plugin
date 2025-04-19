@@ -6,3 +6,15 @@ commands:
   horse:
     description: Manage horse actions like spawn and despawn
     usage: /<command> <spawn|despawn>
+permissions:
+  betterhorses.spawn:
+    description: Allows using /horse spawn
+    default: true
+
+  betterhorses.despawn:
+    description: Allows using /horse despawn
+    default: true
+
+  betterhorses.create:
+    description: Allows using /horse create
+    default: op
