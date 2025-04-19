@@ -1,0 +1,10 @@
+# BetterHorses config
+
+# How strong the mutation effect is (e.g. 0.05 = ±0.05)
+mutation-factor: 0.05
+
+# Max stats a horse can reach
+max-stats:
+  health: 30.0
+  speed: 0.35
+  jump: 1.0
