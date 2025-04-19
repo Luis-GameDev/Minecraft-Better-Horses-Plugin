@@ -14,7 +14,6 @@
 
 - 👫 **Gender System**  
   Every horse has a **gender** (♂ / ♀) assigned at spawn or birth.  
-  Only horses of opposite genders can breed.
 
 - 🎒 **/horse despawn**  
   Converts a **tamed horse you're riding** into a **saddle item** that stores:
