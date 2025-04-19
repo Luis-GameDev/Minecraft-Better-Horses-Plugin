@@ -13,7 +13,8 @@
   A configurable **mutation factor** adds random variation to keep things interesting and realistic.
 
 - 👫 **Gender System**  
-  Every horse has a **gender** (♂ / ♀) assigned at spawn or birth.  
+  Every horse has a **gender** (♂ / ♀) assigned at spawn or birth.
+  Two horses of the same gender cannot breed
 
 - 🎒 **/horse despawn**  
   Converts a **tamed horse you're riding** into a **saddle item** that stores:
@@ -69,12 +70,12 @@ max-stats:
 
 ### 📚 Commands
 
-| Command                                   | Description                                 |
-|------------------------------------------|---------------------------------------------|
-| `/horse spawn`                           | Spawn a horse using the item                |
-| `/horse despawn`                         | Turn the horse you're riding into an item   |
-| `/horse create`                          | Spawn a custom horse item                   |
-| `/horse create 100 1.0 2.0 male Zeus`    | Superhorse with custom name "Zeus"          |
+| Command                                  | Description                                 | Permission                          |
+|------------------------------------------|---------------------------------------------|-------------------------------------|
+| `/horse spawn`                           | Spawn a horse using the item                | `betterhorses.spawn`                |
+| `/horse despawn`                         | Turn the horse you're riding into an item   | `betterhorses.despawn`              |
+| `/horse create`                          | Spawn a custom horse item                   | `betterhorses.create`               |
+| `/horse create 100 1.0 2.0 male Zeus`    | Superhorse with custom name "Zeus"          | `betterhorses.create`               |
 
 ---
 
