@@ -20,14 +20,30 @@ public class HorseCommand implements CommandExecutor {
 
         switch (args[0].toLowerCase()) {
             case "spawn":
+                if (!player.hasPermission("betterhorses.spawn")) {
+                    player.sendMessage(ChatColor.RED + "You don't have permission to use /horse spawn.");
+                    return true;
+                }
                 return RespawnCommand.spawnHorseFromItem(player);
+
             case "despawn":
+                if (!player.hasPermission("betterhorses.despawn")) {
+                    player.sendMessage(ChatColor.RED + "You don't have permission to use /horse despawn.");
+                    return true;
+                }
                 return DespawnCommand.despawnHorseToItem(player);
+
             case "create":
+                if (!player.hasPermission("betterhorses.create")) {
+                    player.sendMessage(ChatColor.RED + "You don't have permission to use /horse create.");
+                    return true;
+                }
                 return CustomHorseCommand.createHorseItem(player, args);
+
             default:
                 player.sendMessage(ChatColor.RED + "Unknown subcommand. Use /horse <spawn|despawn|create>");
                 return true;
         }
+
     }
 }

@@ -19,15 +19,25 @@ public class HorseBreedListener implements Listener {
         if (!(event.getFather() instanceof Horse father)) return;
         if (!(event.getMother() instanceof Horse mother)) return;
 
+        String gender1 = father.getPersistentDataContainer().get(genderKey, PersistentDataType.STRING);
+        String gender2 = mother.getPersistentDataContainer().get(genderKey, PersistentDataType.STRING);
+
+        if (gender1 == null || gender2 == null || gender1.equalsIgnoreCase(gender2)) {
+            event.setCancelled(true);
+            return;
+        }
+
         FileConfiguration config = BetterHorses.getInstance().getConfig();
-        double mutationFactor = config.getDouble("mutation-factor");
+        double mutationHealth = config.getDouble("mutation-factor.health");
+        double mutationSpeed = config.getDouble("mutation-factor.speed");
+        double mutationJump = config.getDouble("mutation-factor.jump");
         double maxHealth = config.getDouble("max-stats.health");
         double maxSpeed = config.getDouble("max-stats.speed");
         double maxJump = config.getDouble("max-stats.jump");
 
-        double childHealth = mutate(avg(getHealth(father), getHealth(mother)), mutationFactor, maxHealth);
-        double childSpeed = mutate(avg(getSpeed(father), getSpeed(mother)), mutationFactor, maxSpeed);
-        double childJump = mutate(avg(getJump(father), getJump(mother)), mutationFactor, maxJump);
+        double childHealth = mutate(avg(getHealth(father), getHealth(mother)), mutationHealth, maxHealth);
+        double childSpeed = mutate(avg(getSpeed(father), getSpeed(mother)), mutationSpeed, maxSpeed);
+        double childJump = mutate(avg(getJump(father), getJump(mother)), mutationJump, maxJump);
 
         setHealth(child, childHealth);
         setSpeed(child, childSpeed);
