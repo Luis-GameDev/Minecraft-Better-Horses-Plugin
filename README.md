@@ -24,6 +24,8 @@
   - Saddle & Armor
   - Color & Style
   - Custom name (if set)
+    
+  A horse can only be despawned by it's owner.
 
 - 🧲 **/horse spawn**  
   Spawns a horse **identical to the original** using the stored data in the saddle item.
