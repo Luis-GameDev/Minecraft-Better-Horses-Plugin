@@ -1,20 +1,24 @@
 name: BetterHorses
-main: BetterHorses
+main: me.luisgamedev.BetterHorses
 version: 1.1
 api-version: 1.20
+
 commands:
   horse:
     description: Manage horse actions like spawn and despawn
     usage: /<command> <spawn|despawn>
-permissions:
-  betterhorses.spawn:
-    description: Allows using /horse spawn
-    default: true
+    permission: betterhorses.base
 
-  betterhorses.despawn:
-    description: Allows using /horse despawn
+  horsecreate:
+    description: Create a custom horse item
+    usage: /horsecreate <health> <speed> <jump> [gender] [name] [trait]
+    permission: betterhorses.create
+
+permissions:
+  betterhorses.base:
+    description: Allows using the /horse spawn|despawn command
     default: true
 
   betterhorses.create:
-    description: Allows using /horse create
+    description: Allows using /horsecreate
     default: op

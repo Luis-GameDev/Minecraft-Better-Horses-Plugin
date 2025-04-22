@@ -12,3 +12,47 @@ max-stats:
   health: 300.0
   speed: 0.4
   jump: 1.2
+
+
+# Horse Abilities
+traits:
+  enabled: true
+
+  hellmare:
+    enabled: true
+    chance: 0.005 # 0.5%
+    duration: 5
+    cooldown: 90
+    radius: 3 # Radius of the fire below the horse
+
+  fireheart:
+    enabled: true
+    chance: 0.01 # 1%
+
+  dashboost:
+    enabled: true
+    chance: 0.01 # 1%
+    duration: 10
+    cooldown: 30
+
+  featherhooves:
+    enabled: true
+    chance: 0.01 # 1%
+
+  frosthooves:
+    enabled: true
+    chance: 0.005 # 0.5%
+    radius: 3 # Radius of the ice below the horse
+
+  kickback:
+    enabled: true
+    chance: 0.005 # 0.5%
+    radius: 4
+    strength: 6
+    cooldown: 20
+
+  ghosthorse:
+    enabled: true
+    chance: 0.005 # 0.5%
+    duration: 5
+    cooldown: 30

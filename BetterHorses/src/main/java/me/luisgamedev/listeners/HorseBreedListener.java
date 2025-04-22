@@ -1,5 +1,9 @@
+package me.luisgamedev.listeners;
+
+import me.luisgamedev.BetterHorses;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Horse;
 import org.bukkit.event.EventHandler;
@@ -9,9 +13,12 @@ import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.NamespacedKey;
 
+import java.util.Set;
+
 public class HorseBreedListener implements Listener {
 
     private final NamespacedKey genderKey = new NamespacedKey(JavaPlugin.getPlugin(BetterHorses.class), "gender");
+    private final NamespacedKey traitKey = new NamespacedKey(JavaPlugin.getPlugin(BetterHorses.class), "trait");
 
     @EventHandler
     public void onHorseBreed(EntityBreedEvent event) {
@@ -45,6 +52,25 @@ public class HorseBreedListener implements Listener {
 
         String gender = Math.random() < 0.5 ? "male" : "female";
         child.getPersistentDataContainer().set(genderKey, PersistentDataType.STRING, gender);
+
+        if (config.getBoolean("traits.enabled")) {
+            ConfigurationSection traitsSection = config.getConfigurationSection("traits");
+            if (traitsSection != null) {
+                Set<String> traits = traitsSection.getKeys(false);
+                for (String trait : traits) {
+                    if (trait.equals("enabled")) continue;
+
+                    ConfigurationSection tSec = traitsSection.getConfigurationSection(trait);
+                    if (tSec == null || !tSec.getBoolean("enabled", false)) continue;
+
+                    double chance = tSec.getDouble("chance", 0);
+                    if (Math.random() < chance) {
+                        child.getPersistentDataContainer().set(traitKey, PersistentDataType.STRING, trait.toLowerCase());
+                        break;
+                    }
+                }
+            }
+        }
     }
 
     private double avg(double a, double b) {

@@ -1,3 +1,7 @@
+package me.luisgamedev.commands;
+
+import me.luisgamedev.commands.DespawnCommand;
+import me.luisgamedev.commands.RespawnCommand;
 import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -14,7 +18,7 @@ public class HorseCommand implements CommandExecutor {
         }
 
         if (args.length == 0) {
-            player.sendMessage(ChatColor.YELLOW + "Usage: /horse <spawn|despawn|create>");
+            player.sendMessage(ChatColor.YELLOW + "Usage: /horse <spawn|despawn>");
             return true;
         }
 
@@ -33,17 +37,9 @@ public class HorseCommand implements CommandExecutor {
                 }
                 return DespawnCommand.despawnHorseToItem(player);
 
-            case "create":
-                if (!player.hasPermission("betterhorses.create")) {
-                    player.sendMessage(ChatColor.RED + "You don't have permission to use /horse create.");
-                    return true;
-                }
-                return CustomHorseCommand.createHorseItem(player, args);
-
             default:
-                player.sendMessage(ChatColor.RED + "Unknown subcommand. Use /horse <spawn|despawn|create>");
+                player.sendMessage(ChatColor.RED + "Unknown subcommand. Use /horse <spawn|despawn>");
                 return true;
         }
-
     }
 }
