@@ -13,10 +13,6 @@ import java.util.List;
 public class CustomHorseCommand {
 
     public static boolean createHorseItem(Player player, String[] args) {
-        if (!player.isOp()) {
-            player.sendMessage(ChatColor.RED + "You must be an operator (OP) to use this command.");
-            return true;
-        }
 
         if (args.length < 4) {
             player.sendMessage(ChatColor.RED + "Usage: /horse create <health> <speed> <jump> [gender] [name]");
