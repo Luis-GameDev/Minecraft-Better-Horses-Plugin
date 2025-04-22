@@ -81,6 +81,25 @@ max-stats:
 
 ---
 
+### 🧠 Plugin API
+
+BetterHorses includes a simple developer API that allows other plugins to create horse items programmatically – no command needed.
+
+#### 🔧 Method
+
+```java
+ItemStack horse = BetterHorsesAPI.createHorseItem(
+    double health,
+    double speed,
+    double jump,
+    String gender, // "male" or "female"
+    String name,
+    Player owner,
+    Inventory targetInventory
+);
+
+---
+
 ### 📌 Roadmap Ideas
 
 - [ ] Breeding cooldowns
