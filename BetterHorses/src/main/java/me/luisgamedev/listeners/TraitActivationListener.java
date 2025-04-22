@@ -44,9 +44,6 @@ public class TraitActivationListener implements Listener {
             case "featherhooves":
                 TraitRegistry.activateFeatherHooves(player, horse);
                 break;
-            case "windstep":
-                TraitRegistry.activateWindStep(player, horse);
-                break;
             case "frosthooves":
                 TraitRegistry.activateFrostHooves(player, horse);
                 break;

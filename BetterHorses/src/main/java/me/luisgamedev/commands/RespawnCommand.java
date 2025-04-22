@@ -10,7 +10,6 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
-import org.bukkit.plugin.java.JavaPlugin;
 
 public class RespawnCommand {
 
@@ -35,6 +34,7 @@ public class RespawnCommand {
         String saddleStr = data.get(new NamespacedKey(BetterHorses.getInstance(), "saddle"), PersistentDataType.STRING);
         String armorStr = data.get(new NamespacedKey(BetterHorses.getInstance(), "armor"), PersistentDataType.STRING);
         String customName = data.get(new NamespacedKey(BetterHorses.getInstance(), "name"), PersistentDataType.STRING);
+        String trait = data.get(new NamespacedKey(BetterHorses.getInstance(), "trait"), PersistentDataType.STRING);
 
         if (health == null || speed == null || jump == null || gender == null || ownerUUID == null) {
             player.sendMessage(ChatColor.RED + "This item does not contain valid horse data.");
@@ -55,11 +55,11 @@ public class RespawnCommand {
         horse.setOwner(player);
 
         if (gender != null) {
-            horse.getPersistentDataContainer().set(
-                    new NamespacedKey(JavaPlugin.getPlugin(BetterHorses.class), "gender"),
-                    PersistentDataType.STRING,
-                    gender
-            );
+            horse.getPersistentDataContainer().set(new NamespacedKey(BetterHorses.getInstance(), "gender"), PersistentDataType.STRING, gender);
+        }
+
+        if (trait != null && !trait.isBlank()) {
+            horse.getPersistentDataContainer().set(new NamespacedKey(BetterHorses.getInstance(), "trait"), PersistentDataType.STRING, trait);
         }
 
         if (customName != null && !customName.isBlank()) {
@@ -80,7 +80,7 @@ public class RespawnCommand {
         }
 
         item.setAmount(item.getAmount() - 1);
-        player.sendMessage(ChatColor.GREEN + "Horse spawned successfully.");
+        player.sendMessage(ChatColor.GREEN + "Horse respawned with stored stats.");
         return true;
     }
 

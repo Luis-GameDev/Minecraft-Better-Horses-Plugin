@@ -90,7 +90,6 @@ public class BetterHorsesAPI {
             case "fireheart": return "Fireheart";
             case "dashboost": return "Dash Boost";
             case "featherhooves": return "Feather Hooves";
-            case "windstep": return "Wind Step";
             case "frosthooves": return "Frost Hooves";
             case "kickback": return "Kickback";
             case "ghosthorse": return "Ghost Horse";

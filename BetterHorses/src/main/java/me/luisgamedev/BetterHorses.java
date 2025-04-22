@@ -6,6 +6,7 @@ import me.luisgamedev.commands.HorseCommandCompleter;
 import me.luisgamedev.commands.HorseCreateTabCompleter;
 import me.luisgamedev.listeners.HorseBreedListener;
 import me.luisgamedev.listeners.HorseSpawnListener;
+import me.luisgamedev.listeners.PassiveTraitListener;
 import me.luisgamedev.listeners.TraitActivationListener;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -20,6 +21,7 @@ public class BetterHorses extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new HorseSpawnListener(), this);
         getServer().getPluginManager().registerEvents(new HorseBreedListener(), this);
         getServer().getPluginManager().registerEvents(new TraitActivationListener(), this);
+        getServer().getPluginManager().registerEvents(new PassiveTraitListener(), this);
         getCommand("horse").setExecutor(new HorseCommand());
         getCommand("horse").setTabCompleter(new HorseCommandCompleter());
         getCommand("horse").setExecutor(new HorseCommand());
