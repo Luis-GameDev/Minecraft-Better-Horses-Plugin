@@ -3,6 +3,7 @@ import org.bukkit.attribute.Attribute;
 import org.bukkit.entity.Horse;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.HorseInventory;
+import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataContainer;
@@ -64,8 +65,28 @@ public class DespawnCommand {
 
         item.setItemMeta(meta);
         horse.remove();
-        player.getInventory().addItem(item);
+
+        // if inventory is full drop item to the ground
+        if(isInventoryFull(player)) {
+            player.getWorld().dropItem(player.getLocation(), item);
+        } else {
+            player.getInventory().addItem(item);
+        }
+
         player.sendMessage(ChatColor.GREEN + "Your horse has been successfully despawned.");
         return true;
+    }
+
+    public static boolean isInventoryFull(Player player) {
+        Inventory inventory = player.getInventory();
+
+        // Check if the player can fit any more items in their inventory
+        for (ItemStack item : inventory.getContents()) {
+            if (item == null || item.getAmount() < item.getMaxStackSize()) {
+                return false; // There's space for at least one item
+            }
+        }
+
+        return true; // Inventory is full
     }
 }
