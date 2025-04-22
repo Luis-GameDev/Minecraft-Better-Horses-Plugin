@@ -107,7 +107,7 @@ ItemStack horse = BetterHorsesAPI.createHorseItem(
 ### 📌 Roadmap Ideas
 
 - [ ] Breeding cooldowns
-- [ ] Custom breeds / bloodlines
+- [ ] Genetic features
 
 ---
 
