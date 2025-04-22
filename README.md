@@ -88,6 +88,8 @@ BetterHorses includes a simple developer API that allows other plugins to create
 #### 🔧 Method
 
 ```java
+import me.luisgamedev.api;
+
 ItemStack horse = BetterHorsesAPI.createHorseItem(
     double health,
     double speed,
