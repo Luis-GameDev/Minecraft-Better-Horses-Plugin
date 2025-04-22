@@ -91,12 +91,14 @@ BetterHorses includes a simple developer API that allows other plugins to create
 ItemStack horse = BetterHorsesAPI.createHorseItem(
     double health,
     double speed,
-    double jump,
+    double jump, 
     String gender, // "male" or "female"
-    String name,
-    Player owner,
-    Inventory targetInventory
-);```
+    String name, // name of the horse
+    Player owner, // owner of the horse
+    Inventory targetInventory // target inventory where the horse item should be added to
+    boolean dropIfFull // weather or not the horse item will be dropped to the ground if the inventory is full
+);
+```
 
 ---
 
