@@ -1,64 +1,47 @@
 package me.luisgamedev.commands;
 
-import me.luisgamedev.BetterHorses;
-import org.bukkit.*;
-import org.bukkit.entity.Horse;
+import me.luisgamedev.api.BetterHorsesAPI;
+import org.bukkit.ChatColor;
+import org.bukkit.command.Command;
+import org.bukkit.command.CommandExecutor;
+import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
-import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.ItemMeta;
-import org.bukkit.persistence.PersistentDataContainer;
-import org.bukkit.persistence.PersistentDataType;
+import org.bukkit.inventory.Inventory;
 
-import java.util.List;
+public class CustomHorseCommand implements CommandExecutor {
 
-public class CustomHorseCommand {
+    @Override
+    public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+        if (!(sender instanceof Player player)) {
+            sender.sendMessage(ChatColor.RED + "Only players can use this command.");
+            return true;
+        }
 
-    public static boolean createHorseItem(Player player, String[] args) {
+        if (!player.hasPermission("betterhorses.create")) {
+            player.sendMessage(ChatColor.RED + "You don't have permission to use this command.");
+            return true;
+        }
 
         if (args.length < 4) {
-            player.sendMessage(ChatColor.RED + "Usage: /horse create <health> <speed> <jump> [gender] [name]");
+            player.sendMessage(ChatColor.YELLOW + "Usage: /horsecreate <health> <speed> <jump> [gender] [name] [trait]");
             return true;
         }
 
-        double health, speed, jump;
         try {
-            health = Double.parseDouble(args[1]);
-            speed = Double.parseDouble(args[2]);
-            jump = Double.parseDouble(args[3]);
+            double health = Double.parseDouble(args[0]);
+            double speed = Double.parseDouble(args[1]);
+            double jump = Double.parseDouble(args[2]);
+            String gender = args.length >= 4 ? args[3].toLowerCase() : (Math.random() < 0.5 ? "male" : "female");
+            String name = args.length >= 5 ? ChatColor.GOLD + args[4] : ChatColor.GOLD + "Horse";
+            String trait = args.length >= 6 ? args[5].toLowerCase() : null;
+
+            Inventory target = player.getInventory();
+            BetterHorsesAPI.createHorseItem(health, speed, jump, gender, name, player, target, true, trait);
+            return true;
+
         } catch (NumberFormatException e) {
-            player.sendMessage(ChatColor.RED + "Health, speed, and jump must be numbers.");
+            player.sendMessage(ChatColor.RED + "Invalid number format.");
             return true;
         }
-
-        String gender = args.length >= 5 ? args[4].toLowerCase() : (Math.random() < 0.5 ? "male" : "female");
-        String genderSymbol = gender.equals("male") ? "♂" : gender.equals("female") ? "♀" : "?";
-
-        String name = args.length >= 6 ? ChatColor.GOLD + args[5] : ChatColor.GOLD + "Horse " + genderSymbol;
-
-        ItemStack item = new ItemStack(Material.SADDLE);
-        ItemMeta meta = item.getItemMeta();
-        meta.setDisplayName(name);
-        meta.setLore(List.of(
-                ChatColor.GRAY + "Gender: " + genderSymbol,
-                ChatColor.GRAY + String.format("Health: %.2f", health),
-                ChatColor.GRAY + String.format("Speed: %.4f", speed),
-                ChatColor.GRAY + String.format("Jump: %.4f", jump)
-        ));
-
-        PersistentDataContainer data = meta.getPersistentDataContainer();
-        data.set(new NamespacedKey(BetterHorses.getInstance(), "gender"), PersistentDataType.STRING, gender);
-        data.set(new NamespacedKey(BetterHorses.getInstance(), "health"), PersistentDataType.DOUBLE, health);
-        data.set(new NamespacedKey(BetterHorses.getInstance(), "current_health"), PersistentDataType.DOUBLE, health);
-        data.set(new NamespacedKey(BetterHorses.getInstance(), "speed"), PersistentDataType.DOUBLE, speed);
-        data.set(new NamespacedKey(BetterHorses.getInstance(), "jump"), PersistentDataType.DOUBLE, jump);
-        data.set(new NamespacedKey(BetterHorses.getInstance(), "owner"), PersistentDataType.STRING, player.getUniqueId().toString());
-        data.set(new NamespacedKey(BetterHorses.getInstance(), "name"), PersistentDataType.STRING, name.replace(ChatColor.GOLD.toString(), ""));
-        data.set(new NamespacedKey(BetterHorses.getInstance(), "style"), PersistentDataType.STRING, Horse.Style.WHITE.name());
-        data.set(new NamespacedKey(BetterHorses.getInstance(), "color"), PersistentDataType.STRING, Horse.Color.CREAMY.name());
-
-        item.setItemMeta(meta);
-        player.getInventory().addItem(item);
-        player.sendMessage(ChatColor.AQUA + "Custom horse item created.");
-        return true;
     }
 }
