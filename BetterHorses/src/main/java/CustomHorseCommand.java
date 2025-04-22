@@ -13,7 +13,7 @@ import java.util.List;
 public class CustomHorseCommand {
 
     public static boolean createHorseItem(Player player, String[] args) {
-        
+
         if (args.length < 4) {
             player.sendMessage(ChatColor.RED + "Usage: /horse create <health> <speed> <jump> [gender] [name]");
             return true;
