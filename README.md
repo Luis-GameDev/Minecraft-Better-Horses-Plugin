@@ -96,7 +96,7 @@ ItemStack horse = BetterHorsesAPI.createHorseItem(
     String name,
     Player owner,
     Inventory targetInventory
-);
+);```
 
 ---
 
