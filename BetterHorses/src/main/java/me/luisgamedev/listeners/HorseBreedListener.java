@@ -1,3 +1,6 @@
+package me.luisgamedev.listeners;
+
+import me.luisgamedev.BetterHorses;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.configuration.file.FileConfiguration;

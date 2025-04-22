@@ -1,4 +1,6 @@
-import org.bukkit.attribute.Attribute;
+package me.luisgamedev.listeners;
+
+import me.luisgamedev.BetterHorses;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Horse;
 import org.bukkit.event.EventHandler;

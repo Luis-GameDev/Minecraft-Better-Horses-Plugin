@@ -1,3 +1,9 @@
+package me.luisgamedev;
+
+import me.luisgamedev.commands.HorseCommand;
+import me.luisgamedev.commands.HorseCommandCompleter;
+import me.luisgamedev.listeners.HorseBreedListener;
+import me.luisgamedev.listeners.HorseSpawnListener;
 import org.bukkit.plugin.java.JavaPlugin;
 
 public class BetterHorses extends JavaPlugin {

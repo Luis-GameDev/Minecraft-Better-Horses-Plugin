@@ -1,3 +1,6 @@
+package me.luisgamedev.commands;
+
+import me.luisgamedev.BetterHorses;
 import org.bukkit.*;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;

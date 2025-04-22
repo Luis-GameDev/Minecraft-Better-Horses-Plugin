@@ -1,38 +1,25 @@
-import org.bukkit.*;
-import org.bukkit.attribute.Attribute;
+package me.luisgamedev.api;
+
+import me.luisgamedev.BetterHorses;
+import org.bukkit.ChatColor;
+import org.bukkit.Material;
+import org.bukkit.NamespacedKey;
 import org.bukkit.entity.Horse;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
-import org.bukkit.plugin.java.JavaPlugin;
 
+import java.util.HashMap;
 import java.util.List;
 
-public class CustomHorseCommand {
+public class BetterHorsesAPI {
 
-    public static boolean createHorseItem(Player player, String[] args) {
+    public static ItemStack createHorseItem(double health, double speed, double jump, String gender, String name, Player owner, Inventory targetInventory, boolean dropIfFull) {
 
-        if (args.length < 4) {
-            player.sendMessage(ChatColor.RED + "Usage: /horse create <health> <speed> <jump> [gender] [name]");
-            return true;
-        }
-
-        double health, speed, jump;
-        try {
-            health = Double.parseDouble(args[1]);
-            speed = Double.parseDouble(args[2]);
-            jump = Double.parseDouble(args[3]);
-        } catch (NumberFormatException e) {
-            player.sendMessage(ChatColor.RED + "Health, speed, and jump must be numbers.");
-            return true;
-        }
-
-        String gender = args.length >= 5 ? args[4].toLowerCase() : (Math.random() < 0.5 ? "male" : "female");
         String genderSymbol = gender.equals("male") ? "♂" : gender.equals("female") ? "♀" : "?";
-
-        String name = args.length >= 6 ? ChatColor.GOLD + args[5] : ChatColor.GOLD + "Horse " + genderSymbol;
 
         ItemStack item = new ItemStack(Material.SADDLE);
         ItemMeta meta = item.getItemMeta();
@@ -45,19 +32,25 @@ public class CustomHorseCommand {
         ));
 
         PersistentDataContainer data = meta.getPersistentDataContainer();
+        NamespacedKey base = new NamespacedKey(BetterHorses.getInstance(), "");
         data.set(new NamespacedKey(BetterHorses.getInstance(), "gender"), PersistentDataType.STRING, gender);
         data.set(new NamespacedKey(BetterHorses.getInstance(), "health"), PersistentDataType.DOUBLE, health);
         data.set(new NamespacedKey(BetterHorses.getInstance(), "current_health"), PersistentDataType.DOUBLE, health);
         data.set(new NamespacedKey(BetterHorses.getInstance(), "speed"), PersistentDataType.DOUBLE, speed);
         data.set(new NamespacedKey(BetterHorses.getInstance(), "jump"), PersistentDataType.DOUBLE, jump);
-        data.set(new NamespacedKey(BetterHorses.getInstance(), "owner"), PersistentDataType.STRING, player.getUniqueId().toString());
+        data.set(new NamespacedKey(BetterHorses.getInstance(), "owner"), PersistentDataType.STRING, owner.getUniqueId().toString());
         data.set(new NamespacedKey(BetterHorses.getInstance(), "name"), PersistentDataType.STRING, name.replace(ChatColor.GOLD.toString(), ""));
         data.set(new NamespacedKey(BetterHorses.getInstance(), "style"), PersistentDataType.STRING, Horse.Style.WHITE.name());
         data.set(new NamespacedKey(BetterHorses.getInstance(), "color"), PersistentDataType.STRING, Horse.Color.CREAMY.name());
 
         item.setItemMeta(meta);
-        player.getInventory().addItem(item);
-        player.sendMessage(ChatColor.AQUA + "Custom horse item created.");
-        return true;
+
+        HashMap<Integer, ItemStack> leftovers = targetInventory.addItem(item);
+        if (!leftovers.isEmpty() && dropIfFull) {
+            owner.getWorld().dropItem(owner.getLocation(), item);
+        }
+
+        return item;
     }
+
 }
