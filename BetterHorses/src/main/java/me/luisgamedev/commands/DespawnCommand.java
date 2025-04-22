@@ -57,7 +57,7 @@ public class DespawnCommand {
         lore.add(ChatColor.GRAY + String.format("Speed: %.4f", speed));
         lore.add(ChatColor.GRAY + String.format("Jump: %.4f", jump));
         if (trait != null) {
-            lore.add(ChatColor.GOLD + "Trait: " + ChatColor.LIGHT_PURPLE + trait);
+            lore.add(ChatColor.GOLD + "Trait: " + ChatColor.LIGHT_PURPLE + formatTraitName(trait));
         }
         meta.setLore(lore);
 
@@ -88,5 +88,18 @@ public class DespawnCommand {
 
         player.sendMessage(ChatColor.GREEN + "Your horse has been successfully despawned.");
         return true;
+    }
+
+    private static String formatTraitName(String raw) {
+        switch (raw.toLowerCase()) {
+            case "hellmare": return "Hellmare";
+            case "fireheart": return "Fireheart";
+            case "dashboost": return "Dash Boost";
+            case "featherhooves": return "Feather Hooves";
+            case "frosthooves": return "Frost Hooves";
+            case "kickback": return "Kickback";
+            case "ghosthorse": return "Ghost Horse";
+            default: return raw.substring(0, 1).toUpperCase() + raw.substring(1);
+        }
     }
 }

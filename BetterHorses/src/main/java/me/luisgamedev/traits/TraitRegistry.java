@@ -24,6 +24,7 @@ public class TraitRegistry {
 
     public static void activateHellmare(Player player, Horse horse) {
         int duration = getConfig().getInt("traits.hellmare.duration", 10);
+        int radius = getConfig().getInt("traits.hellmare.radius", 1); // neu: radius aus config
         player.sendMessage(ChatColor.GOLD + "Hellmare activated! 🔥");
 
         PotionEffect fireResist = new PotionEffect(PotionEffectType.FIRE_RESISTANCE, duration * 20, 1, false, false, false);
@@ -45,8 +46,8 @@ public class TraitRegistry {
 
                 world.spawnParticle(Particle.FLAME, horse.getLocation(), 10, 0.4, 0.2, 0.4, 0.01);
 
-                for (int dx = -1; dx <= 1; dx++) {
-                    for (int dz = -1; dz <= 1; dz++) {
+                for (int dx = -radius; dx <= radius; dx++) {
+                    for (int dz = -radius; dz <= radius; dz++) {
                         Location fireLoc = center.clone().add(dx, 0, dz);
                         Block ground = fireLoc.getBlock();
                         Block above = ground.getRelative(0, 1, 0);
@@ -65,12 +66,10 @@ public class TraitRegistry {
         }.runTaskTimer(BetterHorses.getInstance(), 0, 5);
     }
 
-
     public static void activateFireheart(Player player, Horse horse) {
-        int duration = getConfig().getInt("traits.fireheart.duration", 30);
 
-        horse.addPotionEffect(new PotionEffect(PotionEffectType.FIRE_RESISTANCE, duration * 10000, 0));
-        player.addPotionEffect(new PotionEffect(PotionEffectType.FIRE_RESISTANCE, duration * 20, 0));
+        horse.addPotionEffect(new PotionEffect(PotionEffectType.FIRE_RESISTANCE, 10000, 0));
+        player.addPotionEffect(new PotionEffect(PotionEffectType.FIRE_RESISTANCE, 20, 0));
     }
 
     public static void activateDashBoost(Player player, Horse horse) {
@@ -97,9 +96,8 @@ public class TraitRegistry {
     }
 
     public static void activateFeatherHooves(Player player, Horse horse) {
-        int duration = getConfig().getInt("traits.featherhooves.duration", 10);
-        player.addPotionEffect(new PotionEffect(PotionEffectType.SLOW_FALLING, duration * 10, 0));
-        horse.addPotionEffect(new PotionEffect(PotionEffectType.SLOW_FALLING, duration * 10000, 0));
+        player.addPotionEffect(new PotionEffect(PotionEffectType.SLOW_FALLING, 10, 0));
+        horse.addPotionEffect(new PotionEffect(PotionEffectType.SLOW_FALLING, 10000, 0));
     }
 
     public static void activateGhostHorse(Player player, Horse horse) {
@@ -146,7 +144,7 @@ public class TraitRegistry {
 
     public static void activateFrostHooves(Player player, Horse horse) {
         Location center = horse.getLocation().subtract(0, 1, 0);
-        int radius = 3;
+        int radius = BetterHorses.getInstance().getConfig().getInt("traits.frosthooves.radius", 3); // Radius aus Config
 
         for (int x = -radius; x <= radius; x++) {
             for (int z = -radius; z <= radius; z++) {
@@ -159,7 +157,6 @@ public class TraitRegistry {
             }
         }
     }
-
 
     private static boolean isOnCooldown(Horse horse, String key) {
         UUID id = horse.getUniqueId();
