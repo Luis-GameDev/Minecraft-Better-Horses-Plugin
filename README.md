@@ -18,7 +18,7 @@
 
 - 🔥 **Horse Traits (Abilities)**  
   Horses can be born or created with **special traits** that provide passive or active effects such as:
-  - `Hellmare` – Leaves a trail of fire when the ability is pressed
+  - `Hellmare` – Leaves a trail of fire when the ability is used
   - `Fireheart` – The horse and it's rider is immune to fire
   - `Feather Hooves` – The horse and it's rider can glide
   - `Frost Hooves` – Freezes water below the horse
