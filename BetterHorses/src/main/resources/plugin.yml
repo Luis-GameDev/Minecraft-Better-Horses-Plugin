@@ -1,6 +1,6 @@
 name: BetterHorses
 main: me.luisgamedev.BetterHorses
-version: 1.1
+version: 2.0
 api-version: 1.20
 
 commands:
