@@ -50,7 +50,7 @@
 - 🧲 **/horse spawn**  
   Spawns a horse **identical to the original** using the stored data in the saddle item.
 
-- 🛠 **/horsecreate <health> <speed> <jump> [gender] [name] [trait]**  
+- 🛠 **/horsecreate <health> <speed> <jump> <gender> <name> <trait>**  
   Administrator command to generate a custom horse item with your own stats, name, and optional **specific trait**.  
   If no trait is provided, one is selected randomly based on configured chances, traits can only be selected if enabled in the config.  
 
