@@ -142,8 +142,8 @@ traits:
 
 | Command                                  | Description                                 | Permission                          |
 |------------------------------------------|---------------------------------------------|-------------------------------------|
-| `/horse spawn`                           | Spawn a horse using the item                | `betterhorses.spawn`                |
-| `/horse despawn`                         | Turn the horse you're riding into an item   | `betterhorses.despawn`              |
+| `/horse spawn`                           | Spawn a horse using the item                | `betterhorses.base`                |
+| `/horse despawn`                         | Turn the horse you're riding into an item   | `betterhorses.base`              |
 | `/horsecreate`                           | Spawn a custom horse item                   | `betterhorses.create`               |
 | `/horsecreate 100 1.0 2.0 male Zeus`     | Create superhorse with custom name "Zeus"   | `betterhorses.create`               |
 | `/horsecreate 80 0.3 1.1 female Flare hellmare` | Create horse with fixed trait `hellmare` | `betterhorses.create`               |
