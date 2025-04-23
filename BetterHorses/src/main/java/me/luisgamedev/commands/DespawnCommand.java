@@ -19,6 +19,12 @@ import java.util.List;
 public class DespawnCommand {
 
     public static boolean despawnHorseToItem(Player player) {
+
+        if (!player.hasPermission("betterhorses.base")) {
+            player.sendMessage(ChatColor.RED + "You don't have permission to use this command.");
+            return true;
+        }
+
         if (!(player.getVehicle() instanceof Horse horse)) {
             player.sendMessage(ChatColor.RED + "You must be riding a tamed horse to despawn it.");
             return true;
@@ -48,7 +54,12 @@ public class DespawnCommand {
         ItemStack saddle = inv.getSaddle();
         ItemStack armor = inv.getArmor();
 
-        ItemStack item = new ItemStack(Material.SADDLE);
+        String materialName = BetterHorses.getInstance().getConfig().getString("settings.horse-item", "SADDLE");
+        Material material = Material.getMaterial(materialName.toUpperCase());
+        if (material == null || !material.isItem()) material = Material.SADDLE;
+
+        ItemStack item = new ItemStack(material);
+
         ItemMeta meta = item.getItemMeta();
         meta.setDisplayName(ChatColor.GOLD + "Horse " + genderSymbol);
         List<String> lore = new ArrayList<>();
