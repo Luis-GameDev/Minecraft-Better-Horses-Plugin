@@ -77,6 +77,12 @@ max-stats:
   speed: 0.4
   jump: 1.2
 
+
+# General settings
+settings:
+  horse-item: SADDLE
+
+
 # Horse Abilities
 traits:
   enabled: true
