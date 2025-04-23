@@ -14,9 +14,20 @@ import org.bukkit.persistence.PersistentDataType;
 public class RespawnCommand {
 
     public static boolean spawnHorseFromItem(Player player) {
+
+        if (!player.hasPermission("betterhorses.base")) {
+            player.sendMessage(ChatColor.RED + "You don't have permission to use this command.");
+            return true;
+        }
+
         ItemStack item = player.getInventory().getItemInMainHand();
-        if (item == null || item.getType() != Material.SADDLE || !item.hasItemMeta()) {
-            player.sendMessage(ChatColor.RED + "You must hold a valid horse item (saddle) in your main hand.");
+
+        String configuredItem = BetterHorses.getInstance().getConfig().getString("settings.horse-item", "SADDLE");
+        Material expectedMaterial = Material.getMaterial(configuredItem.toUpperCase());
+        if (expectedMaterial == null || !expectedMaterial.isItem()) expectedMaterial = Material.SADDLE;
+
+        if (item == null || item.getType() != expectedMaterial || !item.hasItemMeta()) {
+            player.sendMessage(ChatColor.RED + "You must hold a valid horse item in your main hand.");
             return true;
         }
 
@@ -38,11 +49,6 @@ public class RespawnCommand {
 
         if (health == null || speed == null || jump == null || gender == null || ownerUUID == null) {
             player.sendMessage(ChatColor.RED + "This item does not contain valid horse data.");
-            return true;
-        }
-
-        if (!player.getUniqueId().toString().equals(ownerUUID)) {
-            player.sendMessage(ChatColor.RED + "You are not the owner of this horse.");
             return true;
         }
 

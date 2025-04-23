@@ -22,7 +22,12 @@ public class BetterHorsesAPI {
 
         String genderSymbol = gender.equals("male") ? "♂" : gender.equals("female") ? "♀" : "?";
 
-        ItemStack item = new ItemStack(Material.SADDLE);
+        String materialName = BetterHorses.getInstance().getConfig().getString("settings.horse-item", "SADDLE");
+        Material material = Material.getMaterial(materialName.toUpperCase());
+        if (material == null || !material.isItem()) material = Material.SADDLE;
+
+        ItemStack item = new ItemStack(material);
+
         ItemMeta meta = item.getItemMeta();
         List<String> lore = new ArrayList<>();
 

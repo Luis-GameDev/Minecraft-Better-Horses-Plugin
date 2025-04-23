@@ -1,7 +1,5 @@
 package me.luisgamedev.commands;
 
-import me.luisgamedev.commands.DespawnCommand;
-import me.luisgamedev.commands.RespawnCommand;
 import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
