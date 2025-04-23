@@ -4,6 +4,8 @@
 
 ![1fbf8a99-e548-4b89-934b-9b5479828b7d](https://github.com/user-attachments/assets/45bc889b-419c-4bce-8957-99d857c79a00)
 
+If you have any questions or need help feel free to join my discord server: https://discord.gg/gBEKWGanM7
+
 ---
 
 ### ✨ Features
