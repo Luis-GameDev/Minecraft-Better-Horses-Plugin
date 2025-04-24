@@ -138,7 +138,7 @@ traits:
 
 ### 🚀 Installation
 
-1. Download the `BetterHorses-2.0.jar` from this repo.
+1. Download the `BetterHorses-2.2.jar` from this repo.
 
 2. Place it into your server’s `plugins/` folder and restart the server to generate the config file.
 
