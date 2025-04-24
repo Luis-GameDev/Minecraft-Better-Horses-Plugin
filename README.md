@@ -18,13 +18,18 @@ If you have any questions or need help feel free to join my discord server: http
   Every horse has a **gender** (♂ / ♀) assigned at spawn or birth.
   Two horses of the same gender cannot breed
 
+- ✂️ **Castration System**  
+  Players can use `/horse neuter` to castrate a horse item.  
+  Castrated horses are marked and **cannot breed**, just like same-gender pairs.  
+  The status is permanently stored in the item and displayed in the lore.
+
 - 🔥 **Horse Traits (Abilities)**  
   Horses can be born or created with **special traits** that provide passive or active effects such as:
   - `Hellmare` – Leaves a trail of fire when the ability is used
-  - `Fireheart` – The horse and it's rider is immune to fire
-  - `Feather Hooves` – The horse and it's rider can glide
+  - `Fireheart` – The horse and its rider are immune to fire
+  - `Feather Hooves` – The horse and its rider can glide
   - `Frost Hooves` – Freezes water below the horse
-  - `Dashboost` - Increases the horses movement speed significantly for a short amount of time when the ability is used
+  - `Dashboost` - Increases the horse's movement speed significantly for a short amount of time when the ability is used
   - `Kickback` - The horse knocks away all enemies when the ability is used
   - `Ghosthorse` - You and the horse enter the realm of the undead and become invisible for a short amount of time when the ability is used
 
@@ -36,7 +41,6 @@ If you have any questions or need help feel free to join my discord server: http
   - Enable/disable individual traits
   - Define duration, cooldown, radius, intensity and more
 
-
 - 🎒 **/horse despawn**  
   Converts a **tamed horse you're riding** into a **saddle item** that stores:
   - All core stats (including current HP)
@@ -45,9 +49,13 @@ If you have any questions or need help feel free to join my discord server: http
   - Saddle & Armor
   - Color & Style
   - Trait
+  - Neutered status
   - Custom name (if set)
     
-  A horse can only be despawned by it's owner.
+  A horse can only be despawned by its owner.
+
+- ✂️ **/horse neuter**
+  Castrates the horse item in your mainhand. Castration is permanent and cannot be undone. 
 
 - 🧲 **/horse spawn**  
   Spawns a horse **identical to the original** using the stored data in the saddle item.
@@ -77,11 +85,9 @@ max-stats:
   speed: 0.4
   jump: 1.2
 
-
 # General settings
 settings:
   horse-item: SADDLE
-
 
 # Horse Abilities
 traits:
@@ -138,7 +144,7 @@ traits:
 
 ### 🚀 Installation
 
-1. Download the `BetterHorses-2.2.jar` from this repo.
+1. Download the `BetterHorses-3.0.jar` from this repo.
 
 2. Place it into your server’s `plugins/` folder and restart the server to generate the config file.
 
@@ -152,6 +158,7 @@ traits:
 |------------------------------------------|---------------------------------------------|-------------------------------------|
 | `/horse spawn`                           | Spawn a horse using the item                | `betterhorses.base`                |
 | `/horse despawn`                         | Turn the horse you're riding into an item   | `betterhorses.base`              |
+| `/horse neuter`                          | Castrate the horse item in your hand        | `betterhorses.neuter`               |
 | `/horsecreate`                           | Spawn a custom horse item                   | `betterhorses.create`               |
 | `/horsecreate 100 1.0 2.0 male Zeus`     | Create superhorse with custom name "Zeus"   | `betterhorses.create`               |
 | `/horsecreate 80 0.3 1.1 female Flare hellmare` | Create horse with fixed trait `hellmare` | `betterhorses.create`               |
@@ -184,6 +191,3 @@ ItemStack horse = BetterHorsesAPI.createHorseItem(
 
 - [ ] Breeding cooldowns
 - [ ] Genetic features
-
----
-
