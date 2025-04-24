@@ -27,7 +27,7 @@ public class HorseCreateTabCompleter implements TabCompleter {
                     }
                 }
             }
-            result.add("none"); // zusätzlich "none" anbieten
+            result.add("none");
             return result;
         }
 

@@ -35,8 +35,16 @@ public class HorseCommand implements CommandExecutor {
                 }
                 return DespawnCommand.despawnHorseToItem(player);
 
+            case "neuter":
+                if (!player.hasPermission("betterhorses.neuter")) {
+                    player.sendMessage(ChatColor.RED + "You don't have permission to use /horse neuter.");
+                    return true;
+                }
+                return HorseNeuterCommand.handle(player);
+
+
             default:
-                player.sendMessage(ChatColor.RED + "Unknown subcommand. Use /horse <spawn|despawn>");
+                player.sendMessage(ChatColor.RED + "Unknown subcommand. Use /horse <spawn|despawn|neuter>");
                 return true;
         }
     }

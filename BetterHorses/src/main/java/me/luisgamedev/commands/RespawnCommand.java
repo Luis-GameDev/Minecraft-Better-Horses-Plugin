@@ -14,9 +14,7 @@ import org.bukkit.persistence.PersistentDataType;
 public class RespawnCommand {
 
     public static boolean spawnHorseFromItem(Player player) {
-
         ItemStack item = player.getInventory().getItemInMainHand();
-
         String configuredItem = BetterHorses.getInstance().getConfig().getString("settings.horse-item", "SADDLE");
         Material expectedMaterial = Material.getMaterial(configuredItem.toUpperCase());
         if (expectedMaterial == null || !expectedMaterial.isItem()) expectedMaterial = Material.SADDLE;
@@ -41,9 +39,15 @@ public class RespawnCommand {
         String armorStr = data.get(new NamespacedKey(BetterHorses.getInstance(), "armor"), PersistentDataType.STRING);
         String customName = data.get(new NamespacedKey(BetterHorses.getInstance(), "name"), PersistentDataType.STRING);
         String trait = data.get(new NamespacedKey(BetterHorses.getInstance(), "trait"), PersistentDataType.STRING);
+        Byte neutered = data.get(new NamespacedKey(BetterHorses.getInstance(), "neutered"), PersistentDataType.BYTE);
 
         if (health == null || speed == null || jump == null || gender == null || ownerUUID == null) {
             player.sendMessage(ChatColor.RED + "This item does not contain valid horse data.");
+            return true;
+        }
+
+        if (!player.getUniqueId().toString().equals(ownerUUID)) {
+            player.sendMessage(ChatColor.RED + "You are not the owner of this horse.");
             return true;
         }
 
@@ -61,6 +65,10 @@ public class RespawnCommand {
 
         if (trait != null && !trait.isBlank()) {
             horse.getPersistentDataContainer().set(new NamespacedKey(BetterHorses.getInstance(), "trait"), PersistentDataType.STRING, trait);
+        }
+
+        if (neutered != null && neutered == (byte) 1) {
+            horse.getPersistentDataContainer().set(new NamespacedKey(BetterHorses.getInstance(), "neutered"), PersistentDataType.BYTE, (byte) 1);
         }
 
         if (customName != null && !customName.isBlank()) {
