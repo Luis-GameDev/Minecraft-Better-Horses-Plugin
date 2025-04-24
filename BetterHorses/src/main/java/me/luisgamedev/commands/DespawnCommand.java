@@ -20,11 +20,6 @@ public class DespawnCommand {
 
     public static boolean despawnHorseToItem(Player player) {
 
-        if (!player.hasPermission("betterhorses.base")) {
-            player.sendMessage(ChatColor.RED + "You don't have permission to use this command.");
-            return true;
-        }
-
         if (!(player.getVehicle() instanceof Horse horse)) {
             player.sendMessage(ChatColor.RED + "You must be riding a tamed horse to despawn it.");
             return true;

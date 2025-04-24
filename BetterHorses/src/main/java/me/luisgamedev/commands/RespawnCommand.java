@@ -15,11 +15,6 @@ public class RespawnCommand {
 
     public static boolean spawnHorseFromItem(Player player) {
 
-        if (!player.hasPermission("betterhorses.base")) {
-            player.sendMessage(ChatColor.RED + "You don't have permission to use this command.");
-            return true;
-        }
-
         ItemStack item = player.getInventory().getItemInMainHand();
 
         String configuredItem = BetterHorses.getInstance().getConfig().getString("settings.horse-item", "SADDLE");

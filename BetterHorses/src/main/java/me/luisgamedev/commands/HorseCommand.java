@@ -22,14 +22,14 @@ public class HorseCommand implements CommandExecutor {
 
         switch (args[0].toLowerCase()) {
             case "spawn":
-                if (!player.hasPermission("betterhorses.spawn")) {
+                if (!player.hasPermission("betterhorses.base")) {
                     player.sendMessage(ChatColor.RED + "You don't have permission to use /horse spawn.");
                     return true;
                 }
                 return RespawnCommand.spawnHorseFromItem(player);
 
             case "despawn":
-                if (!player.hasPermission("betterhorses.despawn")) {
+                if (!player.hasPermission("betterhorses.base")) {
                     player.sendMessage(ChatColor.RED + "You don't have permission to use /horse despawn.");
                     return true;
                 }
