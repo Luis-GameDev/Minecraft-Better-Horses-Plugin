@@ -12,7 +12,7 @@ public class HorseCommandCompleter implements TabCompleter {
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
         if (args.length == 1) {
-            return Arrays.asList("spawn", "despawn");
+            return Arrays.asList("spawn", "despawn", "neuter");
         }
         return List.of();
     }

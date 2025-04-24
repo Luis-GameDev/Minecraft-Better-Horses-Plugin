@@ -19,7 +19,6 @@ import java.util.List;
 public class DespawnCommand {
 
     public static boolean despawnHorseToItem(Player player) {
-
         if (!(player.getVehicle() instanceof Horse horse)) {
             player.sendMessage(ChatColor.RED + "You must be riding a tamed horse to despawn it.");
             return true;
@@ -33,10 +32,12 @@ public class DespawnCommand {
         PersistentDataContainer data = horse.getPersistentDataContainer();
         NamespacedKey genderKey = new NamespacedKey(BetterHorses.getInstance(), "gender");
         NamespacedKey traitKey = new NamespacedKey(BetterHorses.getInstance(), "trait");
+        NamespacedKey neuterKey = new NamespacedKey(BetterHorses.getInstance(), "neutered");
+
         String gender = data.getOrDefault(genderKey, PersistentDataType.STRING, "unknown");
         String trait = data.has(traitKey, PersistentDataType.STRING) ? data.get(traitKey, PersistentDataType.STRING) : null;
+        boolean isNeutered = data.has(neuterKey, PersistentDataType.BYTE) && data.get(neuterKey, PersistentDataType.BYTE) == (byte) 1;
         String genderSymbol = gender.equalsIgnoreCase("male") ? "♂" : gender.equalsIgnoreCase("female") ? "♀" : "?";
-        String name = horse.getCustomName() != null ? ChatColor.stripColor(horse.getCustomName()) : "Horse";
 
         double maxHealth = horse.getAttribute(Attribute.GENERIC_MAX_HEALTH).getBaseValue();
         double currentHealth = horse.getHealth();
@@ -49,12 +50,11 @@ public class DespawnCommand {
         ItemStack saddle = inv.getSaddle();
         ItemStack armor = inv.getArmor();
 
-        String materialName = BetterHorses.getInstance().getConfig().getString("settings.horse-item", "SADDLE");
-        Material material = Material.getMaterial(materialName.toUpperCase());
+        String itemMaterialName = BetterHorses.getInstance().getConfig().getString("settings.horse-item", "SADDLE");
+        Material material = Material.getMaterial(itemMaterialName.toUpperCase());
         if (material == null || !material.isItem()) material = Material.SADDLE;
 
         ItemStack item = new ItemStack(material);
-
         ItemMeta meta = item.getItemMeta();
         meta.setDisplayName(ChatColor.GOLD + "Horse " + genderSymbol);
         List<String> lore = new ArrayList<>();
@@ -62,14 +62,18 @@ public class DespawnCommand {
         lore.add(ChatColor.GRAY + String.format("Health: %.2f / %.2f", currentHealth, maxHealth));
         lore.add(ChatColor.GRAY + String.format("Speed: %.4f", speed));
         lore.add(ChatColor.GRAY + String.format("Jump: %.4f", jump));
+
         if (trait != null) {
-            lore.add(ChatColor.GOLD + "Trait: " + ChatColor.LIGHT_PURPLE + formatTraitName(trait));
+            lore.add(ChatColor.GOLD + "Trait: " + ChatColor.LIGHT_PURPLE + trait);
         }
+        if (isNeutered) {
+            lore.add(ChatColor.DARK_GRAY + "⚠ Castrated – Can't breed");
+        }
+
         meta.setLore(lore);
 
         PersistentDataContainer itemData = meta.getPersistentDataContainer();
         itemData.set(genderKey, PersistentDataType.STRING, gender);
-        data.set(new NamespacedKey(BetterHorses.getInstance(), "name"), PersistentDataType.STRING, name);
         itemData.set(new NamespacedKey(BetterHorses.getInstance(), "health"), PersistentDataType.DOUBLE, maxHealth);
         itemData.set(new NamespacedKey(BetterHorses.getInstance(), "current_health"), PersistentDataType.DOUBLE, currentHealth);
         itemData.set(new NamespacedKey(BetterHorses.getInstance(), "speed"), PersistentDataType.DOUBLE, speed);
@@ -79,6 +83,9 @@ public class DespawnCommand {
         itemData.set(new NamespacedKey(BetterHorses.getInstance(), "color"), PersistentDataType.STRING, color.name());
         if (trait != null) {
             itemData.set(traitKey, PersistentDataType.STRING, trait.toLowerCase());
+        }
+        if (isNeutered) {
+            itemData.set(neuterKey, PersistentDataType.BYTE, (byte) 1);
         }
         if (saddle != null) itemData.set(new NamespacedKey(BetterHorses.getInstance(), "saddle"), PersistentDataType.STRING, saddle.getType().name());
         if (armor != null) itemData.set(new NamespacedKey(BetterHorses.getInstance(), "armor"), PersistentDataType.STRING, armor.getType().name());
@@ -94,18 +101,5 @@ public class DespawnCommand {
 
         player.sendMessage(ChatColor.GREEN + "Your horse has been successfully despawned.");
         return true;
-    }
-
-    private static String formatTraitName(String raw) {
-        switch (raw.toLowerCase()) {
-            case "hellmare": return "Hellmare";
-            case "fireheart": return "Fireheart";
-            case "dashboost": return "Dash Boost";
-            case "featherhooves": return "Feather Hooves";
-            case "frosthooves": return "Frost Hooves";
-            case "kickback": return "Kickback";
-            case "ghosthorse": return "Ghost Horse";
-            default: return raw.substring(0, 1).toUpperCase() + raw.substring(1);
-        }
     }
 }

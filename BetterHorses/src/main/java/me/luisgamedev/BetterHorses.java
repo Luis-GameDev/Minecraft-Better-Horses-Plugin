@@ -22,7 +22,6 @@ public class BetterHorses extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new HorseBreedListener(), this);
         getServer().getPluginManager().registerEvents(new TraitActivationListener(), this);
         getServer().getPluginManager().registerEvents(new PassiveTraitListener(), this);
-        getCommand("horse").setExecutor(new HorseCommand());
         getCommand("horse").setTabCompleter(new HorseCommandCompleter());
         getCommand("horse").setExecutor(new HorseCommand());
         getCommand("horsecreate").setExecutor(new CustomHorseCommand());
