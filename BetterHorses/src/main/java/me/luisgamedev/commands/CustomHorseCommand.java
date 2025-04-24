@@ -20,11 +20,6 @@ public class CustomHorseCommand implements CommandExecutor {
             return true;
         }
 
-        if (!player.hasPermission("betterhorses.create")) {
-            player.sendMessage(ChatColor.RED + "You don't have permission to use this command.");
-            return true;
-        }
-
         if (args.length < 4) {
             player.sendMessage(ChatColor.YELLOW + "Usage: /horsecreate <health> <speed> <jump> [gender] [name] [trait]");
             return true;
