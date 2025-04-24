@@ -54,7 +54,7 @@ If you have any questions or need help feel free to join my discord server: http
     
   A horse can only be despawned by its owner.
 
-- ✂️ **/horse neuter**
+- ✂️ **/horse neuter**  
   Castrates the horse item in your mainhand. Castration is permanent and cannot be undone. 
 
 - 🧲 **/horse spawn**  
