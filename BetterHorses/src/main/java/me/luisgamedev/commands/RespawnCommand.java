@@ -1,6 +1,7 @@
 package me.luisgamedev.commands;
 
 import me.luisgamedev.BetterHorses;
+import me.luisgamedev.language.LanguageManager;
 import org.bukkit.*;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
@@ -14,13 +15,15 @@ import org.bukkit.persistence.PersistentDataType;
 public class RespawnCommand {
 
     public static boolean spawnHorseFromItem(Player player) {
+        LanguageManager lang = BetterHorses.getInstance().getLang();
+
         ItemStack item = player.getInventory().getItemInMainHand();
         String configuredItem = BetterHorses.getInstance().getConfig().getString("settings.horse-item", "SADDLE");
         Material expectedMaterial = Material.getMaterial(configuredItem.toUpperCase());
         if (expectedMaterial == null || !expectedMaterial.isItem()) expectedMaterial = Material.SADDLE;
 
         if (item == null || item.getType() != expectedMaterial || !item.hasItemMeta()) {
-            player.sendMessage(ChatColor.RED + "You must hold a valid horse item in your main hand.");
+            player.sendMessage(lang.get("messages.invalid-item"));
             return true;
         }
 
@@ -42,12 +45,12 @@ public class RespawnCommand {
         Byte neutered = data.get(new NamespacedKey(BetterHorses.getInstance(), "neutered"), PersistentDataType.BYTE);
 
         if (health == null || speed == null || jump == null || gender == null || ownerUUID == null) {
-            player.sendMessage(ChatColor.RED + "This item does not contain valid horse data.");
+            player.sendMessage(lang.get("messages.invalid-horse-data"));
             return true;
         }
 
         if (!player.getUniqueId().toString().equals(ownerUUID)) {
-            player.sendMessage(ChatColor.RED + "You are not the owner of this horse.");
+            player.sendMessage(lang.get("messages.not-horse-owner"));
             return true;
         }
 
@@ -89,7 +92,7 @@ public class RespawnCommand {
         }
 
         item.setAmount(item.getAmount() - 1);
-        player.sendMessage(ChatColor.GREEN + "Horse respawned with stored stats.");
+        player.sendMessage(lang.get("messages.horse-respawned"));
         return true;
     }
 

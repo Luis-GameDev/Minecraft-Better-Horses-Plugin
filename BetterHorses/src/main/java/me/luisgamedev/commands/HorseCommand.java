@@ -1,6 +1,7 @@
 package me.luisgamedev.commands;
 
-import org.bukkit.ChatColor;
+import me.luisgamedev.BetterHorses;
+import me.luisgamedev.language.LanguageManager;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -10,41 +11,42 @@ public class HorseCommand implements CommandExecutor {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+        LanguageManager lang = BetterHorses.getInstance().getLang();
+
         if (!(sender instanceof Player player)) {
-            sender.sendMessage("This command can only be used by players.");
+            sender.sendMessage(lang.get("messages.only-players"));
             return true;
         }
 
         if (args.length == 0) {
-            player.sendMessage(ChatColor.YELLOW + "Usage: /horse <spawn|despawn>");
+            player.sendMessage(lang.get("messages.horse-usage"));
             return true;
         }
 
         switch (args[0].toLowerCase()) {
             case "spawn":
                 if (!player.hasPermission("betterhorses.base")) {
-                    player.sendMessage(ChatColor.RED + "You don't have permission to use /horse spawn.");
+                    player.sendMessage(lang.getFormatted("messages.insufficient-permission", "%command%", "/horse spawn"));
                     return true;
                 }
                 return RespawnCommand.spawnHorseFromItem(player);
 
             case "despawn":
                 if (!player.hasPermission("betterhorses.base")) {
-                    player.sendMessage(ChatColor.RED + "You don't have permission to use /horse despawn.");
+                    player.sendMessage(lang.getFormatted("messages.insufficient-permission", "%command%", "/horse despawn"));
                     return true;
                 }
                 return DespawnCommand.despawnHorseToItem(player);
 
             case "neuter":
                 if (!player.hasPermission("betterhorses.neuter")) {
-                    player.sendMessage(ChatColor.RED + "You don't have permission to use /horse neuter.");
+                    player.sendMessage(lang.getFormatted("messages.insufficient-permission", "%command%", "/horse neuter"));
                     return true;
                 }
                 return HorseNeuterCommand.handle(player);
 
-
             default:
-                player.sendMessage(ChatColor.RED + "Unknown subcommand. Use /horse <spawn|despawn|neuter>");
+                player.sendMessage(lang.get("messages.unknown-subcommand"));
                 return true;
         }
     }
