@@ -1,7 +1,7 @@
 package me.luisgamedev.commands;
 
 import me.luisgamedev.BetterHorses;
-import org.bukkit.ChatColor;
+import me.luisgamedev.language.LanguageManager;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.configuration.file.FileConfiguration;
@@ -16,8 +16,10 @@ import java.util.List;
 public class HorseNeuterCommand {
 
     public static boolean handle(Player player) {
+        LanguageManager lang = BetterHorses.getInstance().getLang();
+
         if (!player.hasPermission("betterhorses.neuter")) {
-            player.sendMessage(ChatColor.RED + "You don't have permission to use /horse neuter.");
+            player.sendMessage(lang.getFormatted("messages.insufficient-permission", "%command%", "/horse neuter"));
             return true;
         }
 
@@ -26,7 +28,7 @@ public class HorseNeuterCommand {
         Material expected = Material.getMaterial(config.getString("settings.horse-item", "SADDLE").toUpperCase());
 
         if (expected == null || item == null || item.getType() != expected || !item.hasItemMeta()) {
-            player.sendMessage(ChatColor.RED + "You must hold a valid horse item in your main hand.");
+            player.sendMessage(lang.get("messages.invalid-item"));
             return true;
         }
 
@@ -34,19 +36,18 @@ public class HorseNeuterCommand {
         NamespacedKey neuteredKey = new NamespacedKey(BetterHorses.getInstance(), "neutered");
 
         if (meta.getPersistentDataContainer().has(neuteredKey, PersistentDataType.BYTE)) {
-            player.sendMessage(ChatColor.YELLOW + "This horse is already castrated.");
+            player.sendMessage(lang.get("messages.already-castrated"));
             return true;
         }
 
         meta.getPersistentDataContainer().set(neuteredKey, PersistentDataType.BYTE, (byte) 1);
 
         List<String> lore = meta.hasLore() ? new ArrayList<>(meta.getLore()) : new ArrayList<>();
-        lore.add(ChatColor.DARK_GRAY + "⚠ Castrated – Cannot breed");
+        lore.add(lang.get("messages.lore-neutered"));
         meta.setLore(lore);
 
         item.setItemMeta(meta);
-        player.sendMessage(ChatColor.GRAY + "You castrated the horse. It can no longer breed.");
+        player.sendMessage(lang.get("messages.successfully-castrated"));
         return true;
     }
 }
-

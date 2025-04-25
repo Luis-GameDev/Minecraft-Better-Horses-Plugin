@@ -1,6 +1,7 @@
 package me.luisgamedev.api;
 
 import me.luisgamedev.BetterHorses;
+import me.luisgamedev.language.LanguageManager;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
@@ -20,25 +21,25 @@ public class BetterHorsesAPI {
 
     public static ItemStack createHorseItem(double health, double speed, double jump, String gender, String name, Player owner, Inventory targetInventory, boolean dropIfFull, String traitOverride) {
 
-        String genderSymbol = gender.equals("male") ? "♂" : gender.equals("female") ? "♀" : "?";
+        BetterHorses plugin = BetterHorses.getInstance();
+        LanguageManager lang = plugin.getLang();
 
-        String materialName = BetterHorses.getInstance().getConfig().getString("settings.horse-item", "SADDLE");
+        String genderSymbol = gender.equals("male") ? lang.getRaw("messages.gender-male") : gender.equals("female") ? lang.getRaw("messages.gender-female") : "?";
+
+        String materialName = plugin.getConfig().getString("settings.horse-item", "SADDLE");
         Material material = Material.getMaterial(materialName.toUpperCase());
         if (material == null || !material.isItem()) material = Material.SADDLE;
 
         ItemStack item = new ItemStack(material);
-
         ItemMeta meta = item.getItemMeta();
         List<String> lore = new ArrayList<>();
 
-        lore.add(ChatColor.GRAY + "Gender: " + genderSymbol);
-        lore.add(ChatColor.GRAY + String.format("Health: %.2f", health));
-        lore.add(ChatColor.GRAY + String.format("Speed: %.4f", speed));
-        lore.add(ChatColor.GRAY + String.format("Jump: %.4f", jump));
+        lore.add(ChatColor.GRAY + lang.getFormattedRaw("messages.lore-gender", "%value%", genderSymbol));
+        lore.add(ChatColor.GRAY + lang.getFormattedRaw("messages.lore-health", "%value%", String.format("%.2f", health), "%max%", String.format("%.2f", health)));
+        lore.add(ChatColor.GRAY + lang.getFormattedRaw("messages.lore-speed", "%value%", String.format("%.4f", speed)));
+        lore.add(ChatColor.GRAY + lang.getFormattedRaw("messages.lore-jump", "%value%", String.format("%.4f", jump)));
 
         PersistentDataContainer data = meta.getPersistentDataContainer();
-        BetterHorses plugin = BetterHorses.getInstance();
-
         data.set(new NamespacedKey(plugin, "gender"), PersistentDataType.STRING, gender);
         data.set(new NamespacedKey(plugin, "health"), PersistentDataType.DOUBLE, health);
         data.set(new NamespacedKey(plugin, "current_health"), PersistentDataType.DOUBLE, health);
@@ -58,7 +59,7 @@ public class BetterHorsesAPI {
                     ConfigurationSection traitConfig = traitsSection.getConfigurationSection(traitOverride);
                     if (traitConfig.getBoolean("enabled", false)) {
                         data.set(new NamespacedKey(plugin, "trait"), PersistentDataType.STRING, traitOverride.toLowerCase());
-                        lore.add(ChatColor.GOLD + "Trait: " + ChatColor.LIGHT_PURPLE + formatTraitName(traitOverride));
+                        lore.add(ChatColor.GOLD + lang.getFormattedRaw("messages.trait-line", "%trait%", formatTraitName(traitOverride)));
                     }
                 }
             } else if (traitsSection != null) {
@@ -70,7 +71,7 @@ public class BetterHorsesAPI {
                     double chance = tSec.getDouble("chance", 0);
                     if (Math.random() < chance) {
                         data.set(new NamespacedKey(plugin, "trait"), PersistentDataType.STRING, trait.toLowerCase());
-                        lore.add(ChatColor.GOLD + "Trait: " + ChatColor.LIGHT_PURPLE + formatTraitName(trait));
+                        lore.add(ChatColor.GOLD + lang.getFormattedRaw("messages.trait-line", "%trait%", formatTraitName(trait)));
                         break;
                     }
                 }
@@ -90,15 +91,13 @@ public class BetterHorsesAPI {
     }
 
     private static String formatTraitName(String raw) {
-        switch (raw.toLowerCase()) {
-            case "hellmare": return "Hellmare";
-            case "fireheart": return "Fireheart";
-            case "dashboost": return "Dash Boost";
-            case "featherhooves": return "Feather Hooves";
-            case "frosthooves": return "Frost Hooves";
-            case "kickback": return "Kickback";
-            case "ghosthorse": return "Ghost Horse";
-            default: return raw.substring(0, 1).toUpperCase() + raw.substring(1);
+        LanguageManager lang = BetterHorses.getInstance().getLang();
+        String path = "traits." + raw.toLowerCase();
+
+        if (lang.getConfig().contains(path)) {
+            return ChatColor.translateAlternateColorCodes('&', lang.getConfig().getString(path));
         }
+
+        return raw.substring(0, 1).toUpperCase() + raw.substring(1);
     }
 }

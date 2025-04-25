@@ -1,5 +1,6 @@
 package me.luisgamedev;
 
+import me.luisgamedev.language.LanguageManager;
 import me.luisgamedev.commands.CustomHorseCommand;
 import me.luisgamedev.commands.HorseCommand;
 import me.luisgamedev.commands.HorseCommandCompleter;
@@ -13,11 +14,13 @@ import org.bukkit.plugin.java.JavaPlugin;
 public class BetterHorses extends JavaPlugin {
 
     private static BetterHorses instance;
+    private LanguageManager languageManager;
 
     @Override
     public void onEnable() {
         instance = this;
         saveDefaultConfig();
+        languageManager = new LanguageManager(this);
         getServer().getPluginManager().registerEvents(new HorseSpawnListener(), this);
         getServer().getPluginManager().registerEvents(new HorseBreedListener(), this);
         getServer().getPluginManager().registerEvents(new TraitActivationListener(), this);
@@ -31,5 +34,9 @@ public class BetterHorses extends JavaPlugin {
 
     public static BetterHorses getInstance() {
         return instance;
+    }
+
+    public LanguageManager getLang() {
+        return languageManager;
     }
 }

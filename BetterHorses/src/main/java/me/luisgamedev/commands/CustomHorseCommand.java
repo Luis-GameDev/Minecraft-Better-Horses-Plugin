@@ -2,7 +2,7 @@ package me.luisgamedev.commands;
 
 import me.luisgamedev.BetterHorses;
 import me.luisgamedev.api.BetterHorsesAPI;
-import org.bukkit.ChatColor;
+import me.luisgamedev.language.LanguageManager;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -15,13 +15,20 @@ public class CustomHorseCommand implements CommandExecutor {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+        LanguageManager lang = BetterHorses.getInstance().getLang();
+
         if (!(sender instanceof Player player)) {
-            sender.sendMessage(ChatColor.RED + "Only players can use this command.");
+            sender.sendMessage(lang.get("messages.only-players"));
+            return true;
+        }
+
+        if (!player.hasPermission("betterhorses.create")) {
+            player.sendMessage(lang.getFormatted("messages.insufficient-permission", "%command%", "/horsecreate"));
             return true;
         }
 
         if (args.length < 4) {
-            player.sendMessage(ChatColor.YELLOW + "Usage: /horsecreate <health> <speed> <jump> [gender] [name] [trait]");
+            player.sendMessage(lang.get("messages.horsecreate-usage"));
             return true;
         }
 
@@ -30,7 +37,7 @@ public class CustomHorseCommand implements CommandExecutor {
             double speed = Double.parseDouble(args[1]);
             double jump = Double.parseDouble(args[2]);
             String gender = args.length >= 4 ? args[3].toLowerCase() : (Math.random() < 0.5 ? "male" : "female");
-            String name = args.length >= 5 ? ChatColor.GOLD + args[4] : ChatColor.GOLD + "Horse";
+            String name = args.length >= 5 ? "§6" + args[4] : "§6Horse";
             String trait = args.length >= 6 ? args[5].toLowerCase() : null;
 
             String validatedTrait = null;
@@ -39,13 +46,13 @@ public class CustomHorseCommand implements CommandExecutor {
                 FileConfiguration config = BetterHorses.getInstance().getConfig();
 
                 if (!config.getBoolean("traits.enabled", false)) {
-                    player.sendMessage(ChatColor.RED + "Traits are disabled in the config.");
+                    player.sendMessage(lang.get("messages.traits-diabled"));
                     return true;
                 }
 
                 ConfigurationSection traitSection = config.getConfigurationSection("traits." + trait);
                 if (traitSection == null || !traitSection.getBoolean("enabled", false)) {
-                    player.sendMessage(ChatColor.RED + "This trait is not enabled or doesn't exist in the config.");
+                    player.sendMessage(lang.get("messages.traits-error"));
                     return true;
                 }
 
@@ -57,7 +64,7 @@ public class CustomHorseCommand implements CommandExecutor {
             return true;
 
         } catch (NumberFormatException e) {
-            player.sendMessage(ChatColor.RED + "Invalid number format.");
+            player.sendMessage(lang.get("messages.invalid-number-format"));
             return true;
         }
     }

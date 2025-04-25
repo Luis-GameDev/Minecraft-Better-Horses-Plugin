@@ -30,7 +30,8 @@ public class HorseBreedListener implements Listener {
         boolean motherNeutered = isNeutered(mother, neuterKey);
         boolean fatherNeutered = isNeutered(father, neuterKey);
 
-        if (motherGender.equals(fatherGender)) {
+        boolean allowSameGender = BetterHorses.getInstance().getConfig().getBoolean("settings.allow-same-gender-breeding", false);
+        if (!allowSameGender && motherGender.equals(fatherGender)) {
             event.setCancelled(true);
             return;
         }

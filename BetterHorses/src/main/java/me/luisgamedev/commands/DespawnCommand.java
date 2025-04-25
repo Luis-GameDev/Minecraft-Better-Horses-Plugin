@@ -1,7 +1,7 @@
 package me.luisgamedev.commands;
 
 import me.luisgamedev.BetterHorses;
-import org.bukkit.ChatColor;
+import me.luisgamedev.language.LanguageManager;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.attribute.Attribute;
@@ -12,6 +12,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
+import org.bukkit.ChatColor;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -19,13 +20,15 @@ import java.util.List;
 public class DespawnCommand {
 
     public static boolean despawnHorseToItem(Player player) {
+        LanguageManager lang = BetterHorses.getInstance().getLang();
+
         if (!(player.getVehicle() instanceof Horse horse)) {
-            player.sendMessage(ChatColor.RED + "You must be riding a tamed horse to despawn it.");
+            player.sendMessage(lang.get("messages.invalid-item"));
             return true;
         }
 
         if (!horse.isTamed() || !horse.getOwner().getUniqueId().equals(player.getUniqueId())) {
-            player.sendMessage(ChatColor.RED + "You must be the owner of the tamed horse.");
+            player.sendMessage(lang.get("messages.invalid-item"));
             return true;
         }
 
@@ -37,7 +40,7 @@ public class DespawnCommand {
         String gender = data.getOrDefault(genderKey, PersistentDataType.STRING, "unknown");
         String trait = data.has(traitKey, PersistentDataType.STRING) ? data.get(traitKey, PersistentDataType.STRING) : null;
         boolean isNeutered = data.has(neuterKey, PersistentDataType.BYTE) && data.get(neuterKey, PersistentDataType.BYTE) == (byte) 1;
-        String genderSymbol = gender.equalsIgnoreCase("male") ? "♂" : gender.equalsIgnoreCase("female") ? "♀" : "?";
+        String genderSymbol = gender.equalsIgnoreCase("male") ? lang.getRaw("messages.gender-male") : gender.equalsIgnoreCase("female") ? lang.getRaw("messages.gender-female") : "?";
 
         double maxHealth = horse.getAttribute(Attribute.GENERIC_MAX_HEALTH).getBaseValue();
         double currentHealth = horse.getHealth();
@@ -56,18 +59,19 @@ public class DespawnCommand {
 
         ItemStack item = new ItemStack(material);
         ItemMeta meta = item.getItemMeta();
-        meta.setDisplayName(ChatColor.GOLD + "Horse " + genderSymbol);
+        meta.setDisplayName(ChatColor.GOLD + lang.getRaw("messages.horse") + " " + genderSymbol);
+
         List<String> lore = new ArrayList<>();
-        lore.add(ChatColor.GRAY + String.format("Gender: %s", genderSymbol));
-        lore.add(ChatColor.GRAY + String.format("Health: %.2f / %.2f", currentHealth, maxHealth));
-        lore.add(ChatColor.GRAY + String.format("Speed: %.4f", speed));
-        lore.add(ChatColor.GRAY + String.format("Jump: %.4f", jump));
+        lore.add(ChatColor.GRAY + lang.getFormattedRaw("messages.lore-gender", "%value%", genderSymbol));
+        lore.add(ChatColor.GRAY + lang.getFormattedRaw("messages.lore-health", "%value%", String.format("%.2f", currentHealth), "%max%", String.format("%.2f", maxHealth)));
+        lore.add(ChatColor.GRAY + lang.getFormattedRaw("messages.lore-speed", "%value%", String.format("%.4f", speed)));
+        lore.add(ChatColor.GRAY + lang.getFormattedRaw("messages.lore-jump", "%value%", String.format("%.4f", jump)));
 
         if (trait != null) {
-            lore.add(ChatColor.GOLD + "Trait: " + ChatColor.LIGHT_PURPLE + trait);
+            lore.add(ChatColor.GOLD + lang.getFormattedRaw("messages.trait-line", "%trait%", formatTraitName(trait)));
         }
         if (isNeutered) {
-            lore.add(ChatColor.DARK_GRAY + "⚠ Castrated – Can't breed");
+            lore.add(ChatColor.DARK_GRAY + lang.getRaw("messages.lore-neutered"));
         }
 
         meta.setLore(lore);
@@ -99,7 +103,18 @@ public class DespawnCommand {
             player.getInventory().addItem(item);
         }
 
-        player.sendMessage(ChatColor.GREEN + "Your horse has been successfully despawned.");
+        player.sendMessage(lang.get("messages.horse-despawned"));
         return true;
+    }
+
+    private static String formatTraitName(String raw) {
+        LanguageManager lang = BetterHorses.getInstance().getLang();
+        String path = "traits." + raw.toLowerCase();
+
+        if (lang.getConfig().contains(path)) {
+            return ChatColor.translateAlternateColorCodes('&', lang.getConfig().getString(path));
+        }
+
+        return raw.substring(0, 1).toUpperCase() + raw.substring(1);
     }
 }

@@ -6,7 +6,6 @@ mutation-factor:
   speed: 0.05
   jump: 0.05
 
-
 # Max stats a horse can reach
 max-stats:
   health: 300.0
@@ -16,7 +15,7 @@ max-stats:
 # General settings
 settings:
   horse-item: SADDLE
-
+  allow-same-gender-breeding: false
 
 # Horse Abilities
 traits:
