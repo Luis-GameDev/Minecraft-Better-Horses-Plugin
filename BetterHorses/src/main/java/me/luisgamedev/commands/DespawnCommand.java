@@ -28,7 +28,7 @@ public class DespawnCommand {
         }
 
         if (!horse.isTamed() || !horse.getOwner().getUniqueId().equals(player.getUniqueId())) {
-            player.sendMessage(lang.get("messages.invalid-item"));
+            player.sendMessage(lang.get("messages.not-horse-owner"));
             return true;
         }
 
@@ -37,7 +37,15 @@ public class DespawnCommand {
         NamespacedKey traitKey = new NamespacedKey(BetterHorses.getInstance(), "trait");
         NamespacedKey neuterKey = new NamespacedKey(BetterHorses.getInstance(), "neutered");
 
-        String gender = data.getOrDefault(genderKey, PersistentDataType.STRING, "unknown");
+        // Assign gender if missing
+        String gender;
+        if (!data.has(genderKey, PersistentDataType.STRING)) {
+            gender = Math.random() < 0.5 ? "male" : "female";
+            data.set(genderKey, PersistentDataType.STRING, gender);
+        } else {
+            gender = data.getOrDefault(genderKey, PersistentDataType.STRING, "unknown");
+        }
+
         String trait = data.has(traitKey, PersistentDataType.STRING) ? data.get(traitKey, PersistentDataType.STRING) : null;
         boolean isNeutered = data.has(neuterKey, PersistentDataType.BYTE) && data.get(neuterKey, PersistentDataType.BYTE) == (byte) 1;
         String genderSymbol = gender.equalsIgnoreCase("male") ? lang.getRaw("messages.gender-male") : gender.equalsIgnoreCase("female") ? lang.getRaw("messages.gender-female") : "?";

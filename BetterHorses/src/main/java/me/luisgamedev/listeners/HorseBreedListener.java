@@ -1,11 +1,8 @@
 package me.luisgamedev.listeners;
 
 import me.luisgamedev.BetterHorses;
-import org.bukkit.ChatColor;
 import org.bukkit.NamespacedKey;
-import org.bukkit.entity.AbstractHorse;
 import org.bukkit.entity.Horse;
-import org.bukkit.entity.LivingEntity;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityBreedEvent;
@@ -43,6 +40,13 @@ public class HorseBreedListener implements Listener {
 
     private String getGender(Horse horse, NamespacedKey key) {
         PersistentDataContainer data = horse.getPersistentDataContainer();
+
+        if (!data.has(key, PersistentDataType.STRING)) {
+            String gender = Math.random() < 0.5 ? "male" : "female";
+            data.set(key, PersistentDataType.STRING, gender);
+            return gender;
+        }
+
         return data.getOrDefault(key, PersistentDataType.STRING, "unknown");
     }
 
