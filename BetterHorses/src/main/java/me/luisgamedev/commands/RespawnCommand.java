@@ -35,7 +35,7 @@ public class RespawnCommand {
         Double speed = data.get(new NamespacedKey(BetterHorses.getInstance(), "speed"), PersistentDataType.DOUBLE);
         Double jump = data.get(new NamespacedKey(BetterHorses.getInstance(), "jump"), PersistentDataType.DOUBLE);
         String gender = data.get(new NamespacedKey(BetterHorses.getInstance(), "gender"), PersistentDataType.STRING);
-        String ownerUUID = data.get(new NamespacedKey(BetterHorses.getInstance(), "owner"), PersistentDataType.STRING);
+        String ownerUUID = player.getUniqueId().toString();
         String styleStr = data.get(new NamespacedKey(BetterHorses.getInstance(), "style"), PersistentDataType.STRING);
         String colorStr = data.get(new NamespacedKey(BetterHorses.getInstance(), "color"), PersistentDataType.STRING);
         String saddleStr = data.get(new NamespacedKey(BetterHorses.getInstance(), "saddle"), PersistentDataType.STRING);
@@ -44,23 +44,36 @@ public class RespawnCommand {
         String trait = data.get(new NamespacedKey(BetterHorses.getInstance(), "trait"), PersistentDataType.STRING);
         Byte neutered = data.get(new NamespacedKey(BetterHorses.getInstance(), "neutered"), PersistentDataType.BYTE);
 
-        if (health == null || speed == null || jump == null || gender == null || ownerUUID == null) {
+        if (health == null || speed == null || jump == null || gender == null) {
             player.sendMessage(lang.get("messages.invalid-horse-data"));
             return true;
         }
 
-        if (!player.getUniqueId().toString().equals(ownerUUID)) {
-            player.sendMessage(lang.get("messages.not-horse-owner"));
+        Horse horse;
+        try {
+            horse = player.getWorld().spawn(player.getLocation(), Horse.class);
+        } catch (Exception e) {
+            player.sendMessage(lang.get("messages.cant-spawn"));
             return true;
         }
 
-        Horse horse = player.getWorld().spawn(player.getLocation(), Horse.class);
+        if (horse == null || !horse.isValid()) {
+            player.sendMessage(lang.get("messages.cant-spawn"));
+            return true;
+        }
+
         setAttribute(horse, Attribute.GENERIC_MAX_HEALTH, health);
         setAttribute(horse, Attribute.GENERIC_MOVEMENT_SPEED, speed);
         setAttribute(horse, Attribute.HORSE_JUMP_STRENGTH, jump);
         horse.setHealth(currentHealth != null ? currentHealth : health);
         horse.setTamed(true);
         horse.setOwner(player);
+
+        horse.getPersistentDataContainer().set(
+                new NamespacedKey(BetterHorses.getInstance(), "owner"),
+                PersistentDataType.STRING,
+                ownerUUID
+        );
 
         if (gender != null) {
             horse.getPersistentDataContainer().set(new NamespacedKey(BetterHorses.getInstance(), "gender"), PersistentDataType.STRING, gender);

@@ -17,6 +17,7 @@ messages:
   invalid-number-format: "Invalid number format."
   horse-despawned: "Your horse has been successfully despawned."
   invalid-item: "You must hold a valid horse item in your main hand."
+  cant-spawn: "You can't spawn your horse here."
   trait-line: "Trait: %trait%"
   gender-male: "♂"
   gender-female: "♀"
