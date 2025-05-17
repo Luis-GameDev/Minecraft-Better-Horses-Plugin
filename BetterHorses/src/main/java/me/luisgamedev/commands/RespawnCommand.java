@@ -88,7 +88,7 @@ public class RespawnCommand {
         }
 
         if (customName != null && !customName.isBlank()) {
-            horse.setCustomName(ChatColor.GOLD + customName);
+            horse.setCustomName(customName);
             horse.setCustomNameVisible(true);
         }
 
