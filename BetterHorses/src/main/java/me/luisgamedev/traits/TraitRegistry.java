@@ -1,6 +1,7 @@
 package me.luisgamedev.traits;
 
 import me.luisgamedev.BetterHorses;
+import me.luisgamedev.language.LanguageManager;
 import org.bukkit.*;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.block.Block;
@@ -21,15 +22,21 @@ import java.util.UUID;
 public class TraitRegistry {
 
     private static final Map<UUID, Map<String, Long>> cooldowns = new HashMap<>();
+    static LanguageManager lang = BetterHorses.getInstance().getLang();
 
     public static void activateHellmare(Player player, Horse horse) {
+        String key = "hellmare";
+        if (isOnCooldown(horse, key)) return;
+
         int duration = getConfig().getInt("traits.hellmare.duration", 10);
-        int radius = getConfig().getInt("traits.hellmare.radius", 1); // neu: radius aus config
-        player.sendMessage(ChatColor.GOLD + "Hellmare activated! 🔥");
+        int radius = getConfig().getInt("traits.hellmare.radius", 1);
+        player.sendMessage(lang.get("traits.hellmare-message"));
 
         PotionEffect fireResist = new PotionEffect(PotionEffectType.FIRE_RESISTANCE, duration * 20, 1, false, false, false);
         player.addPotionEffect(fireResist);
         horse.addPotionEffect(fireResist);
+
+        setCooldown(horse, key, getConfig().getInt("traits.hellmare.cooldown", 30));
 
         new BukkitRunnable() {
             int ticks = 0;
@@ -81,7 +88,7 @@ public class TraitRegistry {
         double boostedSpeed = originalSpeed * 1.5;
 
         horse.getAttribute(Attribute.GENERIC_MOVEMENT_SPEED).setBaseValue(boostedSpeed);
-        player.sendMessage(ChatColor.AQUA + "Dash Boost activated!");
+        player.sendMessage(lang.get("traits.dashboost-message"));
 
         setCooldown(horse, key, getConfig().getInt("traits.dashboost.cooldown", 30));
 
@@ -105,7 +112,7 @@ public class TraitRegistry {
         if (isOnCooldown(horse, key)) return;
 
         int duration = getConfig().getInt("traits.ghosthorse.duration", 5);
-        player.sendMessage(ChatColor.GRAY + "You and your horse have become ghostly...");
+        player.sendMessage(lang.get("traits.ghosthorse-message"));
 
         horse.setInvisible(true);
         player.setInvisible(true);
@@ -138,7 +145,7 @@ public class TraitRegistry {
             }
         }
 
-        player.sendMessage(ChatColor.YELLOW + "Kickback activated!");
+        player.sendMessage(lang.get("traits.kickback-message"));
         setCooldown(horse, key, getConfig().getInt("traits.kickback.cooldown", 10));
     }
 

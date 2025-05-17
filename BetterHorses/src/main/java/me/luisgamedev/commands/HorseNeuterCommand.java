@@ -2,6 +2,7 @@ package me.luisgamedev.commands;
 
 import me.luisgamedev.BetterHorses;
 import me.luisgamedev.language.LanguageManager;
+import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.configuration.file.FileConfiguration;
@@ -43,7 +44,7 @@ public class HorseNeuterCommand {
         meta.getPersistentDataContainer().set(neuteredKey, PersistentDataType.BYTE, (byte) 1);
 
         List<String> lore = meta.hasLore() ? new ArrayList<>(meta.getLore()) : new ArrayList<>();
-        lore.add(lang.get("messages.lore-neutered"));
+        lore.add(ChatColor.DARK_GRAY + lang.getRaw("messages.lore-neutered"));
         meta.setLore(lore);
 
         item.setItemMeta(meta);

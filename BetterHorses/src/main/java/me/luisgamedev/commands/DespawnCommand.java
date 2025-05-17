@@ -67,7 +67,12 @@ public class DespawnCommand {
 
         ItemStack item = new ItemStack(material);
         ItemMeta meta = item.getItemMeta();
-        meta.setDisplayName(ChatColor.GOLD + lang.getRaw("messages.horse") + " " + genderSymbol);
+
+        PersistentDataContainer itemData = meta.getPersistentDataContainer();
+        itemData.set(genderKey, PersistentDataType.STRING, gender);
+
+        String name = horse.getCustomName() != null ? horse.getCustomName() : lang.getRaw("messages.horse");
+        meta.setDisplayName(ChatColor.GOLD + name + " " + genderSymbol);
 
         List<String> lore = new ArrayList<>();
         lore.add(ChatColor.GRAY + lang.getFormattedRaw("messages.lore-gender", "%value%", genderSymbol));
@@ -84,8 +89,10 @@ public class DespawnCommand {
 
         meta.setLore(lore);
 
-        PersistentDataContainer itemData = meta.getPersistentDataContainer();
-        itemData.set(genderKey, PersistentDataType.STRING, gender);
+
+        if (horse.getCustomName() != null) {
+            itemData.set(new NamespacedKey(BetterHorses.getInstance(), "name"), PersistentDataType.STRING, horse.getCustomName());
+        }
         itemData.set(new NamespacedKey(BetterHorses.getInstance(), "health"), PersistentDataType.DOUBLE, maxHealth);
         itemData.set(new NamespacedKey(BetterHorses.getInstance(), "current_health"), PersistentDataType.DOUBLE, currentHealth);
         itemData.set(new NamespacedKey(BetterHorses.getInstance(), "speed"), PersistentDataType.DOUBLE, speed);
@@ -104,6 +111,11 @@ public class DespawnCommand {
 
         item.setItemMeta(meta);
         horse.remove();
+
+        if (horse.isValid()) {
+            player.sendMessage(lang.get("messages.cant-despawn"));
+            return true;
+        }
 
         if (player.getInventory().firstEmpty() == -1) {
             player.getWorld().dropItem(player.getLocation(), item);
