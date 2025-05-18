@@ -1,5 +1,7 @@
 package me.luisgamedev;
 
+import com.comphenix.protocol.ProtocolLibrary;
+import com.comphenix.protocol.ProtocolManager;
 import me.luisgamedev.language.LanguageManager;
 import me.luisgamedev.commands.CustomHorseCommand;
 import me.luisgamedev.commands.HorseCommand;
@@ -15,9 +17,21 @@ public class BetterHorses extends JavaPlugin {
 
     private static BetterHorses instance;
     private LanguageManager languageManager;
+    private boolean protocolLibAvailable = false;
+    private ProtocolManager protocolManager;
 
     @Override
     public void onEnable() {
+        if (getServer().getPluginManager().getPlugin("ProtocolLib") != null) {
+            protocolLibAvailable = true;
+            protocolManager = ProtocolLibrary.getProtocolManager();
+            getLogger().info("Successfully connected to ProtocolLib.");
+        } else {
+            getLogger().info(
+                    "Please install ProtocolLib Version 5.3 for all features to work properly. " +
+                    "Running BetterHorses without ProtocolLib is no problem, but will result in some features being disabled."
+            );
+        }
         instance = this;
         saveDefaultConfig();
         languageManager = new LanguageManager(this);
@@ -38,5 +52,9 @@ public class BetterHorses extends JavaPlugin {
 
     public LanguageManager getLang() {
         return languageManager;
+    }
+
+    public boolean isProtocolLibAvailable() {
+        return protocolLibAvailable;
     }
 }

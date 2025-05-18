@@ -1,6 +1,7 @@
 package me.luisgamedev.traits;
 
 import me.luisgamedev.BetterHorses;
+import me.luisgamedev.utils.ArmorHider;
 import me.luisgamedev.language.LanguageManager;
 import org.bukkit.*;
 import org.bukkit.attribute.Attribute;
@@ -114,8 +115,10 @@ public class TraitRegistry {
         int duration = getConfig().getInt("traits.ghosthorse.duration", 5);
         player.sendMessage(lang.get("traits.ghosthorse-message"));
 
+
         horse.setInvisible(true);
         player.setInvisible(true);
+        ArmorHider.hide(player, horse);
 
         new BukkitRunnable() {
             @Override
@@ -123,6 +126,7 @@ public class TraitRegistry {
                 if (horse.isValid()) {
                     player.setInvisible(false);
                     horse.setInvisible(false);
+                    ArmorHider.show(player, horse);
                 }
             }
         }.runTaskLater(BetterHorses.getInstance(), duration * 20L);
