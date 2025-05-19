@@ -1,4 +1,5 @@
 prefix: "&7[&6BetterHorses&7] "
+
 messages:
   horse: "Horse"
   lore-gender: "Gender: %value%"
@@ -26,15 +27,31 @@ messages:
   lore-jump: "Jump: %value%"
   lore-health: "Health: %value% / %max%"
   lore-neutered: "⚠ Castrated – Cannot breed"
+
 traits:
   hellmare: "Hellmare"
   hellmare-message: "Hellmare activated! 🔥"
+
   fireheart: "Fireheart"
+
   dashboost: "Dash Boost"
   dashboost-message: "Dash Boost activated!"
+
   featherhooves: "Feather Hooves"
+
   frosthooves: "Frost Hooves"
+
   kickback: "Kickback"
   kickback-message: "Kickback activated!"
+
   ghosthorse: "Ghost Horse"
   ghosthorse-message: "You and your horse have become ghostly..."
+
+  skyburst: "Skyburst"
+
+  endermare: "Endermare"
+  endermare-message: "The horse vanished into shadows..."
+  endermare-fail: "No safe teleport location found!"
+
+  revenantcurse: "Revenant Curse"
+  revenantcurse-message: "The curse has been activated. Attackers will suffer."

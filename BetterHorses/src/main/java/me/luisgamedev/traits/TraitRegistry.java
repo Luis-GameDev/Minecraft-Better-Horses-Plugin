@@ -10,6 +10,7 @@ import org.bukkit.entity.Entity;
 import org.bukkit.entity.Horse;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
+import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitRunnable;
@@ -132,6 +133,60 @@ public class TraitRegistry {
         }.runTaskLater(BetterHorses.getInstance(), duration * 20L);
 
         setCooldown(horse, key, getConfig().getInt("traits.ghosthorse.cooldown", 30));
+    }
+
+    public static void activateSkyburst(Player player, Horse horse) {
+        String key = "skyburst";
+        double radius = getConfig().getDouble("traits.skyburst.radius", 3.0);
+        player.getWorld().spawnParticle(Particle.CLOUD, horse.getLocation(), 20, 0.5, 0.1, 0.5, 0.01);
+        player.playSound(horse.getLocation(), Sound.ENTITY_GENERIC_EXPLODE, 1.0f, 1.2f);
+
+        for (Entity entity : horse.getNearbyEntities(radius, radius, radius)) {
+            if (entity instanceof LivingEntity && entity != player && entity != horse) {
+                Vector velocity = entity.getVelocity();
+                velocity.setY(1);
+                entity.setVelocity(velocity);
+            }
+        }
+    }
+
+    public static void activateEndermare(Player player, Horse horse) {
+        String key = "endermare";
+        if (isOnCooldown(horse, key)) return;
+
+        int range = getConfig().getInt("traits.endermare.range", 20);
+        Location start = horse.getLocation();
+        Vector direction = start.getDirection().normalize();
+
+        for (int i = 1; i <= range; i++) {
+            Location check = start.clone().add(direction.clone().multiply(i));
+            if (!check.getBlock().getType().isSolid() && check.getBlock().getRelative(0, 1, 0).getType() == Material.AIR) {
+                horse.teleport(check);
+                horse.getWorld().spawnParticle(Particle.PORTAL, check, 30, 0.5, 0.5, 0.5, 0.05);
+                horse.getWorld().playSound(check, Sound.ENTITY_ENDERMAN_TELEPORT, 1f, 1.2f);
+                setCooldown(horse, key, getConfig().getInt("traits.endermare.cooldown", 30));
+                player.sendMessage(lang.get("traits.endermare-message"));
+                return;
+            }
+        }
+
+        player.sendMessage(lang.get("traits.endermare-fail")); // optional message
+    }
+
+    public static void activateRevenantCurse(Player player, Horse horse) {
+        String key = "revenantcurse";
+        if (isOnCooldown(horse, key)) return;
+
+        int duration = getConfig().getInt("traits.revenantcurse.duration", 5);
+        player.sendMessage(lang.get("traits.revenantcurse-message"));
+
+        horse.getPersistentDataContainer().set(new NamespacedKey(BetterHorses.getInstance(), "revenantcurse_active"), PersistentDataType.LONG,
+                System.currentTimeMillis() + duration * 1000L);
+
+        horse.getWorld().spawnParticle(Particle.SPELL_WITCH, horse.getLocation(), 25, 0.6, 0.6, 0.6, 0.05);
+        horse.getWorld().playSound(horse.getLocation(), Sound.ENTITY_WITHER_AMBIENT, 1, 0.8f);
+
+        setCooldown(horse, key, getConfig().getInt("traits.revenantcurse.cooldown", 30));
     }
 
 

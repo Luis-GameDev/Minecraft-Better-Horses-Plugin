@@ -59,3 +59,21 @@ traits:
     chance: 0.005 # 0.5%
     duration: 5
     cooldown: 30
+
+  skyburst:
+    enabled: true
+    chance: 0.003 # 0.3%
+    radius: 4
+
+  endermare:
+    enabled: true
+    chance: 0.005 # 0.5%
+    cooldown: 30
+    range: 20
+
+  revenantcurse:
+    enabled: true
+    chance: 0.005 # 0.5%
+    cooldown: 30
+    duration: 10
+
