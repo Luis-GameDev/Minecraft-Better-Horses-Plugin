@@ -1,4 +1,5 @@
 prefix: "&7[&6BetterHorses&7] "
+
 messages:
   horse: "Horse"
   lore-gender: "Gender: %value%"
@@ -17,6 +18,7 @@ messages:
   invalid-number-format: "Invalid number format."
   horse-despawned: "Your horse has been successfully despawned."
   invalid-item: "You must hold a valid horse item in your main hand."
+  invalid-vehicle: "You must ride a horse to despawn it."
   cant-spawn: "You can't spawn your horse here."
   cant-despawn: "You can't despawn your horse here."
   trait-line: "Trait: %trait%"
@@ -26,15 +28,27 @@ messages:
   lore-jump: "Jump: %value%"
   lore-health: "Health: %value% / %max%"
   lore-neutered: "⚠ Castrated – Cannot breed"
+
 traits:
   hellmare: "Hellmare"
   hellmare-message: "Hellmare activated! 🔥"
+
   fireheart: "Fireheart"
+
   dashboost: "Dash Boost"
   dashboost-message: "Dash Boost activated!"
+
   featherhooves: "Feather Hooves"
+
   frosthooves: "Frost Hooves"
+
   kickback: "Kickback"
   kickback-message: "Kickback activated!"
+
   ghosthorse: "Ghost Horse"
   ghosthorse-message: "You and your horse have become ghostly..."
+
+  skyburst: "Skyburst"
+
+  revenantcurse: "Revenant Curse"
+  revenantcurse-message: "The curse has been activated. Attackers will suffer."

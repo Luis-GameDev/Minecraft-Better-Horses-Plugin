@@ -2,16 +2,12 @@ package me.luisgamedev.listeners;
 
 import me.luisgamedev.BetterHorses;
 import me.luisgamedev.traits.TraitRegistry;
-import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
-import org.bukkit.block.Block;
 import org.bukkit.entity.Horse;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerMoveEvent;
-import org.bukkit.potion.PotionEffect;
-import org.bukkit.potion.PotionEffectType;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
 
@@ -40,6 +36,4 @@ public class PassiveTraitListener implements Listener {
                 break;
         }
     }
-
-
 }

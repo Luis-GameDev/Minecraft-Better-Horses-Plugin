@@ -23,7 +23,7 @@ public class DespawnCommand {
         LanguageManager lang = BetterHorses.getInstance().getLang();
 
         if (!(player.getVehicle() instanceof Horse horse)) {
-            player.sendMessage(lang.get("messages.invalid-item"));
+            player.sendMessage(lang.get("messages.invalid-vehicle"));
             return true;
         }
 

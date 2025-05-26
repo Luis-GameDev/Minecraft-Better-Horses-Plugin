@@ -17,6 +17,9 @@ settings:
   horse-item: SADDLE
   allow-same-gender-breeding: false
 
+  # Traited horses will have particles around them, disabling this will result in slightly better performance
+  trait-particle-indicator: true
+
 # Horse Abilities
 traits:
   enabled: true
@@ -59,3 +62,15 @@ traits:
     chance: 0.005 # 0.5%
     duration: 5
     cooldown: 30
+
+  skyburst:
+    enabled: true
+    chance: 0.003 # 0.3%
+    radius: 4
+
+  revenantcurse:
+    enabled: true
+    chance: 0.005 # 0.5%
+    cooldown: 30
+    duration: 10
+

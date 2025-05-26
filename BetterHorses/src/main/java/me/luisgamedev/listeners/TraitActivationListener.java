@@ -35,17 +35,8 @@ public class TraitActivationListener implements Listener {
             case "hellmare":
                 TraitRegistry.activateHellmare(player, horse);
                 break;
-            case "fireheart":
-                TraitRegistry.activateFireheart(player, horse);
-                break;
             case "dashboost":
                 TraitRegistry.activateDashBoost(player, horse);
-                break;
-            case "featherhooves":
-                TraitRegistry.activateFeatherHooves(player, horse);
-                break;
-            case "frosthooves":
-                TraitRegistry.activateFrostHooves(player, horse);
                 break;
             case "kickback":
                 TraitRegistry.activateKickback(player, horse);
@@ -53,8 +44,9 @@ public class TraitActivationListener implements Listener {
             case "ghosthorse":
                 TraitRegistry.activateGhostHorse(player, horse);
                 break;
-            default:
-                player.sendMessage(ChatColor.RED + "This horse has an unknown trait.");
+            case "revenantcurse":
+                TraitRegistry.activateRevenantCurse(player, horse);
+                break;
         }
 
         event.setCancelled(true); // Prevent item swap
