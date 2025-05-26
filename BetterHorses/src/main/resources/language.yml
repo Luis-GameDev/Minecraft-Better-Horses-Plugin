@@ -18,6 +18,7 @@ messages:
   invalid-number-format: "Invalid number format."
   horse-despawned: "Your horse has been successfully despawned."
   invalid-item: "You must hold a valid horse item in your main hand."
+  invalid-vehicle: "You must ride a horse to despawn it."
   cant-spawn: "You can't spawn your horse here."
   cant-despawn: "You can't despawn your horse here."
   trait-line: "Trait: %trait%"
@@ -48,10 +49,6 @@ traits:
   ghosthorse-message: "You and your horse have become ghostly..."
 
   skyburst: "Skyburst"
-
-  endermare: "Endermare"
-  endermare-message: "The horse vanished into shadows..."
-  endermare-fail: "No safe teleport location found!"
 
   revenantcurse: "Revenant Curse"
   revenantcurse-message: "The curse has been activated. Attackers will suffer."

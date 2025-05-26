@@ -17,6 +17,9 @@ settings:
   horse-item: SADDLE
   allow-same-gender-breeding: false
 
+  # Traited horses will have particles around them, disabling this will result in slightly better performance
+  trait-particle-indicator: true
+
 # Horse Abilities
 traits:
   enabled: true
@@ -64,12 +67,6 @@ traits:
     enabled: true
     chance: 0.003 # 0.3%
     radius: 4
-
-  endermare:
-    enabled: true
-    chance: 0.005 # 0.5%
-    cooldown: 30
-    range: 20
 
   revenantcurse:
     enabled: true

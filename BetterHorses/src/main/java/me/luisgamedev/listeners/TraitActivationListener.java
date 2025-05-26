@@ -44,9 +44,6 @@ public class TraitActivationListener implements Listener {
             case "ghosthorse":
                 TraitRegistry.activateGhostHorse(player, horse);
                 break;
-            case "endermare":
-                TraitRegistry.activateEndermare(player, horse);
-                break;
             case "revenantcurse":
                 TraitRegistry.activateRevenantCurse(player, horse);
                 break;

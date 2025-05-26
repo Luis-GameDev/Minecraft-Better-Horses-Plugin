@@ -8,6 +8,8 @@ import me.luisgamedev.commands.HorseCommand;
 import me.luisgamedev.commands.HorseCommandCompleter;
 import me.luisgamedev.commands.HorseCreateTabCompleter;
 import me.luisgamedev.listeners.*;
+import me.luisgamedev.tasks.TraitParticleTask;
+import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
 
 public class BetterHorses extends JavaPlugin {
@@ -43,6 +45,12 @@ public class BetterHorses extends JavaPlugin {
         getCommand("horsecreate").setExecutor(new CustomHorseCommand());
         getCommand("horsecreate").setTabCompleter(new HorseCreateTabCompleter());
 
+        Bukkit.getScheduler().runTaskTimer(
+                this,
+                new TraitParticleTask(),
+                20L, // delay 1s
+                20L  // repeat every 1s
+        );
     }
 
     public static BetterHorses getInstance() {
