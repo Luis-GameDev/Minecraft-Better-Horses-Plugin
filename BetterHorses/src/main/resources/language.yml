@@ -13,7 +13,7 @@ messages:
   unknown-subcommand: "Unknown subcommand. Use /horse <spawn|despawn|neuter>"
   only-players: "Only players can use this command."
   horsecreate-usage: "Usage: /horsecreate <health> <speed> <jump> [gender] [name] [trait]"
-  traits-diabled: "Traits are disabled in the config."
+  traits-disabled: "Traits are disabled in the config."
   traits-error: "This trait is not enabled or doesn't exist in the config."
   invalid-number-format: "Invalid number format."
   horse-despawned: "Your horse has been successfully despawned."
