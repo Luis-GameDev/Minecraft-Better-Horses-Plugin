@@ -46,7 +46,7 @@ public class CustomHorseCommand implements CommandExecutor {
                 FileConfiguration config = BetterHorses.getInstance().getConfig();
 
                 if (!config.getBoolean("traits.enabled", false)) {
-                    player.sendMessage(lang.get("messages.traits-diabled"));
+                    player.sendMessage(lang.get("messages.traits-disabled"));
                     return true;
                 }
 

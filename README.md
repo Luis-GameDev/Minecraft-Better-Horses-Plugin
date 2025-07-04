@@ -1,6 +1,6 @@
 # 🐴 BetterHorses – Advanced Horse Breeding & Storage Plugin
 
-**BetterHorses** is a Minecraft plugin that completely reworks the vanilla horse system by introducing **realistic genetics, mutations, breeding mechanics, and item-based horse storage**. Designed with realism and flexibility in mind, it’s perfect for survival servers, RPGs, or just better vanilla gameplay.
+**BetterHorses** is a Minecraft plugin that completely reworks the vanilla horse system by introducing **realistic genetics, mutations, breeding mechanics, and item-based horse storage**. Designed with realism and flexibility in mind, every single feature and value is customizable and toggleable, it’s perfect for survival servers, RPGs, or just better vanilla gameplay.
 
 ![1fbf8a99-e548-4b89-934b-9b5479828b7d](https://github.com/user-attachments/assets/45bc889b-419c-4bce-8957-99d857c79a00)
 
@@ -61,7 +61,8 @@ If you have any questions or need help feel free to join my discord server: http
   Castrates the horse item in your mainhand. Castration is permanent and cannot be undone. 
 
 - 🧲 **/horse spawn**  
-  Spawns a horse **identical to the original** using the stored data in the saddle item.
+  Spawns a horse **identical to the original** using the stored data in the horse item. 
+  Additionally a horse can be spawned by rightclicking while holding the horse item.
 
 - 🛠 **/horsecreate [health] [speed] [jump] [gender] [name] [trait]**  
   Administrator command to generate a custom horse item with your own stats, name, and optional **specific trait**.  
