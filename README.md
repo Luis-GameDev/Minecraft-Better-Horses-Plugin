@@ -77,7 +77,8 @@ Inside your `config.yml`:
 ```yaml
 # BetterHorses config
 
-# How strong the mutation effect is (e.g. 0.05 = ±0.05)
+# Customizes how big the maximum positive or negative mutation effect is (e.g. 0.05 = ±0.05)
+# e.g. health-factor 3 means the health of the child can be up to 3 HP higher or lower than the average HP of both parents
 mutation-factor:
   health: 3.0
   speed: 0.05
@@ -91,7 +92,18 @@ max-stats:
 
 # General settings
 settings:
+
+  # Customizes the original item a horse item is
   horse-item: SADDLE
+
+  # Allows two horses of the same gender to breed
+  allow-same-gender-breeding: false
+
+  # Allows spawning the horse by rightclicking with the horse item
+  allow-rightclick-spawn: true
+
+  # Traited horses will have particles around them, disabling this will result in slightly better performance
+  trait-particle-indicator: true
 
 # Horse Abilities
 traits:
@@ -135,24 +147,35 @@ traits:
     chance: 0.005 # 0.5%
     duration: 5
     cooldown: 30
+
+  skyburst:
+    enabled: true
+    chance: 0.003 # 0.3%
+    radius: 4
+
+  revenantcurse:
+    enabled: true
+    chance: 0.005 # 0.5%
+    cooldown: 30
+    duration: 10
 ```
 
 ---
 
 ### 🧩 Requirements
 
-- Minecraft (Paper) `1.20.4+`
+- Minecraft (Paper) `1.16.4` - `1.21.6`
 - Java `17+`
 
 ---
 
 ### 🚀 Installation
 
-1. Download the `BetterHorses-3.0.jar` from this repo.
+1. Download the `BetterHorses-4.1.jar` from this repo.
 
 2. Place it into your server’s `plugins/` folder and restart the server to generate the config file.
 
-3. Adjust the values in the `config.yml` file.
+3. Adjust the values in the `config.yml` and `language.yml` file.
 
 ---
 
