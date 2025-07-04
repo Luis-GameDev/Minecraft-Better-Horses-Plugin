@@ -7,6 +7,7 @@ import org.bukkit.NamespacedKey;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.entity.AnimalTamer;
 import org.bukkit.entity.Horse;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -43,10 +44,7 @@ public class RightClickListener implements Listener {
             Material expectedMaterial = Material.getMaterial(configuredItem.toUpperCase());
             if (expectedMaterial == null || !expectedMaterial.isItem()) expectedMaterial = Material.SADDLE;
 
-            if (item == null || item.getType() != expectedMaterial || !item.hasItemMeta()) {
-                player.sendMessage(lang.get("messages.invalid-item"));
-                return;
-            }
+            if (item == null || item.getType() != expectedMaterial || !item.hasItemMeta()) return;
             if(!config.getBoolean("settings.allow-rightclick-spawn")) return;
 
             ItemMeta meta = item.getItemMeta();
@@ -89,7 +87,7 @@ public class RightClickListener implements Listener {
             setAttribute(horse, Attribute.HORSE_JUMP_STRENGTH, jump);
             horse.setHealth(currentHealth != null ? currentHealth : health);
             horse.setTamed(true);
-            horse.setOwner(player);
+            horse.setOwner((AnimalTamer) player);
 
             horse.getPersistentDataContainer().set(
                     new NamespacedKey(BetterHorses.getInstance(), "owner"),
