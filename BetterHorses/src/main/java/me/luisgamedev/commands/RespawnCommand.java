@@ -19,6 +19,7 @@ public class RespawnCommand {
 
         ItemStack item = player.getInventory().getItemInMainHand();
         String configuredItem = BetterHorses.getInstance().getConfig().getString("settings.horse-item", "SADDLE");
+
         Material expectedMaterial = Material.getMaterial(configuredItem.toUpperCase());
         if (expectedMaterial == null || !expectedMaterial.isItem()) expectedMaterial = Material.SADDLE;
 
@@ -43,6 +44,8 @@ public class RespawnCommand {
         String customName = data.get(new NamespacedKey(BetterHorses.getInstance(), "name"), PersistentDataType.STRING);
         String trait = data.get(new NamespacedKey(BetterHorses.getInstance(), "trait"), PersistentDataType.STRING);
         Byte neutered = data.get(new NamespacedKey(BetterHorses.getInstance(), "neutered"), PersistentDataType.BYTE);
+        Integer storedStage = data.get(new NamespacedKey(BetterHorses.getInstance(), "growth_stage"), PersistentDataType.INTEGER);
+        int growthStage = storedStage != null ? storedStage : 10;
 
         if (health == null || speed == null || jump == null || gender == null) {
             player.sendMessage(lang.get("messages.invalid-horse-data"));
@@ -62,9 +65,28 @@ public class RespawnCommand {
             return true;
         }
 
+        // Set Growth Stage
+        double maxScale = BetterHorses.getInstance().getConfig().getDouble("horse-growth-settings.max-size", 1.3);
+        int threshold = BetterHorses.getInstance().getConfig().getInt("horse-growth-settings.ride-and-breed-threshhold", 7);
+        float minScale = (growthStage >= threshold) ? 0.85f : 0.7f;
+        double scale = minScale + ((maxScale - minScale) / 10.0) * growthStage;
+
+        if (BetterHorses.getInstance().getConfig().getBoolean("horse-growth-settings.enabled")) {
+            setAttribute(horse, Attribute.valueOf("SCALE"), scale);
+            if (growthStage >= threshold) horse.setAdult();
+            else horse.setBaby();
+            horse.setAgeLock(true);
+        }
+
+        horse.getPersistentDataContainer().set(
+                new NamespacedKey(BetterHorses.getInstance(), "growth_stage"),
+                PersistentDataType.INTEGER,
+                growthStage
+        );
+
         setAttribute(horse, Attribute.GENERIC_MAX_HEALTH, health);
         setAttribute(horse, Attribute.GENERIC_MOVEMENT_SPEED, speed);
-        setAttribute(horse, Attribute.HORSE_JUMP_STRENGTH, jump);
+        setAttribute(horse, Attribute.valueOf("HORSE_JUMP_STRENGTH"), jump);
         horse.setHealth(currentHealth != null ? currentHealth : health);
         horse.setTamed(true);
         horse.setOwner(player);
@@ -108,6 +130,7 @@ public class RespawnCommand {
         player.sendMessage(lang.get("messages.horse-respawned"));
         return true;
     }
+
 
     private static void setAttribute(Horse horse, Attribute attribute, double value) {
         AttributeInstance attr = horse.getAttribute(attribute);

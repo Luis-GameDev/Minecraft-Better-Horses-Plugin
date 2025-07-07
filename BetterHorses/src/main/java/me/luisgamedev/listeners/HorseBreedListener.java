@@ -21,6 +21,7 @@ public class HorseBreedListener implements Listener {
     private final NamespacedKey genderKey = new NamespacedKey(JavaPlugin.getPlugin(BetterHorses.class), "gender");
     private final NamespacedKey traitKey = new NamespacedKey(JavaPlugin.getPlugin(BetterHorses.class), "trait");
     private final NamespacedKey neuterKey = new NamespacedKey(BetterHorses.getInstance(), "neutered");
+    private final NamespacedKey growthKey = new NamespacedKey(BetterHorses.getInstance(), "growth_stage");
 
     @EventHandler
     public void onHorseBreed(EntityBreedEvent event) {
@@ -63,6 +64,11 @@ public class HorseBreedListener implements Listener {
 
         String gender = Math.random() < 0.5 ? "male" : "female";
         child.getPersistentDataContainer().set(genderKey, PersistentDataType.STRING, gender);
+        child.getPersistentDataContainer().set(growthKey, PersistentDataType.INTEGER, 1);
+
+        if (BetterHorses.getInstance().getConfig().getBoolean("horse-growth-settings.enabled")) {
+            child.setAgeLock(true);
+        }
 
         if (config.getBoolean("traits.enabled")) {
             ConfigurationSection traitsSection = config.getConfigurationSection("traits");
@@ -117,7 +123,7 @@ public class HorseBreedListener implements Listener {
     }
 
     private double getJump(Horse horse) {
-        return horse.getAttribute(Attribute.HORSE_JUMP_STRENGTH).getBaseValue();
+        return horse.getAttribute(Attribute.valueOf("HORSE_JUMP_STRENGTH")).getBaseValue();
     }
 
     private void setHealth(Horse horse, double value) {
@@ -131,6 +137,6 @@ public class HorseBreedListener implements Listener {
     }
 
     private void setJump(Horse horse, double value) {
-        horse.getAttribute(Attribute.HORSE_JUMP_STRENGTH).setBaseValue(value);
+        horse.getAttribute(Attribute.valueOf("HORSE_JUMP_STRENGTH")).setBaseValue(value);
     }
 }

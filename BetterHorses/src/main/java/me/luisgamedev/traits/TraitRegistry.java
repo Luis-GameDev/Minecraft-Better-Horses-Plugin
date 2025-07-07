@@ -175,7 +175,7 @@ public class TraitRegistry {
         horse.getPersistentDataContainer().set(new NamespacedKey(BetterHorses.getInstance(), "revenantcurse_active"), PersistentDataType.LONG,
                 System.currentTimeMillis() + duration * 1000L);
 
-        horse.getWorld().spawnParticle(Particle.SPELL_WITCH, horse.getLocation(), 25, 0.6, 0.6, 0.6, 0.05);
+        horse.getWorld().spawnParticle(Particle.WITCH, horse.getLocation(), 25, 0.6, 0.6, 0.6, 0.05);
         horse.getWorld().playSound(horse.getLocation(), Sound.ENTITY_WITHER_AMBIENT, 1, 0.8f);
 
         setCooldown(horse, key, getConfig().getInt("traits.revenantcurse.cooldown", 30));

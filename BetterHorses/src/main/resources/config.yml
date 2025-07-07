@@ -13,6 +13,19 @@ max-stats:
   speed: 0.4
   jump: 1.2
 
+# Settings that determine horse growth
+horse-growth-settings:
+
+  # If disabled, horses will remain their Vanilla size, this feature only works for Paper 1.20.6 & Java 21 or above
+  enabled: true
+
+  # The time in minutes that needs to pass until a horse is fully grown
+  time-until-adult: 3
+
+  # The maximum size a horse can reach, this is the scale applied to a vanilla sized horse
+  # If the value remains 1, an adult horse will be vanilla sized
+  max-size: 1.3 # 30% bigger than vanilla
+
 # General settings
 settings:
 
@@ -37,7 +50,7 @@ traits:
     chance: 0.005 # 0.5%
     duration: 5
     cooldown: 90
-    radius: 3 # Radius of the fire below the horse
+    radius: 2 # Radius of the fire below the horse
 
   fireheart:
     enabled: true

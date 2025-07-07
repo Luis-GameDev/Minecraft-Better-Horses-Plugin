@@ -2,11 +2,13 @@ package me.luisgamedev;
 
 import com.comphenix.protocol.ProtocolLibrary;
 import com.comphenix.protocol.ProtocolManager;
+import me.luisgamedev.growing.HorseGrowthManager;
 import me.luisgamedev.language.LanguageManager;
 import me.luisgamedev.commands.CustomHorseCommand;
 import me.luisgamedev.commands.HorseCommand;
 import me.luisgamedev.commands.HorseCommandCompleter;
 import me.luisgamedev.commands.HorseCreateTabCompleter;
+import me.luisgamedev.growing.HorseGrowthManager;
 import me.luisgamedev.listeners.*;
 import me.luisgamedev.tasks.TraitParticleTask;
 import org.bukkit.Bukkit;
@@ -34,6 +36,7 @@ public class BetterHorses extends JavaPlugin {
         instance = this;
         saveDefaultConfig();
         languageManager = new LanguageManager(this);
+
         getServer().getPluginManager().registerEvents(new HorseSpawnListener(), this);
         getServer().getPluginManager().registerEvents(new HorseBreedListener(), this);
         getServer().getPluginManager().registerEvents(new TraitActivationListener(), this);
@@ -41,11 +44,14 @@ public class BetterHorses extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new RevenantCurseListener(), this);
         getServer().getPluginManager().registerEvents(new HorseJumpListener(), this);
         getServer().getPluginManager().registerEvents(new RightClickListener(), this);
+        getServer().getPluginManager().registerEvents(new HorseFeedListener(), this);
 
         getCommand("horse").setTabCompleter(new HorseCommandCompleter());
         getCommand("horse").setExecutor(new HorseCommand());
         getCommand("horsecreate").setExecutor(new CustomHorseCommand());
         getCommand("horsecreate").setTabCompleter(new HorseCreateTabCompleter());
+
+        new HorseGrowthManager(this).start();
 
         Bukkit.getScheduler().runTaskTimer(
                 this,

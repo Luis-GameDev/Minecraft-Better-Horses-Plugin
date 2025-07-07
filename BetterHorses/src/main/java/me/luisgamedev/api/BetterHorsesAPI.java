@@ -19,7 +19,7 @@ import java.util.*;
 
 public class BetterHorsesAPI {
 
-    public static ItemStack createHorseItem(double health, double speed, double jump, String gender, String name, Player owner, Inventory targetInventory, boolean dropIfFull, String traitOverride) {
+    public static ItemStack createHorseItem(double health, double speed, double jump, String gender, String name, Player owner, Inventory targetInventory, boolean dropIfFull, String traitOverride, Integer growthStage) {
 
         BetterHorses plugin = BetterHorses.getInstance();
         LanguageManager lang = plugin.getLang();
@@ -34,10 +34,13 @@ public class BetterHorsesAPI {
         ItemMeta meta = item.getItemMeta();
         List<String> lore = new ArrayList<>();
 
+        int growth = growthStage > 10 || growthStage < 1 ? 10 : growthStage;
+
         lore.add(ChatColor.GRAY + lang.getFormattedRaw("messages.lore-gender", "%value%", genderSymbol));
         lore.add(ChatColor.GRAY + lang.getFormattedRaw("messages.lore-health", "%value%", String.format("%.2f", health), "%max%", String.format("%.2f", health)));
         lore.add(ChatColor.GRAY + lang.getFormattedRaw("messages.lore-speed", "%value%", String.format("%.4f", speed)));
         lore.add(ChatColor.GRAY + lang.getFormattedRaw("messages.lore-jump", "%value%", String.format("%.4f", jump)));
+        lore.add(ChatColor.GRAY + lang.getFormattedRaw("messages.lore-growth", "%value%", String.format("%d", growth)));
 
         PersistentDataContainer data = meta.getPersistentDataContainer();
         data.set(new NamespacedKey(plugin, "gender"), PersistentDataType.STRING, gender);
@@ -49,6 +52,7 @@ public class BetterHorsesAPI {
         data.set(new NamespacedKey(plugin, "name"), PersistentDataType.STRING, name.replace(ChatColor.GOLD.toString(), ""));
         data.set(new NamespacedKey(plugin, "style"), PersistentDataType.STRING, Horse.Style.WHITE.name());
         data.set(new NamespacedKey(plugin, "color"), PersistentDataType.STRING, Horse.Color.CREAMY.name());
+        data.set(new NamespacedKey(BetterHorses.getInstance(), "growth_stage"), PersistentDataType.INTEGER, growth);
 
         FileConfiguration config = plugin.getConfig();
         if (config.getBoolean("traits.enabled")) {

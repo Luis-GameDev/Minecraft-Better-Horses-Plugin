@@ -33,7 +33,7 @@ public class TraitParticleTask implements Runnable {
                         spawn(horse, Particle.FLAME, 4, 0.3, 0.1, 0.3);
                         break;
                     case "ghosthorse":
-                        spawn(horse, Particle.SMOKE_NORMAL, 4, 0.25, 0.2, 0.25);
+                        spawn(horse, Particle.SMOKE, 4, 0.25, 0.2, 0.25);
                         break;
                     case "dashboost":
                         spawn(horse, Particle.SWEEP_ATTACK, 2, 0.2, 0.1, 0.2);

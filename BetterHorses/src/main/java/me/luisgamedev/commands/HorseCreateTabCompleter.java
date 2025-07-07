@@ -35,6 +35,7 @@ public class HorseCreateTabCompleter implements TabCompleter {
                 }
                 suggestions.add("none");
             }
+            case 7 -> suggestions.addAll(List.of("1", "2", "3", "4", "5", "6", "7", "8", "9", "10"));
             default -> {
                 return Collections.emptyList();
             }
