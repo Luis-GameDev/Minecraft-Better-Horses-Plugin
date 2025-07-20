@@ -41,6 +41,9 @@ settings:
   # Traited horses will have particles around them, disabling this will result in slightly better performance
   trait-particle-indicator: true
 
+  # The amount of time in seconds that a horse needs before it can breed again (set to 0 for no cooldown)
+  breeding-cooldown: 300 # 5 minutes
+
 # Horse Abilities
 traits:
   enabled: true

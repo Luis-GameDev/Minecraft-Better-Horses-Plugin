@@ -45,6 +45,10 @@ public class RespawnCommand {
         String trait = data.get(new NamespacedKey(BetterHorses.getInstance(), "trait"), PersistentDataType.STRING);
         Byte neutered = data.get(new NamespacedKey(BetterHorses.getInstance(), "neutered"), PersistentDataType.BYTE);
         Integer storedStage = data.get(new NamespacedKey(BetterHorses.getInstance(), "growth_stage"), PersistentDataType.INTEGER);
+        Long cooldown = data.has(new NamespacedKey(BetterHorses.getInstance(), "cooldown"), PersistentDataType.LONG)
+                ? data.get(new NamespacedKey(BetterHorses.getInstance(), "cooldown"), PersistentDataType.LONG)
+                : null;
+
         int growthStage = storedStage != null ? storedStage : 10;
 
         if (health == null || speed == null || jump == null || gender == null) {
@@ -91,22 +95,21 @@ public class RespawnCommand {
         horse.setTamed(true);
         horse.setOwner(player);
 
-        horse.getPersistentDataContainer().set(
-                new NamespacedKey(BetterHorses.getInstance(), "owner"),
-                PersistentDataType.STRING,
-                ownerUUID
-        );
+        PersistentDataContainer horseData = horse.getPersistentDataContainer();
 
-        if (gender != null) {
-            horse.getPersistentDataContainer().set(new NamespacedKey(BetterHorses.getInstance(), "gender"), PersistentDataType.STRING, gender);
-        }
+        horseData.set(new NamespacedKey(BetterHorses.getInstance(), "owner"), PersistentDataType.STRING, ownerUUID);
+        horseData.set(new NamespacedKey(BetterHorses.getInstance(), "gender"), PersistentDataType.STRING, gender);
 
         if (trait != null && !trait.isBlank()) {
-            horse.getPersistentDataContainer().set(new NamespacedKey(BetterHorses.getInstance(), "trait"), PersistentDataType.STRING, trait);
+            horseData.set(new NamespacedKey(BetterHorses.getInstance(), "trait"), PersistentDataType.STRING, trait);
         }
 
         if (neutered != null && neutered == (byte) 1) {
-            horse.getPersistentDataContainer().set(new NamespacedKey(BetterHorses.getInstance(), "neutered"), PersistentDataType.BYTE, (byte) 1);
+            horseData.set(new NamespacedKey(BetterHorses.getInstance(), "neutered"), PersistentDataType.BYTE, (byte) 1);
+        }
+
+        if (cooldown != null) {
+            horseData.set(new NamespacedKey(BetterHorses.getInstance(), "cooldown"), PersistentDataType.LONG, cooldown);
         }
 
         if (customName != null && !customName.isBlank()) {
@@ -130,7 +133,6 @@ public class RespawnCommand {
         player.sendMessage(lang.get("messages.horse-respawned"));
         return true;
     }
-
 
     private static void setAttribute(Horse horse, Attribute attribute, double value) {
         AttributeInstance attr = horse.getAttribute(attribute);

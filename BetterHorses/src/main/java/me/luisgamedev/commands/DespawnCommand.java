@@ -37,6 +37,7 @@ public class DespawnCommand {
         NamespacedKey traitKey = new NamespacedKey(BetterHorses.getInstance(), "trait");
         NamespacedKey neuterKey = new NamespacedKey(BetterHorses.getInstance(), "neutered");
         NamespacedKey growthKey = new NamespacedKey(BetterHorses.getInstance(), "growth_stage");
+        NamespacedKey cooldownKey = new NamespacedKey(BetterHorses.getInstance(), "cooldown");
 
         // Assign gender if missing
         String gender;
@@ -49,6 +50,7 @@ public class DespawnCommand {
 
         String trait = data.has(traitKey, PersistentDataType.STRING) ? data.get(traitKey, PersistentDataType.STRING) : null;
         boolean isNeutered = data.has(neuterKey, PersistentDataType.BYTE) && data.get(neuterKey, PersistentDataType.BYTE) == (byte) 1;
+        Long cooldown = data.has(cooldownKey, PersistentDataType.LONG) ? data.get(cooldownKey, PersistentDataType.LONG) : null;
 
         int growthStage;
         if (BetterHorses.getInstance().getConfig().getBoolean("horse-growth-settings.enabled")) {
@@ -76,8 +78,8 @@ public class DespawnCommand {
 
         ItemStack item = new ItemStack(material);
         ItemMeta meta = item.getItemMeta();
-
         PersistentDataContainer itemData = meta.getPersistentDataContainer();
+
         itemData.set(genderKey, PersistentDataType.STRING, gender);
 
         String name = horse.getCustomName() != null ? horse.getCustomName() : lang.getRaw("messages.horse");
@@ -99,7 +101,6 @@ public class DespawnCommand {
 
         meta.setLore(lore);
 
-
         if (horse.getCustomName() != null) {
             itemData.set(new NamespacedKey(BetterHorses.getInstance(), "name"), PersistentDataType.STRING, horse.getCustomName());
         }
@@ -116,6 +117,9 @@ public class DespawnCommand {
         }
         if (isNeutered) {
             itemData.set(neuterKey, PersistentDataType.BYTE, (byte) 1);
+        }
+        if (cooldown != null) {
+            itemData.set(cooldownKey, PersistentDataType.LONG, cooldown);
         }
         if (saddle != null) itemData.set(new NamespacedKey(BetterHorses.getInstance(), "saddle"), PersistentDataType.STRING, saddle.getType().name());
         if (armor != null) itemData.set(new NamespacedKey(BetterHorses.getInstance(), "armor"), PersistentDataType.STRING, armor.getType().name());
