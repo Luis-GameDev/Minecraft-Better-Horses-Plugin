@@ -39,6 +39,7 @@ public class CustomHorseCommand implements CommandExecutor {
             String gender = args.length >= 4 ? args[3].toLowerCase() : (Math.random() < 0.5 ? "male" : "female");
             String name = args.length >= 5 ? "§6" + args[4] : "§6Horse";
             String trait = args.length >= 6 ? args[5].toLowerCase() : null;
+            int growthStage = args.length >= 7 ? Integer.parseInt(args[6]) : 10;
 
             String validatedTrait = null;
 
@@ -60,7 +61,7 @@ public class CustomHorseCommand implements CommandExecutor {
             }
 
             Inventory target = player.getInventory();
-            BetterHorsesAPI.createHorseItem(health, speed, jump, gender, name, player, target, true, validatedTrait);
+            BetterHorsesAPI.createHorseItem(health, speed, jump, gender, name, player, target, true, validatedTrait, growthStage);
             return true;
 
         } catch (NumberFormatException e) {

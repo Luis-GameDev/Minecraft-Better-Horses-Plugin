@@ -36,6 +36,8 @@ public class DespawnCommand {
         NamespacedKey genderKey = new NamespacedKey(BetterHorses.getInstance(), "gender");
         NamespacedKey traitKey = new NamespacedKey(BetterHorses.getInstance(), "trait");
         NamespacedKey neuterKey = new NamespacedKey(BetterHorses.getInstance(), "neutered");
+        NamespacedKey growthKey = new NamespacedKey(BetterHorses.getInstance(), "growth_stage");
+        NamespacedKey cooldownKey = new NamespacedKey(BetterHorses.getInstance(), "cooldown");
 
         // Assign gender if missing
         String gender;
@@ -48,12 +50,21 @@ public class DespawnCommand {
 
         String trait = data.has(traitKey, PersistentDataType.STRING) ? data.get(traitKey, PersistentDataType.STRING) : null;
         boolean isNeutered = data.has(neuterKey, PersistentDataType.BYTE) && data.get(neuterKey, PersistentDataType.BYTE) == (byte) 1;
+        Long cooldown = data.has(cooldownKey, PersistentDataType.LONG) ? data.get(cooldownKey, PersistentDataType.LONG) : null;
+
+        int growthStage;
+        if (BetterHorses.getInstance().getConfig().getBoolean("horse-growth-settings.enabled")) {
+            growthStage = data.has(growthKey, PersistentDataType.INTEGER) ? data.get(growthKey, PersistentDataType.INTEGER) : 10;
+        } else {
+            growthStage = 10;
+        }
+
         String genderSymbol = gender.equalsIgnoreCase("male") ? lang.getRaw("messages.gender-male") : gender.equalsIgnoreCase("female") ? lang.getRaw("messages.gender-female") : "?";
 
         double maxHealth = horse.getAttribute(Attribute.GENERIC_MAX_HEALTH).getBaseValue();
         double currentHealth = horse.getHealth();
         double speed = horse.getAttribute(Attribute.GENERIC_MOVEMENT_SPEED).getBaseValue();
-        double jump = horse.getAttribute(Attribute.HORSE_JUMP_STRENGTH).getBaseValue();
+        double jump = horse.getAttribute(Attribute.valueOf("HORSE_JUMP_STRENGTH")).getBaseValue();
 
         Horse.Style style = horse.getStyle();
         Horse.Color color = horse.getColor();
@@ -67,8 +78,8 @@ public class DespawnCommand {
 
         ItemStack item = new ItemStack(material);
         ItemMeta meta = item.getItemMeta();
-
         PersistentDataContainer itemData = meta.getPersistentDataContainer();
+
         itemData.set(genderKey, PersistentDataType.STRING, gender);
 
         String name = horse.getCustomName() != null ? horse.getCustomName() : lang.getRaw("messages.horse");
@@ -79,6 +90,7 @@ public class DespawnCommand {
         lore.add(ChatColor.GRAY + lang.getFormattedRaw("messages.lore-health", "%value%", String.format("%.2f", currentHealth), "%max%", String.format("%.2f", maxHealth)));
         lore.add(ChatColor.GRAY + lang.getFormattedRaw("messages.lore-speed", "%value%", String.format("%.4f", speed)));
         lore.add(ChatColor.GRAY + lang.getFormattedRaw("messages.lore-jump", "%value%", String.format("%.4f", jump)));
+        lore.add(ChatColor.GRAY + lang.getFormattedRaw("messages.lore-growth", "%value%", String.format("%d", growthStage)));
 
         if (trait != null) {
             lore.add(ChatColor.GOLD + lang.getFormattedRaw("messages.trait-line", "%trait%", formatTraitName(trait)));
@@ -88,7 +100,6 @@ public class DespawnCommand {
         }
 
         meta.setLore(lore);
-
 
         if (horse.getCustomName() != null) {
             itemData.set(new NamespacedKey(BetterHorses.getInstance(), "name"), PersistentDataType.STRING, horse.getCustomName());
@@ -100,11 +111,15 @@ public class DespawnCommand {
         itemData.set(new NamespacedKey(BetterHorses.getInstance(), "owner"), PersistentDataType.STRING, player.getUniqueId().toString());
         itemData.set(new NamespacedKey(BetterHorses.getInstance(), "style"), PersistentDataType.STRING, style.name());
         itemData.set(new NamespacedKey(BetterHorses.getInstance(), "color"), PersistentDataType.STRING, color.name());
+        itemData.set(new NamespacedKey(BetterHorses.getInstance(), "growth_stage"), PersistentDataType.INTEGER, growthStage);
         if (trait != null) {
             itemData.set(traitKey, PersistentDataType.STRING, trait.toLowerCase());
         }
         if (isNeutered) {
             itemData.set(neuterKey, PersistentDataType.BYTE, (byte) 1);
+        }
+        if (cooldown != null) {
+            itemData.set(cooldownKey, PersistentDataType.LONG, cooldown);
         }
         if (saddle != null) itemData.set(new NamespacedKey(BetterHorses.getInstance(), "saddle"), PersistentDataType.STRING, saddle.getType().name());
         if (armor != null) itemData.set(new NamespacedKey(BetterHorses.getInstance(), "armor"), PersistentDataType.STRING, armor.getType().name());

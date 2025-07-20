@@ -42,7 +42,7 @@ public class RevenantCurseListener implements Listener {
 
     private void applyDebuff(LivingEntity attacker) {
         attacker.addPotionEffect(new PotionEffect(PotionEffectType.BLINDNESS, 30, 3));
-        attacker.addPotionEffect(new PotionEffect(PotionEffectType.CONFUSION, 30, 3)); // Nausea
-        attacker.addPotionEffect(new PotionEffect(PotionEffectType.SLOW, 30, 6));
+        attacker.addPotionEffect(new PotionEffect(PotionEffectType.NAUSEA, 30, 3)); // Nausea
+        attacker.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 30, 6));
     }
 }

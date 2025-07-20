@@ -21,12 +21,38 @@ public class HorseBreedListener implements Listener {
     private final NamespacedKey genderKey = new NamespacedKey(JavaPlugin.getPlugin(BetterHorses.class), "gender");
     private final NamespacedKey traitKey = new NamespacedKey(JavaPlugin.getPlugin(BetterHorses.class), "trait");
     private final NamespacedKey neuterKey = new NamespacedKey(BetterHorses.getInstance(), "neutered");
+    private final NamespacedKey growthKey = new NamespacedKey(BetterHorses.getInstance(), "growth_stage");
+    private final NamespacedKey cooldownKey = new NamespacedKey(BetterHorses.getInstance(), "cooldown");
 
     @EventHandler
     public void onHorseBreed(EntityBreedEvent event) {
         if (!(event.getEntity() instanceof Horse child)) return;
         if (!(event.getFather() instanceof Horse father)) return;
         if (!(event.getMother() instanceof Horse mother)) return;
+
+        FileConfiguration config = BetterHorses.getInstance().getConfig();
+        long cooldownSeconds = config.getLong("settings.breeding-cooldown", 0);
+        long cooldownMillis = cooldownSeconds * 1000L;
+        long now = System.currentTimeMillis();
+
+        PersistentDataContainer dataFather = father.getPersistentDataContainer();
+        PersistentDataContainer dataMother = mother.getPersistentDataContainer();
+
+        // Cancel if either parent has cooldown that hasn't expired
+        if (dataFather.has(cooldownKey, PersistentDataType.LONG)) {
+            long last = dataFather.get(cooldownKey, PersistentDataType.LONG);
+            if (now - last < cooldownMillis) {
+                event.setCancelled(true);
+                return;
+            }
+        }
+        if (dataMother.has(cooldownKey, PersistentDataType.LONG)) {
+            long last = dataMother.get(cooldownKey, PersistentDataType.LONG);
+            if (now - last < cooldownMillis) {
+                event.setCancelled(true);
+                return;
+            }
+        }
 
         String gender1 = getGender(father);
         String gender2 = getGender(mother);
@@ -39,13 +65,12 @@ public class HorseBreedListener implements Listener {
             return;
         }
 
-        boolean allowSameGender = BetterHorses.getInstance().getConfig().getBoolean("settings.allow-same-gender-breeding", false);
+        boolean allowSameGender = config.getBoolean("settings.allow-same-gender-breeding", false);
         if (!allowSameGender && gender1.equalsIgnoreCase(gender2)) {
             event.setCancelled(true);
             return;
         }
 
-        FileConfiguration config = BetterHorses.getInstance().getConfig();
         double mutationHealth = config.getDouble("mutation-factor.health");
         double mutationSpeed = config.getDouble("mutation-factor.speed");
         double mutationJump = config.getDouble("mutation-factor.jump");
@@ -63,6 +88,11 @@ public class HorseBreedListener implements Listener {
 
         String gender = Math.random() < 0.5 ? "male" : "female";
         child.getPersistentDataContainer().set(genderKey, PersistentDataType.STRING, gender);
+        child.getPersistentDataContainer().set(growthKey, PersistentDataType.INTEGER, 1);
+
+        if (config.getBoolean("horse-growth-settings.enabled")) {
+            child.setAgeLock(true);
+        }
 
         if (config.getBoolean("traits.enabled")) {
             ConfigurationSection traitsSection = config.getConfigurationSection("traits");
@@ -82,6 +112,10 @@ public class HorseBreedListener implements Listener {
                 }
             }
         }
+
+        // Apply cooldown to both parents
+        dataFather.set(cooldownKey, PersistentDataType.LONG, now);
+        dataMother.set(cooldownKey, PersistentDataType.LONG, now);
     }
 
     private String getGender(Horse horse) {
@@ -117,7 +151,7 @@ public class HorseBreedListener implements Listener {
     }
 
     private double getJump(Horse horse) {
-        return horse.getAttribute(Attribute.HORSE_JUMP_STRENGTH).getBaseValue();
+        return horse.getAttribute(Attribute.valueOf("HORSE_JUMP_STRENGTH")).getBaseValue();
     }
 
     private void setHealth(Horse horse, double value) {
@@ -131,6 +165,6 @@ public class HorseBreedListener implements Listener {
     }
 
     private void setJump(Horse horse, double value) {
-        horse.getAttribute(Attribute.HORSE_JUMP_STRENGTH).setBaseValue(value);
+        horse.getAttribute(Attribute.valueOf("HORSE_JUMP_STRENGTH")).setBaseValue(value);
     }
 }

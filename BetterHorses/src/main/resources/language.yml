@@ -28,6 +28,7 @@ messages:
   lore-jump: "Jump: %value%"
   lore-health: "Health: %value% / %max%"
   lore-neutered: "⚠ Castrated – Cannot breed"
+  lore-growth: "Growth: %value%0%"
 
 traits:
   hellmare: "Hellmare"
