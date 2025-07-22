@@ -1,4 +1,4 @@
-package me.luisgamedev.commands;
+package me.luisgamedev.betterhorses.commands;
 
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;

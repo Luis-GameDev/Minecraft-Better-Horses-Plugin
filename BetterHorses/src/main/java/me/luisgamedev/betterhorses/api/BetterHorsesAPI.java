@@ -1,7 +1,7 @@
-package me.luisgamedev.api;
+package me.luisgamedev.betterhorses.api;
 
-import me.luisgamedev.BetterHorses;
-import me.luisgamedev.language.LanguageManager;
+import me.luisgamedev.betterhorses.BetterHorses;
+import me.luisgamedev.betterhorses.language.LanguageManager;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;

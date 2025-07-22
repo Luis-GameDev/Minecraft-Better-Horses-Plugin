@@ -1,5 +1,5 @@
 name: BetterHorses
-main: me.luisgamedev.BetterHorses
+main: me.luisgamedev.betterhorses.BetterHorses
 version: 5.1
 api-version: 1.20
 softdepend: [ ProtocolLib ]

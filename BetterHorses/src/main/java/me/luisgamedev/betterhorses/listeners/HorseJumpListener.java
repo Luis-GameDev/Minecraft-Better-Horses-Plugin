@@ -1,8 +1,8 @@
-package me.luisgamedev.listeners;
+package me.luisgamedev.betterhorses.listeners;
 
-import me.luisgamedev.BetterHorses;
-import me.luisgamedev.language.LanguageManager;
-import me.luisgamedev.traits.TraitRegistry;
+import me.luisgamedev.betterhorses.BetterHorses;
+import me.luisgamedev.betterhorses.language.LanguageManager;
+import me.luisgamedev.betterhorses.traits.TraitRegistry;
 import org.bukkit.NamespacedKey;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Entity;

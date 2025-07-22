@@ -1,7 +1,7 @@
-package me.luisgamedev.listeners;
+package me.luisgamedev.betterhorses.listeners;
 
-import me.luisgamedev.BetterHorses;
-import me.luisgamedev.traits.TraitRegistry;
+import me.luisgamedev.betterhorses.BetterHorses;
+import me.luisgamedev.betterhorses.traits.TraitRegistry;
 import org.bukkit.NamespacedKey;
 import org.bukkit.entity.Horse;
 import org.bukkit.entity.Player;

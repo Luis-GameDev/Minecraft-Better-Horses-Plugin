@@ -1,12 +1,11 @@
-package me.luisgamedev.language;
+package me.luisgamedev.betterhorses.language;
 
-import me.luisgamedev.BetterHorses;
+import me.luisgamedev.betterhorses.BetterHorses;
 import org.bukkit.ChatColor;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 
 import java.io.File;
-import java.io.IOException;
 
 public class LanguageManager {
 

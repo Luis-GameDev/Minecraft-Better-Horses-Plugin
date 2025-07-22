@@ -1,6 +1,6 @@
-package me.luisgamedev.listeners;
+package me.luisgamedev.betterhorses.listeners;
 
-import me.luisgamedev.BetterHorses;
+import me.luisgamedev.betterhorses.BetterHorses;
 import org.bukkit.NamespacedKey;
 import org.bukkit.entity.Horse;
 import org.bukkit.entity.LivingEntity;

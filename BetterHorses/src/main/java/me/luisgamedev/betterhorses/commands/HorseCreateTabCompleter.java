@@ -1,6 +1,6 @@
-package me.luisgamedev.commands;
+package me.luisgamedev.betterhorses.commands;
 
-import me.luisgamedev.BetterHorses;
+import me.luisgamedev.betterhorses.BetterHorses;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;

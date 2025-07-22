@@ -1,32 +1,49 @@
-package me.luisgamedev.commands;
+package me.luisgamedev.betterhorses.listeners;
 
-import me.luisgamedev.BetterHorses;
-import me.luisgamedev.language.LanguageManager;
-import org.bukkit.*;
+import me.luisgamedev.betterhorses.BetterHorses;
+import me.luisgamedev.betterhorses.language.LanguageManager;
+import org.bukkit.Material;
+import org.bukkit.NamespacedKey;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
+import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.entity.AnimalTamer;
 import org.bukkit.entity.Horse;
 import org.bukkit.entity.Player;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
+import org.bukkit.event.block.Action;
+import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
 
-public class RespawnCommand {
+public class RightClickListener implements Listener {
 
-    public static boolean spawnHorseFromItem(Player player) {
-        LanguageManager lang = BetterHorses.getInstance().getLang();
+    @EventHandler
+    public void onRightClick(PlayerInteractEvent event) {
 
+        if (event.getHand() != EquipmentSlot.HAND) return;
+
+        Action action = event.getAction();
+        if (action != Action.RIGHT_CLICK_AIR && action != Action.RIGHT_CLICK_BLOCK) return;
+
+        Player player = event.getPlayer();
         ItemStack item = player.getInventory().getItemInMainHand();
-        String configuredItem = BetterHorses.getInstance().getConfig().getString("settings.horse-item", "SADDLE");
+        if (item == null || item.getType() == Material.AIR) return;
+        if (!player.hasPermission("betterhorses.base")) return;
 
+        LanguageManager lang = BetterHorses.getInstance().getLang();
+        FileConfiguration config = BetterHorses.getInstance().getConfig();
+        if (!config.getBoolean("settings.allow-rightclick-spawn")) return;
+
+        String configuredItem = config.getString("settings.horse-item", "SADDLE");
         Material expectedMaterial = Material.getMaterial(configuredItem.toUpperCase());
         if (expectedMaterial == null || !expectedMaterial.isItem()) expectedMaterial = Material.SADDLE;
 
-        if (item == null || item.getType() != expectedMaterial || !item.hasItemMeta()) {
-            player.sendMessage(lang.get("messages.invalid-item"));
-            return true;
-        }
+        if (!item.hasItemMeta() || item.getType() != expectedMaterial) return;
 
         ItemMeta meta = item.getItemMeta();
         PersistentDataContainer data = meta.getPersistentDataContainer();
@@ -44,16 +61,14 @@ public class RespawnCommand {
         String customName = data.get(new NamespacedKey(BetterHorses.getInstance(), "name"), PersistentDataType.STRING);
         String trait = data.get(new NamespacedKey(BetterHorses.getInstance(), "trait"), PersistentDataType.STRING);
         Byte neutered = data.get(new NamespacedKey(BetterHorses.getInstance(), "neutered"), PersistentDataType.BYTE);
-        Integer storedStage = data.get(new NamespacedKey(BetterHorses.getInstance(), "growth_stage"), PersistentDataType.INTEGER);
+        int growthStage = data.getOrDefault(new NamespacedKey(BetterHorses.getInstance(), "growth_stage"), PersistentDataType.INTEGER, 10);
         Long cooldown = data.has(new NamespacedKey(BetterHorses.getInstance(), "cooldown"), PersistentDataType.LONG)
                 ? data.get(new NamespacedKey(BetterHorses.getInstance(), "cooldown"), PersistentDataType.LONG)
                 : null;
 
-        int growthStage = storedStage != null ? storedStage : 10;
-
         if (health == null || speed == null || jump == null || gender == null) {
             player.sendMessage(lang.get("messages.invalid-horse-data"));
-            return true;
+            return;
         }
 
         Horse horse;
@@ -61,44 +76,37 @@ public class RespawnCommand {
             horse = player.getWorld().spawn(player.getLocation(), Horse.class);
         } catch (Exception e) {
             player.sendMessage(lang.get("messages.cant-spawn"));
-            return true;
+            return;
         }
 
         if (horse == null || !horse.isValid()) {
             player.sendMessage(lang.get("messages.cant-spawn"));
-            return true;
+            return;
         }
 
-        // Set Growth Stage
-        double maxScale = BetterHorses.getInstance().getConfig().getDouble("horse-growth-settings.max-size", 1.3);
-        int threshold = BetterHorses.getInstance().getConfig().getInt("horse-growth-settings.ride-and-breed-threshhold", 7);
+        double maxScale = config.getDouble("horse-growth-settings.max-size", 1.3);
+        int threshold = config.getInt("horse-growth-settings.ride-and-breed-threshhold", 7);
         float minScale = (growthStage >= threshold) ? 0.85f : 0.7f;
         double scale = minScale + ((maxScale - minScale) / 10.0) * growthStage;
 
-        if (BetterHorses.getInstance().getConfig().getBoolean("horse-growth-settings.enabled")) {
+        if (config.getBoolean("horse-growth-settings.enabled")) {
             setAttribute(horse, Attribute.valueOf("SCALE"), scale);
             if (growthStage >= threshold) horse.setAdult();
             else horse.setBaby();
             horse.setAgeLock(true);
         }
 
-        horse.getPersistentDataContainer().set(
-                new NamespacedKey(BetterHorses.getInstance(), "growth_stage"),
-                PersistentDataType.INTEGER,
-                growthStage
-        );
-
         setAttribute(horse, Attribute.GENERIC_MAX_HEALTH, health);
         setAttribute(horse, Attribute.GENERIC_MOVEMENT_SPEED, speed);
         setAttribute(horse, Attribute.valueOf("HORSE_JUMP_STRENGTH"), jump);
         horse.setHealth(currentHealth != null ? currentHealth : health);
         horse.setTamed(true);
-        horse.setOwner(player);
+        horse.setOwner((AnimalTamer) player);
 
         PersistentDataContainer horseData = horse.getPersistentDataContainer();
-
         horseData.set(new NamespacedKey(BetterHorses.getInstance(), "owner"), PersistentDataType.STRING, ownerUUID);
         horseData.set(new NamespacedKey(BetterHorses.getInstance(), "gender"), PersistentDataType.STRING, gender);
+        horseData.set(new NamespacedKey(BetterHorses.getInstance(), "growth_stage"), PersistentDataType.INTEGER, growthStage == 0 ? 10 : growthStage);
 
         if (trait != null && !trait.isBlank()) {
             horseData.set(new NamespacedKey(BetterHorses.getInstance(), "trait"), PersistentDataType.STRING, trait);
@@ -131,7 +139,6 @@ public class RespawnCommand {
 
         item.setAmount(item.getAmount() - 1);
         player.sendMessage(lang.get("messages.horse-respawned"));
-        return true;
     }
 
     private static void setAttribute(Horse horse, Attribute attribute, double value) {

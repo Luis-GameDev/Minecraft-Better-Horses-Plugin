@@ -1,16 +1,16 @@
-package me.luisgamedev;
+package me.luisgamedev.betterhorses;
 
 import com.comphenix.protocol.ProtocolLibrary;
 import com.comphenix.protocol.ProtocolManager;
-import me.luisgamedev.growing.HorseGrowthManager;
-import me.luisgamedev.language.LanguageManager;
-import me.luisgamedev.commands.CustomHorseCommand;
-import me.luisgamedev.commands.HorseCommand;
-import me.luisgamedev.commands.HorseCommandCompleter;
-import me.luisgamedev.commands.HorseCreateTabCompleter;
-import me.luisgamedev.growing.HorseGrowthManager;
+import me.luisgamedev.betterhorses.growing.HorseGrowthManager;
+import me.luisgamedev.betterhorses.language.LanguageManager;
+import me.luisgamedev.betterhorses.commands.CustomHorseCommand;
+import me.luisgamedev.betterhorses.commands.HorseCommand;
+import me.luisgamedev.betterhorses.commands.HorseCommandCompleter;
+import me.luisgamedev.betterhorses.commands.HorseCreateTabCompleter;
+import me.luisgamedev.betterhorses.listeners.*;
 import me.luisgamedev.listeners.*;
-import me.luisgamedev.tasks.TraitParticleTask;
+import me.luisgamedev.betterhorses.tasks.TraitParticleTask;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
 

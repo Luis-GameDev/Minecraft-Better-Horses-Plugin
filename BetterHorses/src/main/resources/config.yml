@@ -48,6 +48,16 @@ settings:
 traits:
   enabled: true
 
+  cooldown-display:
+    # If false, the trait cooldown isn't displayed at all
+    enabled: true
+
+    # If true, the trait cooldown is shown as a bossbar when using an ability that is currently on cooldown
+    show-bossbar-indicator: true
+
+    # If true, the trait cooldown is shown above the hotbar when using an ability that is currently on cooldown
+    show-hotbar-indicator: true
+
   hellmare:
     enabled: true
     chance: 0.005 # 0.5%

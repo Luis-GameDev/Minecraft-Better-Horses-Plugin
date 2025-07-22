@@ -1,6 +1,6 @@
-package me.luisgamedev.tasks;
+package me.luisgamedev.betterhorses.tasks;
 
-import me.luisgamedev.BetterHorses;
+import me.luisgamedev.betterhorses.BetterHorses;
 import org.bukkit.Bukkit;
 import org.bukkit.NamespacedKey;
 import org.bukkit.Particle;

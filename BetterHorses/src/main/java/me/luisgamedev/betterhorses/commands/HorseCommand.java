@@ -1,7 +1,7 @@
-package me.luisgamedev.commands;
+package me.luisgamedev.betterhorses.commands;
 
-import me.luisgamedev.BetterHorses;
-import me.luisgamedev.language.LanguageManager;
+import me.luisgamedev.betterhorses.BetterHorses;
+import me.luisgamedev.betterhorses.language.LanguageManager;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;

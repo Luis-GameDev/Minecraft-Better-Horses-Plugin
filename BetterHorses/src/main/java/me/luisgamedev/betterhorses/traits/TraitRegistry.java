@@ -1,8 +1,8 @@
-package me.luisgamedev.traits;
+package me.luisgamedev.betterhorses.traits;
 
-import me.luisgamedev.BetterHorses;
-import me.luisgamedev.language.LanguageManager;
-import me.luisgamedev.utils.ArmorHider;
+import me.luisgamedev.betterhorses.BetterHorses;
+import me.luisgamedev.betterhorses.language.LanguageManager;
+import me.luisgamedev.betterhorses.utils.ArmorHider;
 import org.bukkit.*;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.block.Block;
