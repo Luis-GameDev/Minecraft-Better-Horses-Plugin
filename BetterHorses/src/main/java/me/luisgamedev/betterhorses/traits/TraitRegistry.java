@@ -3,6 +3,7 @@ package me.luisgamedev.betterhorses.traits;
 import me.luisgamedev.betterhorses.BetterHorses;
 import me.luisgamedev.betterhorses.language.LanguageManager;
 import me.luisgamedev.betterhorses.utils.ArmorHider;
+import me.luisgamedev.betterhorses.utils.CooldownDisplay;
 import org.bukkit.*;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.block.Block;
@@ -32,7 +33,10 @@ public class TraitRegistry {
         if (!config.getBoolean("traits.hellmare.enabled")) return;
 
         String key = "hellmare";
-        if (isOnCooldown(horse, key)) return;
+        if (isOnCooldown(horse, key)) {
+            showCooldownBar(player, horse, key);
+            return;
+        }
 
         int duration = config.getInt("traits.hellmare.duration", 10);
         int radius = config.getInt("traits.hellmare.radius", 1);
@@ -46,17 +50,14 @@ public class TraitRegistry {
 
         new BukkitRunnable() {
             int ticks = 0;
-
             @Override
             public void run() {
                 if (!horse.isValid()) {
                     cancel();
                     return;
                 }
-
                 Location center = horse.getLocation().clone().subtract(0, 1, 0);
                 World world = center.getWorld();
-
                 world.spawnParticle(Particle.FLAME, horse.getLocation(), 10, 0.4, 0.2, 0.4, 0.01);
 
                 for (int dx = -radius; dx <= radius; dx++) {
@@ -64,7 +65,6 @@ public class TraitRegistry {
                         Location fireLoc = center.clone().add(dx, 0, dz);
                         Block ground = fireLoc.getBlock();
                         Block above = ground.getRelative(0, 1, 0);
-
                         if (ground.getType().isSolid() && above.getType() == Material.AIR) {
                             BlockIgniteEvent igniteEvent = new BlockIgniteEvent(
                                     above,
@@ -72,7 +72,6 @@ public class TraitRegistry {
                                     player
                             );
                             Bukkit.getPluginManager().callEvent(igniteEvent);
-
                             if (!igniteEvent.isCancelled()) {
                                 above.setType(Material.FIRE);
                             }
@@ -90,7 +89,6 @@ public class TraitRegistry {
 
     public static void activateFireheart(Player player, Horse horse) {
         if (!config.getBoolean("traits.fireheart.enabled")) return;
-
         horse.addPotionEffect(new PotionEffect(PotionEffectType.FIRE_RESISTANCE, 10000, 0));
         player.addPotionEffect(new PotionEffect(PotionEffectType.FIRE_RESISTANCE, 20, 0));
     }
@@ -99,7 +97,10 @@ public class TraitRegistry {
         if (!config.getBoolean("traits.dashboost.enabled")) return;
 
         String key = "dashboost";
-        if (isOnCooldown(horse, key)) return;
+        if (isOnCooldown(horse, key)) {
+            showCooldownBar(player, horse, key);
+            return;
+        }
 
         int duration = config.getInt("traits.dashboost.duration", 5);
         double originalSpeed = horse.getAttribute(Attribute.GENERIC_MOVEMENT_SPEED).getBaseValue();
@@ -122,7 +123,6 @@ public class TraitRegistry {
 
     public static void activateFeatherHooves(Player player, Horse horse) {
         if (!config.getBoolean("traits.featherhooves.enabled")) return;
-
         player.addPotionEffect(new PotionEffect(PotionEffectType.SLOW_FALLING, 10, 0));
         horse.addPotionEffect(new PotionEffect(PotionEffectType.SLOW_FALLING, 10000, 0));
     }
@@ -131,7 +131,10 @@ public class TraitRegistry {
         if (!config.getBoolean("traits.ghosthorse.enabled")) return;
 
         String key = "ghosthorse";
-        if (isOnCooldown(horse, key)) return;
+        if (isOnCooldown(horse, key)) {
+            showCooldownBar(player, horse, key);
+            return;
+        }
 
         int duration = config.getInt("traits.ghosthorse.duration", 5);
         player.sendMessage(lang.get("traits.ghosthorse-message"));
@@ -157,7 +160,6 @@ public class TraitRegistry {
     public static void activateSkyburst(Player player, Horse horse) {
         if (!config.getBoolean("traits.skyburst.enabled")) return;
 
-        String key = "skyburst";
         double radius = config.getDouble("traits.skyburst.radius", 3.0);
         player.getWorld().spawnParticle(Particle.CLOUD, horse.getLocation(), 20, 0.5, 0.1, 0.5, 0.01);
         player.playSound(horse.getLocation(), Sound.ENTITY_GENERIC_EXPLODE, 1.0f, 1.2f);
@@ -166,7 +168,6 @@ public class TraitRegistry {
             if (entity instanceof LivingEntity && entity != player && entity != horse) {
                 EntityDamageByEntityEvent event = new EntityDamageByEntityEvent(player, entity, EntityDamageEvent.DamageCause.ENTITY_ATTACK, 0.0);
                 Bukkit.getPluginManager().callEvent(event);
-
                 if (!event.isCancelled()) {
                     Vector velocity = entity.getVelocity();
                     velocity.setY(1);
@@ -180,7 +181,10 @@ public class TraitRegistry {
         if (!config.getBoolean("traits.revenantcurse.enabled")) return;
 
         String key = "revenantcurse";
-        if (isOnCooldown(horse, key)) return;
+        if (isOnCooldown(horse, key)) {
+            showCooldownBar(player, horse, key);
+            return;
+        }
 
         int duration = config.getInt("traits.revenantcurse.duration", 5);
         player.sendMessage(lang.get("traits.revenantcurse-message"));
@@ -201,7 +205,10 @@ public class TraitRegistry {
         if (!config.getBoolean("traits.kickback.enabled")) return;
 
         String key = "kickback";
-        if (isOnCooldown(horse, key)) return;
+        if (isOnCooldown(horse, key)) {
+            showCooldownBar(player, horse, key);
+            return;
+        }
 
         double radius = config.getDouble("traits.kickback.radius", 2.5);
         double strength = config.getDouble("traits.kickback.strength", 1.5);
@@ -246,6 +253,18 @@ public class TraitRegistry {
                     }
                 }
             }
+        }
+    }
+
+    private static void showCooldownBar(Player player, Horse horse, String key) {
+        int fullCooldown = config.getInt("traits." + key + ".cooldown", 30);
+        long now = System.currentTimeMillis();
+        long until = cooldowns.get(horse.getUniqueId()).getOrDefault(key, 0L);
+        double secondsLeft = (until - now) / 1000.0;
+        String name = lang.getRaw("traits." + key);
+
+        if (secondsLeft > 0) {
+            CooldownDisplay.showCooldown(secondsLeft, fullCooldown, player, name);
         }
     }
 

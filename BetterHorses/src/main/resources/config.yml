@@ -44,19 +44,19 @@ settings:
   # The amount of time in seconds that a horse needs before it can breed again (set to 0 for no cooldown)
   breeding-cooldown: 300 # 5 minutes
 
-# Horse Abilities
-traits:
-  enabled: true
-
   cooldown-display:
     # If false, the trait cooldown isn't displayed at all
     enabled: true
 
     # If true, the trait cooldown is shown as a bossbar when using an ability that is currently on cooldown
-    show-bossbar-indicator: true
+    show-bossbar-indicator: false
 
     # If true, the trait cooldown is shown above the hotbar when using an ability that is currently on cooldown
     show-hotbar-indicator: true
+
+# Horse Abilities
+traits:
+  enabled: true
 
   hellmare:
     enabled: true
