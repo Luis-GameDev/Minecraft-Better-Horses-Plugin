@@ -39,7 +39,7 @@ public class HorseBreedListener implements Listener {
         PersistentDataContainer dataMother = mother.getPersistentDataContainer();
 
         // Cancel if either parent has cooldown that hasn't expired
-        if (dataFather.has(cooldownKey, PersistentDataType.LONG)) {
+        if (dataFather.has(cooldownKey, PersistentDataType.LONG) && !config.getBoolean("settings.male-ignore-cooldown")) {
             long last = dataFather.get(cooldownKey, PersistentDataType.LONG);
             if (now - last < cooldownMillis) {
                 event.setCancelled(true);

@@ -11,10 +11,12 @@ import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
+import org.bukkit.plugin.java.JavaPlugin;
 
 public class HorseFeedListener implements Listener {
 
     private final NamespacedKey cooldownKey = new NamespacedKey(BetterHorses.getInstance(), "cooldown");
+    private final NamespacedKey genderKey = new NamespacedKey(BetterHorses.getInstance(), "gender");
 
     @EventHandler
     public void onHorseFeed(PlayerInteractEntityEvent event) {
@@ -49,7 +51,12 @@ public class HorseFeedListener implements Listener {
             PersistentDataContainer data = horse.getPersistentDataContainer();
             Long lastBreed = data.get(cooldownKey, PersistentDataType.LONG);
 
-            if (lastBreed != null && now - lastBreed < cooldownMillis) {
+            if (config.getBoolean("settings.male-ignore-cooldown", false)) {
+                String gender = data.getOrDefault(genderKey, PersistentDataType.STRING, "UNKNOWN");
+                if ("male".equalsIgnoreCase(gender)) return;
+            }
+
+            if (lastBreed != null && lastBreed != 0 && now - lastBreed < cooldownMillis) {
                 event.setCancelled(true);
             }
         }

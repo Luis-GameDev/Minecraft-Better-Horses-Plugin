@@ -59,7 +59,7 @@ public class HorseSpawnListener implements Listener {
             }
 
             // Set to adult if threshold met
-            int threshold = BetterHorses.getInstance().getConfig().getInt("horse-growth-settings.ride-and-breed-threshhold", 7);
+            int threshold = 7; // percentage of max growth (70%)
             if (stage >= threshold && !horse.isAdult()) {
                 horse.setAdult();
             } else if (stage < threshold) {

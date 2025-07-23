@@ -16,7 +16,7 @@ max-stats:
 # Settings that determine horse growth
 horse-growth-settings:
 
-  # If disabled, horses will remain their Vanilla size, this feature only works for Paper 1.20.6 & Java 21 or above
+  # If false, horses will remain their Vanilla size, this feature only works for Paper 1.20.6 & Java 21 or above
   enabled: true
 
   # The time in minutes that needs to pass until a horse is fully grown
@@ -44,6 +44,9 @@ settings:
   # The amount of time in seconds that a horse needs before it can breed again (set to 0 for no cooldown)
   breeding-cooldown: 300 # 5 minutes
 
+  # If true, male horses will ignore the breeding cooldown
+  male-ignore-cooldown: true
+
   cooldown-display:
     # If false, the trait cooldown isn't displayed at all
     enabled: true
@@ -56,6 +59,7 @@ settings:
 
 # Horse Abilities
 traits:
+  # Set this to false to disable the whole trait feature
   enabled: true
 
   hellmare:
