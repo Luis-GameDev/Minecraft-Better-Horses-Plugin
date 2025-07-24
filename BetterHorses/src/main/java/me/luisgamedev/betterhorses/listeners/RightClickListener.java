@@ -93,8 +93,8 @@ public class RightClickListener implements Listener {
             setAttribute(horse, Attribute.valueOf("SCALE"), scale);
             if (growthStage >= threshold) {
                 horse.setAdult();
-            }
-            else {
+                horse.setAgeLock(false);
+            } else {
                 horse.setBaby();
                 horse.setAgeLock(true);
             }

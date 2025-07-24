@@ -29,10 +29,6 @@ public class HorseSpawnListener implements Listener {
 
         Horse horse = (Horse) event.getEntity();
 
-        if (BetterHorses.getInstance().getConfig().getBoolean("horse-growth-settings.enabled")) {
-            horse.setAgeLock(true);
-        }
-
         // Set gender
         String gender = GENDERS[random.nextInt(GENDERS.length)];
         PersistentDataContainer data = horse.getPersistentDataContainer();
@@ -40,7 +36,9 @@ public class HorseSpawnListener implements Listener {
 
         int stage = 10;
 
-        if (BetterHorses.getInstance().getConfig().getBoolean("horse-growth-settings.enabled")) {
+        //if (BetterHorses.getInstance().getConfig().getBoolean("horse-growth-settings.enabled")) {
+        boolean growthEnabled = BetterHorses.getInstance().getConfig().getBoolean("horse-growth-settings.enabled");
+        if (growthEnabled) {
             // Set random growth stage
             stage = random.nextInt(11); // 0–10
 
@@ -62,8 +60,12 @@ public class HorseSpawnListener implements Listener {
             int threshold = 7; // percentage of max growth (70%)
             if (stage >= threshold && !horse.isAdult()) {
                 horse.setAdult();
+                horse.setAgeLock(false);
             } else if (stage < threshold) {
                 horse.setBaby();
+                horse.setAgeLock(true);
+            } else {
+                horse.setAgeLock(false);
             }
         }
 

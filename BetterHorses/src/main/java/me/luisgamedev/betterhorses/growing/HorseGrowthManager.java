@@ -77,6 +77,8 @@ public class HorseGrowthManager {
 
                         if (!horse.isAdult()) {
                             horse.setAgeLock(true);
+                        } else {
+                            horse.setAgeLock(false);
                         }
 
                         if (stage >= maxStage) {

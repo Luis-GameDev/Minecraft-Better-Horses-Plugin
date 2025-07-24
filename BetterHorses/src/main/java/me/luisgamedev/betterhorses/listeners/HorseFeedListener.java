@@ -50,13 +50,17 @@ public class HorseFeedListener implements Listener {
         if (config.contains("settings.breeding-cooldown")) {
             long cooldownMillis = config.getLong("settings.breeding-cooldown") * 1000L;
             long now = System.currentTimeMillis();
+            horse.setAge(0);
 
             PersistentDataContainer data = horse.getPersistentDataContainer();
             Long lastBreed = data.get(cooldownKey, PersistentDataType.LONG);
             Double cooldownLeft = (cooldownMillis - (now - lastBreed)) / 1000.0;
 
             Player player = event.getPlayer();
-            player.sendMessage("§cBreeding cooldown: " + String.format(Locale.US, "%.1f", cooldownLeft) + "s");
+
+            // Debugging
+            //player.sendMessage("§cBreeding cooldown: " + String.format(Locale.US, "%.1f", cooldownLeft) + "s");
+            //player.sendMessage("§cInternal Breeding cooldown: " + horse.getAge() + "s");
 
             if (config.getBoolean("settings.male-ignore-cooldown", false)) {
                 String gender = data.getOrDefault(genderKey, PersistentDataType.STRING, "UNKNOWN");

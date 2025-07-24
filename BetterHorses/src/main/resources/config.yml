@@ -42,7 +42,7 @@ settings:
   trait-particle-indicator: true
 
   # The amount of time in seconds that a horse needs before it can breed again (set to 0 for no cooldown)
-  breeding-cooldown: 30 # 5 minutes
+  breeding-cooldown: 300 # 5 minutes
 
   # If true, male horses will ignore the breeding cooldown
   male-ignore-cooldown: true
