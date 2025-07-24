@@ -89,6 +89,7 @@ public class HorseGrowthManager {
 
                         if (stage >= threshold && !horse.isAdult()) {
                             horse.setAdult();
+                            horse.setAgeLock(false);
                         }
 
                         double scaledSize = getScaledSizeForStage(stage, horse.isAdult(), maxScale, threshold);

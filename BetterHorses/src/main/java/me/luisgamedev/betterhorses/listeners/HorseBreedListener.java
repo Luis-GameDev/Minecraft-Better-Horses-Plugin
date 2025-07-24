@@ -116,6 +116,9 @@ public class HorseBreedListener implements Listener {
         // Apply cooldown to both parents
         dataFather.set(cooldownKey, PersistentDataType.LONG, now);
         dataMother.set(cooldownKey, PersistentDataType.LONG, now);
+
+        father.setAge(0);
+        mother.setAge(0);
     }
 
     private String getGender(Horse horse) {

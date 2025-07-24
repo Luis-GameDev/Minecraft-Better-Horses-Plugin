@@ -91,9 +91,13 @@ public class RightClickListener implements Listener {
 
         if (config.getBoolean("horse-growth-settings.enabled")) {
             setAttribute(horse, Attribute.valueOf("SCALE"), scale);
-            if (growthStage >= threshold) horse.setAdult();
-            else horse.setBaby();
-            horse.setAgeLock(true);
+            if (growthStage >= threshold) {
+                horse.setAdult();
+            }
+            else {
+                horse.setBaby();
+                horse.setAgeLock(true);
+            }
         }
 
         setAttribute(horse, Attribute.GENERIC_MAX_HEALTH, health);
