@@ -5,6 +5,7 @@ import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Horse;
+import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
@@ -12,6 +13,8 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.java.JavaPlugin;
+
+import java.util.Locale;
 
 public class HorseFeedListener implements Listener {
 
@@ -50,13 +53,17 @@ public class HorseFeedListener implements Listener {
 
             PersistentDataContainer data = horse.getPersistentDataContainer();
             Long lastBreed = data.get(cooldownKey, PersistentDataType.LONG);
+            Double cooldownLeft = (cooldownMillis - (now - lastBreed)) / 1000.0;
+
+            Player player = event.getPlayer();
+            player.sendMessage("§cBreeding cooldown: " + String.format(Locale.US, "%.1f", cooldownLeft) + "s");
 
             if (config.getBoolean("settings.male-ignore-cooldown", false)) {
                 String gender = data.getOrDefault(genderKey, PersistentDataType.STRING, "UNKNOWN");
                 if ("male".equalsIgnoreCase(gender)) return;
             }
 
-            if (lastBreed != null && lastBreed != 0 && now - lastBreed < cooldownMillis) {
+            if (lastBreed != null && lastBreed != 0 && cooldownLeft > 0) {
                 event.setCancelled(true);
             }
         }
