@@ -77,9 +77,13 @@ public class RespawnCommand {
 
         if (BetterHorses.getInstance().getConfig().getBoolean("horse-growth-settings.enabled")) {
             setAttribute(horse, Attribute.valueOf("SCALE"), scale);
-            if (growthStage >= threshold) horse.setAdult();
-            else horse.setBaby();
-            horse.setAgeLock(true);
+            if (growthStage >= threshold) {
+                horse.setAdult();
+                horse.setAgeLock(false);
+            } else {
+                horse.setBaby();
+                horse.setAgeLock(true);
+            }
         }
 
         horse.getPersistentDataContainer().set(
