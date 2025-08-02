@@ -53,6 +53,8 @@ public class TraitParticleTask implements Runnable {
                     case "fireheart":
                         spawn(horse, Particle.LAVA, 2, 0.2, 0.1, 0.2);
                         break;
+                    case "heavenhooves":
+                        spawn(horse, Particle.GLOW, 2, 0.2, 0.3, 0.2);
                 }
             }
         }

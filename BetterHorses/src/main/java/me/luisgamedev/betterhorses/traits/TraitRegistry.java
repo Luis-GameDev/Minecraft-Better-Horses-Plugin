@@ -9,10 +9,12 @@ import org.bukkit.attribute.Attribute;
 import org.bukkit.block.Block;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.*;
+import org.bukkit.event.Event;
 import org.bukkit.event.block.BlockIgniteEvent;
 import org.bukkit.event.entity.EntityChangeBlockEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
+import org.bukkit.event.entity.HorseJumpEvent;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
@@ -92,6 +94,42 @@ public class TraitRegistry {
         horse.addPotionEffect(new PotionEffect(PotionEffectType.FIRE_RESISTANCE, 10000, 0));
         player.addPotionEffect(new PotionEffect(PotionEffectType.FIRE_RESISTANCE, 20, 0));
     }
+
+    public static void activateHeavenHooves(Player player, Horse horse, Event event) {
+        if (!config.getBoolean("traits.heavenhooves.enabled")) return;
+
+        horse.addPotionEffect(new PotionEffect(PotionEffectType.SLOW_FALLING, 10000, 0));
+
+        if (!(event instanceof HorseJumpEvent jumpEvent)) return;
+
+        double power = jumpEvent.getPower();
+
+        jumpEvent.setCancelled(true);
+
+        double baseUp = config.getDouble("traits.heavenhooves.strength");
+        double extraUp = power * 0.6;
+
+        double forwardStrength = 0.4;
+        Vector forward = horse.getLocation().getDirection().normalize().multiply(forwardStrength);
+
+        forward.setY(baseUp + extraUp);
+
+        horse.setVelocity(forward);
+
+        if (config.getBoolean("traits.heavenhooves.particles")) {
+            horse.getWorld().spawnParticle(
+                    Particle.CLOUD,
+                    horse.getLocation().add(0, 1.5, 0),
+                    8,
+                    0.3, 0.2, 0.3,
+                    0.01
+            );
+        }
+
+        horse.getWorld().playSound(horse.getLocation(), Sound.BLOCK_WOOL_PLACE, 1f, 1f);
+    }
+
+
 
     public static void activateDashBoost(Player player, Horse horse) {
         if (!config.getBoolean("traits.dashboost.enabled")) return;

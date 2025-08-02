@@ -29,6 +29,12 @@ public class HorseJumpListener implements Listener {
     @EventHandler
     public void onHorseJump(HorseJumpEvent event) {
         if (!(event.getEntity() instanceof Horse horse)) return;
+        if (hasHeavenHoovesTrait(horse)) {
+            Entity rider = horse.getPassengers().get(0);
+            if (rider instanceof Player player) {
+                TraitRegistry.activateHeavenHooves(player, horse, event);
+            }
+        }
         if (!hasSkyburstTrait(horse)) return;
         if (horse.hasMetadata("SkyburstCandidate")) return;
 
@@ -78,6 +84,12 @@ public class HorseJumpListener implements Listener {
         if (!horse.getPersistentDataContainer().has(traitKey, PersistentDataType.STRING)) return false;
         String trait = horse.getPersistentDataContainer().get(traitKey, PersistentDataType.STRING);
         return "skyburst".equalsIgnoreCase(trait) && config.getBoolean("traits.skyburst.enabled", true);
+    }
+
+    private boolean hasHeavenHoovesTrait(Horse horse) {
+        if (!horse.getPersistentDataContainer().has(traitKey, PersistentDataType.STRING)) return false;
+        String trait = horse.getPersistentDataContainer().get(traitKey, PersistentDataType.STRING);
+        return "heavenhooves".equalsIgnoreCase(trait) && config.getBoolean("traits.heavenhooves.enabled", true);
     }
 
     @EventHandler

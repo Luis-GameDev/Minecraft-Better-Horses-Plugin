@@ -112,3 +112,9 @@ traits:
     cooldown: 30
     duration: 10
 
+  heavenhooves:
+    enabled: true
+    chance: 0.001 # 0.1%
+    strength: 0.4
+    particles: true
+
