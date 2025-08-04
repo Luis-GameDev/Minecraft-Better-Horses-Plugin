@@ -10,8 +10,15 @@ import me.luisgamedev.betterhorses.commands.HorseCommandCompleter;
 import me.luisgamedev.betterhorses.commands.HorseCreateTabCompleter;
 import me.luisgamedev.betterhorses.listeners.*;
 import me.luisgamedev.betterhorses.tasks.TraitParticleTask;
+import me.luisgamedev.betterhorses.enchantments.SwingDamageEnchantment;
 import org.bukkit.Bukkit;
+import org.bukkit.NamespacedKey;
+import org.bukkit.Registry;
+import org.bukkit.enchantments.Enchantment;
 import org.bukkit.plugin.java.JavaPlugin;
+
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 
 public class BetterHorses extends JavaPlugin {
 
@@ -50,6 +57,10 @@ public class BetterHorses extends JavaPlugin {
         getCommand("horsecreate").setExecutor(new CustomHorseCommand());
         getCommand("horsecreate").setTabCompleter(new HorseCreateTabCompleter());
 
+        NamespacedKey key = new NamespacedKey(this, "swing_damage");
+        SwingDamageEnchantment swingDamage = new SwingDamageEnchantment(key);
+        registerCustomEnchantment(swingDamage);
+
         new HorseGrowthManager(this).start();
 
         Bukkit.getScheduler().runTaskTimer(
@@ -71,4 +82,23 @@ public class BetterHorses extends JavaPlugin {
     public boolean isProtocolLibAvailable() {
         return protocolLibAvailable;
     }
+
+    public static void registerCustomEnchantment(Enchantment enchantment) {
+        try {
+
+            Field acceptingNew = Enchantment.class.getDeclaredField("acceptingNew");
+            acceptingNew.setAccessible(true);
+            acceptingNew.set(null, true);
+
+            Method method = Enchantment.class.getDeclaredMethod("registerEnchantment", Enchantment.class);
+            method.setAccessible(true);
+            method.invoke(null, enchantment);
+
+        } catch (IllegalArgumentException e) {
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
 }
