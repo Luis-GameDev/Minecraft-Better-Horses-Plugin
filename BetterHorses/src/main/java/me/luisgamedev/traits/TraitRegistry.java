@@ -15,8 +15,8 @@ import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
-import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.Vector;
+import io.papermc.paper.threadedregions.scheduler.ScheduledTask;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -44,48 +44,44 @@ public class TraitRegistry {
 
         setCooldown(horse, key, config.getInt("traits.hellmare.cooldown", 30));
 
-        new BukkitRunnable() {
-            int ticks = 0;
+        final int[] ticks = {0};
+        horse.getScheduler().runAtFixedRate(BetterHorses.getInstance(), (ScheduledTask task) -> {
+            if (!horse.isValid()) {
+                task.cancel();
+                return;
+            }
 
-            @Override
-            public void run() {
-                if (!horse.isValid()) {
-                    cancel();
-                    return;
-                }
+            Location center = horse.getLocation().clone().subtract(0, 1, 0);
+            World world = center.getWorld();
 
-                Location center = horse.getLocation().clone().subtract(0, 1, 0);
-                World world = center.getWorld();
+            world.spawnParticle(Particle.FLAME, horse.getLocation(), 10, 0.4, 0.2, 0.4, 0.01);
 
-                world.spawnParticle(Particle.FLAME, horse.getLocation(), 10, 0.4, 0.2, 0.4, 0.01);
+            for (int dx = -radius; dx <= radius; dx++) {
+                for (int dz = -radius; dz <= radius; dz++) {
+                    Location fireLoc = center.clone().add(dx, 0, dz);
+                    Block ground = fireLoc.getBlock();
+                    Block above = ground.getRelative(0, 1, 0);
 
-                for (int dx = -radius; dx <= radius; dx++) {
-                    for (int dz = -radius; dz <= radius; dz++) {
-                        Location fireLoc = center.clone().add(dx, 0, dz);
-                        Block ground = fireLoc.getBlock();
-                        Block above = ground.getRelative(0, 1, 0);
+                    if (ground.getType().isSolid() && above.getType() == Material.AIR) {
+                        BlockIgniteEvent igniteEvent = new BlockIgniteEvent(
+                                above,
+                                BlockIgniteEvent.IgniteCause.FLINT_AND_STEEL,
+                                player
+                        );
+                        Bukkit.getPluginManager().callEvent(igniteEvent);
 
-                        if (ground.getType().isSolid() && above.getType() == Material.AIR) {
-                            BlockIgniteEvent igniteEvent = new BlockIgniteEvent(
-                                    above,
-                                    BlockIgniteEvent.IgniteCause.FLINT_AND_STEEL,
-                                    player
-                            );
-                            Bukkit.getPluginManager().callEvent(igniteEvent);
-
-                            if (!igniteEvent.isCancelled()) {
-                                above.setType(Material.FIRE);
-                            }
+                        if (!igniteEvent.isCancelled()) {
+                            above.setType(Material.FIRE);
                         }
                     }
                 }
-
-                ticks++;
-                if (ticks >= duration * 20 / 5) {
-                    cancel();
-                }
             }
-        }.runTaskTimer(BetterHorses.getInstance(), 0, 5);
+
+            ticks[0]++;
+            if (ticks[0] >= duration * 20 / 5) {
+                task.cancel();
+            }
+        }, 0L, 5L);
     }
 
     public static void activateFireheart(Player player, Horse horse) {
@@ -110,14 +106,11 @@ public class TraitRegistry {
 
         setCooldown(horse, key, config.getInt("traits.dashboost.cooldown", 30));
 
-        new BukkitRunnable() {
-            @Override
-            public void run() {
-                if (horse.isValid()) {
-                    horse.getAttribute(Attribute.GENERIC_MOVEMENT_SPEED).setBaseValue(originalSpeed);
-                }
+        horse.getScheduler().runDelayed(BetterHorses.getInstance(), (ScheduledTask task) -> {
+            if (horse.isValid()) {
+                horse.getAttribute(Attribute.GENERIC_MOVEMENT_SPEED).setBaseValue(originalSpeed);
             }
-        }.runTaskLater(BetterHorses.getInstance(), duration * 20L);
+        }, duration * 20L);
     }
 
     public static void activateFeatherHooves(Player player, Horse horse) {
@@ -140,16 +133,13 @@ public class TraitRegistry {
         player.setInvisible(true);
         ArmorHider.hide(player, horse);
 
-        new BukkitRunnable() {
-            @Override
-            public void run() {
-                if (horse.isValid()) {
-                    player.setInvisible(false);
-                    horse.setInvisible(false);
-                    ArmorHider.show(player, horse);
-                }
+        horse.getScheduler().runDelayed(BetterHorses.getInstance(), (ScheduledTask task) -> {
+            if (horse.isValid()) {
+                player.setInvisible(false);
+                horse.setInvisible(false);
+                ArmorHider.show(player, horse);
             }
-        }.runTaskLater(BetterHorses.getInstance(), duration * 20L);
+        }, duration * 20L);
 
         setCooldown(horse, key, config.getInt("traits.ghosthorse.cooldown", 30));
     }

@@ -8,11 +8,11 @@ import me.luisgamedev.commands.CustomHorseCommand;
 import me.luisgamedev.commands.HorseCommand;
 import me.luisgamedev.commands.HorseCommandCompleter;
 import me.luisgamedev.commands.HorseCreateTabCompleter;
-import me.luisgamedev.growing.HorseGrowthManager;
 import me.luisgamedev.listeners.*;
 import me.luisgamedev.tasks.TraitParticleTask;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
+import io.papermc.paper.threadedregions.scheduler.ScheduledTask;
 
 public class BetterHorses extends JavaPlugin {
 
@@ -53,11 +53,11 @@ public class BetterHorses extends JavaPlugin {
 
         new HorseGrowthManager(this).start();
 
-        Bukkit.getScheduler().runTaskTimer(
+        Bukkit.getGlobalRegionScheduler().runAtFixedRate(
                 this,
-                new TraitParticleTask(),
-                20L, // delay 1s
-                20L  // repeat every 1s
+                (ScheduledTask task) -> new TraitParticleTask().run(),
+                20L,
+                20L
         );
     }
 
