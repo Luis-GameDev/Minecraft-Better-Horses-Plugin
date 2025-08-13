@@ -58,8 +58,8 @@ public class HorseJumpListener implements Listener {
                     clear(horse);
                     repeating.cancel();
                 }
-            }, 0L, 2L);
-        }, 1L);
+            }, () -> {}, 0L, 2L);
+        }, () -> {}, 1L);
     }
 
     private void clear(Horse horse) {

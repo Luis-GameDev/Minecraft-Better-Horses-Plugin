@@ -81,7 +81,7 @@ public class TraitRegistry {
             if (ticks[0] >= duration * 20 / 5) {
                 task.cancel();
             }
-        }, 0L, 5L);
+        }, () -> {}, 0L, 5L);
     }
 
     public static void activateFireheart(Player player, Horse horse) {
@@ -110,7 +110,7 @@ public class TraitRegistry {
             if (horse.isValid()) {
                 horse.getAttribute(Attribute.GENERIC_MOVEMENT_SPEED).setBaseValue(originalSpeed);
             }
-        }, duration * 20L);
+        }, () -> {}, duration * 20L);
     }
 
     public static void activateFeatherHooves(Player player, Horse horse) {
@@ -139,7 +139,7 @@ public class TraitRegistry {
                 horse.setInvisible(false);
                 ArmorHider.show(player, horse);
             }
-        }, duration * 20L);
+        }, () -> {}, duration * 20L);
 
         setCooldown(horse, key, config.getInt("traits.ghosthorse.cooldown", 30));
     }
