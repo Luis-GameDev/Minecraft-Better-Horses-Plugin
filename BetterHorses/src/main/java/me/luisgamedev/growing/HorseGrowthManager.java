@@ -11,7 +11,7 @@ import org.bukkit.entity.Entity;
 import org.bukkit.entity.Horse;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
-import org.bukkit.scheduler.BukkitRunnable;
+import io.papermc.paper.threadedregions.scheduler.ScheduledTask;
 
 public class HorseGrowthManager {
 
@@ -27,25 +27,22 @@ public class HorseGrowthManager {
         FileConfiguration config = BetterHorses.getInstance().getConfig();
 
         if (!config.getBoolean("horse-growth-settings.enabled")) {
-            new BukkitRunnable() {
-                @Override
-                public void run() {
-                    for (World world : Bukkit.getWorlds()) {
-                        for (Horse horse : world.getEntitiesByClass(Horse.class)) {
-                            if (!horse.isAdult()) {
-                                horse.setAgeLock(false);
-                            }
-                            try {
-                                Attribute attr = Attribute.valueOf("SCALE");
-                                AttributeInstance instance = horse.getAttribute(attr);
-                                if (instance != null) {
-                                    instance.setBaseValue(1.0);
-                                }
-                            } catch (IllegalArgumentException | NoSuchFieldError ignored) {}
+            Bukkit.getGlobalRegionScheduler().run(BetterHorses.getInstance(), (ScheduledTask task) -> {
+                for (World world : Bukkit.getWorlds()) {
+                    for (Horse horse : world.getEntitiesByClass(Horse.class)) {
+                        if (!horse.isAdult()) {
+                            horse.setAgeLock(false);
                         }
+                        try {
+                            Attribute attr = Attribute.valueOf("SCALE");
+                            AttributeInstance instance = horse.getAttribute(attr);
+                            if (instance != null) {
+                                instance.setBaseValue(1.0);
+                            }
+                        } catch (IllegalArgumentException | NoSuchFieldError ignored) {}
                     }
                 }
-            }.runTask(BetterHorses.getInstance());
+            });
             return;
         }
 
@@ -56,47 +53,44 @@ public class HorseGrowthManager {
         float maxScale = (float) config.getDouble("horse-growth-settings.max-size", 1.3f);
         int threshold = 7;
 
-        new BukkitRunnable() {
-            @Override
-            public void run() {
-                for (World world : Bukkit.getWorlds()) {
-                    for (Entity entity : world.getEntitiesByClass(Horse.class)) {
-                        if (!(entity instanceof Horse horse)) continue;
-                        if (!horse.isValid() || horse.getPassengers().size() > 0) continue;
+        Bukkit.getGlobalRegionScheduler().runAtFixedRate(BetterHorses.getInstance(), (ScheduledTask task) -> {
+            for (World world : Bukkit.getWorlds()) {
+                for (Entity entity : world.getEntitiesByClass(Horse.class)) {
+                    if (!(entity instanceof Horse horse)) continue;
+                    if (!horse.isValid() || horse.getPassengers().size() > 0) continue;
 
-                        PersistentDataContainer data = horse.getPersistentDataContainer();
-                        int stage;
+                    PersistentDataContainer data = horse.getPersistentDataContainer();
+                    int stage;
 
-                        if (data.has(growthKey, PersistentDataType.INTEGER)) {
-                            stage = data.get(growthKey, PersistentDataType.INTEGER);
-                        } else {
-                            stage = maxStage;
-                            data.set(growthKey, PersistentDataType.INTEGER, stage);
-                            horse.setAdult();
-                        }
-
-                        if (!horse.isAdult()) {
-                            horse.setAgeLock(true);
-                        }
-
-                        if (stage >= maxStage) {
-                            setScaleSafe(horse, maxScale);
-                            continue;
-                        }
-
-                        stage++;
+                    if (data.has(growthKey, PersistentDataType.INTEGER)) {
+                        stage = data.get(growthKey, PersistentDataType.INTEGER);
+                    } else {
+                        stage = maxStage;
                         data.set(growthKey, PersistentDataType.INTEGER, stage);
-
-                        if (stage >= threshold && !horse.isAdult()) {
-                            horse.setAdult();
-                        }
-
-                        double scaledSize = getScaledSizeForStage(stage, horse.isAdult(), maxScale, threshold);
-                        setScaleSafe(horse, scaledSize);
+                        horse.setAdult();
                     }
+
+                    if (!horse.isAdult()) {
+                        horse.setAgeLock(true);
+                    }
+
+                    if (stage >= maxStage) {
+                        setScaleSafe(horse, maxScale);
+                        continue;
+                    }
+
+                    stage++;
+                    data.set(growthKey, PersistentDataType.INTEGER, stage);
+
+                    if (stage >= threshold && !horse.isAdult()) {
+                        horse.setAdult();
+                    }
+
+                    double scaledSize = getScaledSizeForStage(stage, horse.isAdult(), maxScale, threshold);
+                    setScaleSafe(horse, scaledSize);
                 }
             }
-        }.runTaskTimer(BetterHorses.getInstance(), 0L, intervalTicks);
+        }, 0L, intervalTicks);
     }
 
     private void setScaleSafe(Horse horse, double scale) {

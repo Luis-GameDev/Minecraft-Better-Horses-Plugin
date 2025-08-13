@@ -14,7 +14,7 @@ import org.bukkit.event.entity.HorseJumpEvent;
 import org.bukkit.event.vehicle.VehicleExitEvent;
 import org.bukkit.metadata.FixedMetadataValue;
 import org.bukkit.persistence.PersistentDataType;
-import org.bukkit.scheduler.BukkitRunnable;
+import io.papermc.paper.threadedregions.scheduler.ScheduledTask;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -35,38 +35,31 @@ public class HorseJumpListener implements Listener {
         horse.setMetadata("SkyburstCandidate", new FixedMetadataValue(BetterHorses.getInstance(), true));
         airborneHorses.add(horse);
 
-        new BukkitRunnable() {
-            @Override
-            public void run() {
+        horse.getScheduler().runDelayed(BetterHorses.getInstance(), (ScheduledTask delayed) -> {
+            if (!horse.isValid()) {
+                clear(horse);
+                return;
+            }
+
+            horse.getScheduler().runAtFixedRate(BetterHorses.getInstance(), (ScheduledTask repeating) -> {
                 if (!horse.isValid()) {
                     clear(horse);
+                    repeating.cancel();
                     return;
                 }
 
-                // Wait for landing
-                new BukkitRunnable() {
-                    @Override
-                    public void run() {
-                        if (!horse.isValid()) {
-                            clear(horse);
-                            cancel();
-                            return;
-                        }
-
-                        if (horse.isOnGround()) {
-                            if (!horse.getPassengers().isEmpty()) {
-                                Entity rider = horse.getPassengers().get(0);
-                                if (rider instanceof Player player) {
-                                    TraitRegistry.activateSkyburst(player, horse);
-                                }
-                            }
-                            clear(horse);
-                            cancel();
+                if (horse.isOnGround()) {
+                    if (!horse.getPassengers().isEmpty()) {
+                        Entity rider = horse.getPassengers().get(0);
+                        if (rider instanceof Player player) {
+                            TraitRegistry.activateSkyburst(player, horse);
                         }
                     }
-                }.runTaskTimer(BetterHorses.getInstance(), 0L, 2L);
-            }
-        }.runTaskLater(BetterHorses.getInstance(), 1L);
+                    clear(horse);
+                    repeating.cancel();
+                }
+            }, 0L, 2L);
+        }, 1L);
     }
 
     private void clear(Horse horse) {
