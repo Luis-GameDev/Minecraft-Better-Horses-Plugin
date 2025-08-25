@@ -38,6 +38,13 @@ settings:
   # Allows spawning the horse by rightclicking with the horse item
   allow-rightclick-spawn: true
 
+  # If enabled, players riding a horse cant be hit
+  rider-invulnerable: false
+
+  # Fixes a vanilla bug where horses cant automatically climb from a path block onto a full block
+  # because it exceeds their 1-block step height, only applies to mounted horses
+  fix-step-height: true
+
   # Traited horses will have particles around them, disabling this will result in slightly better performance
   trait-particle-indicator: true
 

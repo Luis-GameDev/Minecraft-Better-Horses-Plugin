@@ -44,6 +44,9 @@ public class BetterHorses extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new HorseJumpListener(), this);
         getServer().getPluginManager().registerEvents(new RightClickListener(), this);
         getServer().getPluginManager().registerEvents(new HorseFeedListener(), this);
+        getServer().getPluginManager().registerEvents(new RiderInvulnerableListener(), this);
+        getServer().getPluginManager().registerEvents(new HorseStepHeightListener(), this);
+        getServer().getPluginManager().registerEvents(new HorseItemBlockerListener(), this);
 
         getCommand("horse").setTabCompleter(new HorseCommandCompleter());
         getCommand("horse").setExecutor(new HorseCommand());
