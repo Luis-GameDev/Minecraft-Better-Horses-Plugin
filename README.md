@@ -213,7 +213,7 @@ traits:
 ### 🧩 Requirements
 
 Up to Version 4.1:
-- Minecraft (Spigot) `1.16.4` - `1.21.6`
+- Minecraft (Spigot) `1.17` - `1.21.6`
 - Java `17+`
 
 Version 5.0 and above:
