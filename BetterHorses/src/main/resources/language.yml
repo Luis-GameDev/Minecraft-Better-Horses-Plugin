@@ -29,10 +29,12 @@ messages:
   lore-health: "Health: %value% / %max%"
   lore-neutered: "⚠ Castrated – Cannot breed"
   lore-growth: "Growth: %value%0%"
+  cooldown-message-bossbar: "&e%value% &7Cooldown"
+  cooldown-message-hotbar: "&e%value% &7Cooldown: &f%remaining%s"
 
 traits:
   hellmare: "Hellmare"
-  hellmare-message: "Hellmare activated! 🔥"
+  hellmare-message: "Hellmare activated!"
 
   fireheart: "Fireheart"
 
@@ -42,6 +44,8 @@ traits:
   featherhooves: "Feather Hooves"
 
   frosthooves: "Frost Hooves"
+
+  heavenhooves: "Heaven Hooves"
 
   kickback: "Kickback"
   kickback-message: "Kickback activated!"
