@@ -125,11 +125,17 @@ public class DespawnCommand {
         if (armor != null) itemData.set(new NamespacedKey(BetterHorses.getInstance(), "armor"), PersistentDataType.STRING, armor.getType().name());
 
         item.setItemMeta(meta);
+        boolean wasLeashed = horse.isLeashed();
+
         horse.remove();
 
         if (horse.isValid()) {
             player.sendMessage(lang.get("messages.cant-despawn"));
             return true;
+        }
+
+        if(wasLeashed) {
+            horse.getWorld().dropItemNaturally(horse.getLocation(), new ItemStack(Material.LEAD, 1));
         }
 
         if (player.getInventory().firstEmpty() == -1) {
