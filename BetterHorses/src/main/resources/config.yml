@@ -1,5 +1,10 @@
 # BetterHorses config
 
+# Configure custom aliases for the /horse command
+command-aliases:
+  # - bh
+  # - horses
+
 # Customizes how big the maximum positive or negative mutation effect is (e.g. 0.05 = ±0.05)
 # e.g. health-factor 3 means the health of the child can be up to 3 HP higher or lower than the average HP of both parents
 mutation-factor:

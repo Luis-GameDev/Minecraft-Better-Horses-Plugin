@@ -11,19 +11,33 @@ public class HorseCommand implements CommandExecutor {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        LanguageManager lang = BetterHorses.getInstance().getLang();
+        BetterHorses plugin = BetterHorses.getInstance();
+        LanguageManager lang = plugin.getLang();
+
+        if (args.length == 0) {
+            sender.sendMessage(lang.get("messages.horse-usage"));
+            return true;
+        }
+
+        String subcommand = args[0].toLowerCase();
+
+        if (subcommand.equals("reload")) {
+            if (!sender.hasPermission("betterhorses.reload")) {
+                sender.sendMessage(lang.getFormatted("messages.insufficient-permission", "%command%", "/horse reload"));
+                return true;
+            }
+
+            plugin.reloadPluginConfiguration();
+            sender.sendMessage(lang.get("messages.config-reloaded"));
+            return true;
+        }
 
         if (!(sender instanceof Player player)) {
             sender.sendMessage(lang.get("messages.only-players"));
             return true;
         }
 
-        if (args.length == 0) {
-            player.sendMessage(lang.get("messages.horse-usage"));
-            return true;
-        }
-
-        switch (args[0].toLowerCase()) {
+        switch (subcommand) {
             case "spawn":
                 if (!player.hasPermission("betterhorses.base")) {
                     player.sendMessage(lang.getFormatted("messages.insufficient-permission", "%command%", "/horse spawn"));

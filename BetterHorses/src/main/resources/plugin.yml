@@ -7,7 +7,7 @@ softdepend: [ ProtocolLib ]
 commands:
   horse:
     description: Manage horse actions like spawn and despawn
-    usage: /<command> <spawn|despawn|neuter>
+    usage: /<command> <spawn|despawn|neuter|reload>
     permission: betterhorses.base
 
   horsecreate:
@@ -26,4 +26,8 @@ permissions:
 
   betterhorses.create:
     description: Allows using /horsecreate
+    default: op
+
+  betterhorses.reload:
+    description: Allows reloading the BetterHorses configuration
     default: op
