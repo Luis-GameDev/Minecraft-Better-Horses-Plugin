@@ -50,6 +50,11 @@ settings:
   # because it exceeds their 1-block step height, only applies to mounted horses
   fix-step-height: true
 
+  # Increases player melee damage by the given percentage while riding a horse
+  mounted-damage-boost:
+    enabled: false
+    percentage: 25.0 # 25% more damage while mounted
+
   # Traited horses will have particles around them, disabling this will result in slightly better performance
   trait-particle-indicator: true
 

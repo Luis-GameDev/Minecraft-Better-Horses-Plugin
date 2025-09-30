@@ -2,17 +2,19 @@ package me.luisgamedev.betterhorses;
 
 import com.comphenix.protocol.ProtocolLibrary;
 import com.comphenix.protocol.ProtocolManager;
-import me.luisgamedev.betterhorses.growing.HorseGrowthManager;
-import me.luisgamedev.betterhorses.language.LanguageManager;
 import me.luisgamedev.betterhorses.commands.CustomHorseCommand;
 import me.luisgamedev.betterhorses.commands.HorseCommand;
 import me.luisgamedev.betterhorses.commands.HorseCommandCompleter;
 import me.luisgamedev.betterhorses.commands.HorseCreateTabCompleter;
+import me.luisgamedev.betterhorses.growing.HorseGrowthManager;
+import me.luisgamedev.betterhorses.language.LanguageManager;
 import me.luisgamedev.betterhorses.listeners.*;
 import me.luisgamedev.betterhorses.tasks.TraitParticleTask;
 import org.bukkit.Bukkit;
 import org.bukkit.command.PluginCommand;
+import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.plugin.PluginManager;
 
 import java.util.List;
 
@@ -39,17 +41,7 @@ public class BetterHorses extends JavaPlugin {
         saveDefaultConfig();
         languageManager = new LanguageManager(this);
 
-        getServer().getPluginManager().registerEvents(new HorseSpawnListener(), this);
-        getServer().getPluginManager().registerEvents(new HorseBreedListener(), this);
-        getServer().getPluginManager().registerEvents(new TraitActivationListener(), this);
-        getServer().getPluginManager().registerEvents(new PassiveTraitListener(), this);
-        getServer().getPluginManager().registerEvents(new RevenantCurseListener(), this);
-        getServer().getPluginManager().registerEvents(new HorseJumpListener(), this);
-        getServer().getPluginManager().registerEvents(new RightClickListener(), this);
-        getServer().getPluginManager().registerEvents(new HorseFeedListener(), this);
-        getServer().getPluginManager().registerEvents(new RiderInvulnerableListener(), this);
-        getServer().getPluginManager().registerEvents(new HorseStepHeightListener(), this);
-        getServer().getPluginManager().registerEvents(new HorseItemBlockerListener(), this);
+        registerListeners();
 
         PluginCommand horseCommand = getCommand("horse");
         if (horseCommand != null) {
@@ -95,6 +87,64 @@ public class BetterHorses extends JavaPlugin {
         }
         List<String> aliases = getConfig().getStringList("command-aliases");
         horseCommand.setAliases(aliases);
+    }
+
+    private void registerListeners() {
+        PluginManager pluginManager = getServer().getPluginManager();
+        FileConfiguration config = getConfig();
+
+        pluginManager.registerEvents(new HorseSpawnListener(), this);
+        pluginManager.registerEvents(new HorseBreedListener(), this);
+        pluginManager.registerEvents(new HorseFeedListener(), this);
+        pluginManager.registerEvents(new HorseItemBlockerListener(), this);
+
+        if (config.getBoolean("settings.allow-rightclick-spawn", true)) {
+            pluginManager.registerEvents(new RightClickListener(), this);
+        }
+
+        if (config.getBoolean("settings.rider-invulnerable", false)) {
+            pluginManager.registerEvents(new RiderInvulnerableListener(), this);
+        }
+
+        if (config.getBoolean("settings.fix-step-height", false)) {
+            pluginManager.registerEvents(new HorseStepHeightListener(), this);
+        }
+
+        if (config.getBoolean("settings.mounted-damage-boost.enabled", false)) {
+            pluginManager.registerEvents(new MountedDamageBoostListener(), this);
+        }
+
+        boolean traitsEnabled = config.getBoolean("traits.enabled", true);
+        if (!traitsEnabled) {
+            return;
+        }
+
+        if (isAnyTraitEnabled("hellmare", "dashboost", "kickback", "ghosthorse", "revenantcurse")) {
+            pluginManager.registerEvents(new TraitActivationListener(), this);
+        }
+
+        if (isAnyTraitEnabled("frosthooves", "featherhooves", "fireheart")) {
+            pluginManager.registerEvents(new PassiveTraitListener(), this);
+        }
+
+        if (config.getBoolean("traits.revenantcurse.enabled", false)) {
+            pluginManager.registerEvents(new RevenantCurseListener(), this);
+        }
+
+        if (config.getBoolean("traits.skyburst.enabled", false)
+                || config.getBoolean("traits.heavenhooves.enabled", false)) {
+            pluginManager.registerEvents(new HorseJumpListener(), this);
+        }
+    }
+
+    private boolean isAnyTraitEnabled(String... traits) {
+        FileConfiguration config = getConfig();
+        for (String trait : traits) {
+            if (config.getBoolean("traits." + trait + ".enabled", false)) {
+                return true;
+            }
+        }
+        return false;
     }
 
 }
