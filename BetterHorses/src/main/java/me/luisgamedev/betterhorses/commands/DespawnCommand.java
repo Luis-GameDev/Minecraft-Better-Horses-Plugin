@@ -2,6 +2,7 @@ package me.luisgamedev.betterhorses.commands;
 
 import me.luisgamedev.betterhorses.BetterHorses;
 import me.luisgamedev.betterhorses.language.LanguageManager;
+import me.luisgamedev.betterhorses.traits.TraitRegistry;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.attribute.Attribute;
@@ -60,6 +61,8 @@ public class DespawnCommand {
         }
 
         String genderSymbol = gender.equalsIgnoreCase("male") ? lang.getRaw("messages.gender-male") : gender.equalsIgnoreCase("female") ? lang.getRaw("messages.gender-female") : "?";
+
+        TraitRegistry.revertDashBoostIfActive(horse);
 
         double maxHealth = horse.getAttribute(Attribute.GENERIC_MAX_HEALTH).getBaseValue();
         double currentHealth = horse.getHealth();

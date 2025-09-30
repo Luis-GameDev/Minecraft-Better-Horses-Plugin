@@ -6,6 +6,7 @@ import me.luisgamedev.betterhorses.utils.ArmorHider;
 import me.luisgamedev.betterhorses.utils.CooldownDisplay;
 import org.bukkit.*;
 import org.bukkit.attribute.Attribute;
+import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.block.Block;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.*;
@@ -30,6 +31,7 @@ public class TraitRegistry {
     private static final Map<UUID, Map<String, Long>> cooldowns = new HashMap<>();
     static LanguageManager lang = BetterHorses.getInstance().getLang();
     static FileConfiguration config = BetterHorses.getInstance().getConfig();
+    private static final Map<UUID, Double> dashBoostOriginalSpeeds = new HashMap<>();
 
     public static void activateHellmare(Player player, Horse horse) {
         if (!config.getBoolean("traits.hellmare.enabled")) return;
@@ -141,10 +143,14 @@ public class TraitRegistry {
         }
 
         int duration = config.getInt("traits.dashboost.duration", 5);
-        double originalSpeed = horse.getAttribute(Attribute.GENERIC_MOVEMENT_SPEED).getBaseValue();
+        AttributeInstance speedAttr = horse.getAttribute(Attribute.GENERIC_MOVEMENT_SPEED);
+        if (speedAttr == null) return;
+
+        double originalSpeed = speedAttr.getBaseValue();
+        dashBoostOriginalSpeeds.putIfAbsent(horse.getUniqueId(), originalSpeed);
         double boostedSpeed = originalSpeed * 1.5;
 
-        horse.getAttribute(Attribute.GENERIC_MOVEMENT_SPEED).setBaseValue(boostedSpeed);
+        speedAttr.setBaseValue(boostedSpeed);
         player.sendMessage(lang.get("traits.dashboost-message"));
 
         setCooldown(horse, key, config.getInt("traits.dashboost.cooldown", 30));
@@ -152,11 +158,31 @@ public class TraitRegistry {
         new BukkitRunnable() {
             @Override
             public void run() {
+                Double storedOriginal = dashBoostOriginalSpeeds.remove(horse.getUniqueId());
+                double revertSpeed = storedOriginal != null ? storedOriginal : originalSpeed;
+
                 if (horse.isValid()) {
-                    horse.getAttribute(Attribute.GENERIC_MOVEMENT_SPEED).setBaseValue(originalSpeed);
+                    AttributeInstance speedAttr = horse.getAttribute(Attribute.GENERIC_MOVEMENT_SPEED);
+                    if (speedAttr != null) {
+                        speedAttr.setBaseValue(revertSpeed);
+                    }
                 }
             }
         }.runTaskLater(BetterHorses.getInstance(), duration * 20L);
+    }
+
+    public static void revertDashBoostIfActive(Horse horse) {
+        if (horse == null) return;
+
+        Double storedOriginal = dashBoostOriginalSpeeds.remove(horse.getUniqueId());
+        if (storedOriginal == null) return;
+
+        if (!horse.isValid()) return;
+
+        AttributeInstance speedAttr = horse.getAttribute(Attribute.GENERIC_MOVEMENT_SPEED);
+        if (speedAttr != null) {
+            speedAttr.setBaseValue(storedOriginal);
+        }
     }
 
     public static void activateFeatherHooves(Player player, Horse horse) {
