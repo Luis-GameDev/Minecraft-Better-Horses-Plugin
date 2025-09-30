@@ -1,5 +1,10 @@
 # BetterHorses config
 
+# Configure custom aliases for the /horse command
+command-aliases:
+  # - bh
+  # - horses
+
 # Customizes how big the maximum positive or negative mutation effect is (e.g. 0.05 = ±0.05)
 # e.g. health-factor 3 means the health of the child can be up to 3 HP higher or lower than the average HP of both parents
 mutation-factor:
@@ -44,6 +49,11 @@ settings:
   # Fixes a vanilla bug where horses cant automatically climb from a path block onto a full block
   # because it exceeds their 1-block step height, only applies to mounted horses
   fix-step-height: true
+
+  # Increases player melee damage by the given percentage while riding a horse
+  mounted-damage-boost:
+    enabled: false
+    percentage: 25.0 # 25% more damage while mounted
 
   # Traited horses will have particles around them, disabling this will result in slightly better performance
   trait-particle-indicator: true
