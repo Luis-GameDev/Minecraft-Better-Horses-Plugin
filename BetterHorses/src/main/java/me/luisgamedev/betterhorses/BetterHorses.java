@@ -11,7 +11,10 @@ import me.luisgamedev.betterhorses.commands.HorseCreateTabCompleter;
 import me.luisgamedev.betterhorses.listeners.*;
 import me.luisgamedev.betterhorses.tasks.TraitParticleTask;
 import org.bukkit.Bukkit;
+import org.bukkit.command.PluginCommand;
 import org.bukkit.plugin.java.JavaPlugin;
+
+import java.util.List;
 
 public class BetterHorses extends JavaPlugin {
 
@@ -48,8 +51,12 @@ public class BetterHorses extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new HorseStepHeightListener(), this);
         getServer().getPluginManager().registerEvents(new HorseItemBlockerListener(), this);
 
-        getCommand("horse").setTabCompleter(new HorseCommandCompleter());
-        getCommand("horse").setExecutor(new HorseCommand());
+        PluginCommand horseCommand = getCommand("horse");
+        if (horseCommand != null) {
+            horseCommand.setTabCompleter(new HorseCommandCompleter());
+            horseCommand.setExecutor(new HorseCommand());
+            applyHorseCommandAliases();
+        }
         getCommand("horsecreate").setExecutor(new CustomHorseCommand());
         getCommand("horsecreate").setTabCompleter(new HorseCreateTabCompleter());
 
@@ -71,8 +78,23 @@ public class BetterHorses extends JavaPlugin {
         return languageManager;
     }
 
+    public void reloadPluginConfiguration() {
+        reloadConfig();
+        languageManager.reload();
+        applyHorseCommandAliases();
+    }
+
     public boolean isProtocolLibAvailable() {
         return protocolLibAvailable;
+    }
+
+    private void applyHorseCommandAliases() {
+        PluginCommand horseCommand = getCommand("horse");
+        if (horseCommand == null) {
+            return;
+        }
+        List<String> aliases = getConfig().getStringList("command-aliases");
+        horseCommand.setAliases(aliases);
     }
 
 }
