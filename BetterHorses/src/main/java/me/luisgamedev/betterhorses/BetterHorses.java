@@ -12,9 +12,11 @@ import me.luisgamedev.betterhorses.listeners.*;
 import me.luisgamedev.betterhorses.tasks.TraitParticleTask;
 import org.bukkit.Bukkit;
 import org.bukkit.command.PluginCommand;
+import org.bukkit.command.SimpleCommandMap;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.plugin.PluginManager;
+import org.bukkit.craftbukkit.CraftServer;
 
 import java.util.List;
 
@@ -87,6 +89,11 @@ public class BetterHorses extends JavaPlugin {
         }
         List<String> aliases = getConfig().getStringList("command-aliases");
         horseCommand.setAliases(aliases);
+
+        CraftServer craftServer = (CraftServer) Bukkit.getServer();
+        SimpleCommandMap commandMap = craftServer.getCommandMap();
+        horseCommand.unregister(commandMap);
+        commandMap.register(getDescription().getName(), horseCommand);
     }
 
     private void registerListeners() {
