@@ -16,9 +16,10 @@ import org.bukkit.command.SimpleCommandMap;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.plugin.PluginManager;
-import org.bukkit.craftbukkit.CraftServer;
+import org.bukkit.command.SimpleCommandMap;
 
 import java.util.List;
+import java.util.logging.Level;
 
 public class BetterHorses extends JavaPlugin {
 
@@ -90,10 +91,18 @@ public class BetterHorses extends JavaPlugin {
         List<String> aliases = getConfig().getStringList("command-aliases");
         horseCommand.setAliases(aliases);
 
-        CraftServer craftServer = (CraftServer) Bukkit.getServer();
-        SimpleCommandMap commandMap = craftServer.getCommandMap();
-        horseCommand.unregister(commandMap);
-        commandMap.register(getDescription().getName(), horseCommand);
+        try {
+            Object server = Bukkit.getServer();
+            Object commandMapObject = server.getClass().getMethod("getCommandMap").invoke(server);
+            if (commandMapObject instanceof SimpleCommandMap commandMap) {
+                horseCommand.unregister(commandMap);
+                commandMap.register(getDescription().getName(), horseCommand);
+            } else {
+                getLogger().warning("Unable to refresh horse command aliases because the command map is unavailable.");
+            }
+        } catch (ReflectiveOperationException exception) {
+            getLogger().log(Level.WARNING, "Failed to refresh horse command aliases.", exception);
+        }
     }
 
     private void registerListeners() {
