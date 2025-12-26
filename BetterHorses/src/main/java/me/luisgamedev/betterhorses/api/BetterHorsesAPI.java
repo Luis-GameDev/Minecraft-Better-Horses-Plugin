@@ -20,10 +20,11 @@ import java.util.*;
 
 public class BetterHorsesAPI {
 
-    public static ItemStack createHorseItem(double health, double speed, double jump, String gender, String name, Player owner, Inventory targetInventory, boolean dropIfFull, String traitOverride, Integer growthStage) {
+    public static ItemStack createHorseItem(double health, double speed, double jump, String gender, String name, Player owner, Inventory targetInventory, boolean dropIfFull, String traitOverride, Integer growthStage, SupportedMountType mountType) {
 
         BetterHorses plugin = BetterHorses.getInstance();
         LanguageManager lang = plugin.getLang();
+        SupportedMountType targetMountType = mountType == null ? SupportedMountType.HORSE : mountType;
 
         String genderSymbol = gender.equals("male") ? lang.getRaw("messages.gender-male") : gender.equals("female") ? lang.getRaw("messages.gender-female") : "?";
 
@@ -54,7 +55,7 @@ public class BetterHorsesAPI {
         data.set(new NamespacedKey(plugin, "style"), PersistentDataType.STRING, Horse.Style.WHITE.name());
         data.set(new NamespacedKey(plugin, "color"), PersistentDataType.STRING, Horse.Color.CREAMY.name());
         data.set(new NamespacedKey(BetterHorses.getInstance(), "growth_stage"), PersistentDataType.INTEGER, growth);
-        data.set(new NamespacedKey(plugin, "mount_type"), PersistentDataType.STRING, SupportedMountType.HORSE.getEntityType().name());
+        data.set(new NamespacedKey(plugin, "mount_type"), PersistentDataType.STRING, targetMountType.getEntityType().name());
 
         FileConfiguration config = plugin.getConfig();
         if (config.getBoolean("traits.enabled")) {
