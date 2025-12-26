@@ -1,10 +1,12 @@
 package me.luisgamedev.betterhorses.commands;
 
 import me.luisgamedev.betterhorses.BetterHorses;
+import me.luisgamedev.betterhorses.utils.SupportedMountType;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
 import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.configuration.file.FileConfiguration;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -36,6 +38,14 @@ public class HorseCreateTabCompleter implements TabCompleter {
                 suggestions.add("none");
             }
             case 7 -> suggestions.addAll(List.of("1", "2", "3", "4", "5", "6", "7", "8", "9", "10"));
+            case 8 -> {
+                FileConfiguration config = BetterHorses.getInstance().getConfig();
+                for (SupportedMountType type : SupportedMountType.values()) {
+                    if (type.isEnabled(config)) {
+                        suggestions.add(type.getEntityType().name().toLowerCase());
+                    }
+                }
+            }
             default -> {
                 return Collections.emptyList();
             }

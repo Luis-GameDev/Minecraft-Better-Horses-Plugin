@@ -12,7 +12,7 @@ commands:
 
   horsecreate:
     description: Create a custom horse item
-    usage: /horsecreate <health> <speed> <jump> [gender] [name] [trait]
+    usage: /horsecreate <health> <speed> <jump> [gender] [name] [trait] [growth] [mounttype]
     permission: betterhorses.create
 
 permissions:

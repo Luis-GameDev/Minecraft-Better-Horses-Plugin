@@ -12,6 +12,7 @@ import org.bukkit.entity.SkeletonHorse;
 import org.bukkit.entity.ZombieHorse;
 
 import java.util.Arrays;
+import java.util.Locale;
 import java.util.Optional;
 
 public enum SupportedMountType {
@@ -66,6 +67,23 @@ public enum SupportedMountType {
         } catch (IllegalArgumentException ignored) {
             return Optional.empty();
         }
+    }
+
+    public static Optional<SupportedMountType> fromUserInput(String input) {
+        if (input == null || input.isBlank()) return Optional.empty();
+
+        String normalized = normalize(input);
+        for (SupportedMountType type : values()) {
+            if (normalize(type.entityType.name()).equals(normalized) || normalize(type.configKey).equals(normalized)) {
+                return Optional.of(type);
+            }
+        }
+
+        return Optional.empty();
+    }
+
+    private static String normalize(String value) {
+        return value.toLowerCase(Locale.ROOT).replace("_", "").replace("-", "");
     }
 
     public static SupportedMountType fromNameOrDefault(String name) {
