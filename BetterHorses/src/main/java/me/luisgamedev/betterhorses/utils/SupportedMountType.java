@@ -1,6 +1,7 @@
 package me.luisgamedev.betterhorses.utils;
 
 import me.luisgamedev.betterhorses.BetterHorses;
+import me.luisgamedev.betterhorses.language.LanguageManager;
 import org.bukkit.Location;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.AbstractHorse;
@@ -16,20 +17,22 @@ import java.util.Locale;
 import java.util.Optional;
 
 public enum SupportedMountType {
-    HORSE(EntityType.HORSE, Horse.class, "horse", true),
-    SKELETON_HORSE(EntityType.SKELETON_HORSE, SkeletonHorse.class, "skeleton-horses", false),
-    ZOMBIE_HORSE(EntityType.ZOMBIE_HORSE, ZombieHorse.class, "zombie-horses", false),
-    CAMEL(EntityType.CAMEL, Camel.class, "camels", false);
+    HORSE(EntityType.HORSE, Horse.class, "horse", "horse", true),
+    SKELETON_HORSE(EntityType.SKELETON_HORSE, SkeletonHorse.class, "skeleton-horses", "horse", false),
+    ZOMBIE_HORSE(EntityType.ZOMBIE_HORSE, ZombieHorse.class, "zombie-horses", "horse", false),
+    CAMEL(EntityType.CAMEL, Camel.class, "camels", "camel", false);
 
     private final EntityType entityType;
     private final Class<? extends AbstractHorse> entityClass;
     private final String configKey;
+    private final String nameKey;
     private final boolean alwaysEnabled;
 
-    SupportedMountType(EntityType entityType, Class<? extends AbstractHorse> entityClass, String configKey, boolean alwaysEnabled) {
+    SupportedMountType(EntityType entityType, Class<? extends AbstractHorse> entityClass, String configKey, String nameKey, boolean alwaysEnabled) {
         this.entityType = entityType;
         this.entityClass = entityClass;
         this.configKey = configKey;
+        this.nameKey = nameKey;
         this.alwaysEnabled = alwaysEnabled;
     }
 
@@ -44,6 +47,10 @@ public enum SupportedMountType {
     public boolean isEnabled(FileConfiguration config) {
         if (alwaysEnabled) return true;
         return config.getBoolean("settings.mount-types." + configKey, false);
+    }
+
+    public String getDisplayName(LanguageManager lang) {
+        return lang.getRaw("messages." + nameKey);
     }
 
     public AbstractHorse spawn(Location location) throws IllegalArgumentException {

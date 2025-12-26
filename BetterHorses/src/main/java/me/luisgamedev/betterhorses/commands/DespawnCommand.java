@@ -43,18 +43,29 @@ public class DespawnCommand {
             return true;
         }
 
-        AnimalTamer owner = horse.getOwner();
-        if (!horse.isTamed() || owner == null || !owner.getUniqueId().equals(player.getUniqueId())) {
-            player.sendMessage(lang.get("messages.not-horse-owner"));
-            return true;
-        }
+        String mountName = mountType.getDisplayName(lang);
 
         PersistentDataContainer data = horse.getPersistentDataContainer();
         NamespacedKey genderKey = new NamespacedKey(BetterHorses.getInstance(), "gender");
+        NamespacedKey ownerKey = new NamespacedKey(BetterHorses.getInstance(), "owner");
         NamespacedKey traitKey = new NamespacedKey(BetterHorses.getInstance(), "trait");
         NamespacedKey neuterKey = new NamespacedKey(BetterHorses.getInstance(), "neutered");
         NamespacedKey growthKey = new NamespacedKey(BetterHorses.getInstance(), "growth_stage");
         NamespacedKey cooldownKey = new NamespacedKey(BetterHorses.getInstance(), "cooldown");
+
+        String storedOwner = data.get(ownerKey, PersistentDataType.STRING);
+        boolean ownershipRequired = mountType != SupportedMountType.CAMEL || storedOwner != null;
+        boolean isOwner = storedOwner != null && storedOwner.equals(player.getUniqueId().toString());
+
+        if (storedOwner == null) {
+            AnimalTamer owner = horse.getOwner();
+            isOwner = horse.isTamed() && owner != null && owner.getUniqueId().equals(player.getUniqueId());
+        }
+
+        if (ownershipRequired && !isOwner) {
+            player.sendMessage(lang.getFormatted("messages.not-horse-owner", "%mount%", mountName));
+            return true;
+        }
 
         // Assign gender if missing
         String gender;
@@ -102,7 +113,7 @@ public class DespawnCommand {
 
         itemData.set(genderKey, PersistentDataType.STRING, gender);
 
-        String name = horse.getCustomName() != null ? horse.getCustomName() : lang.getRaw("messages.horse");
+        String name = horse.getCustomName() != null ? horse.getCustomName() : mountName;
         meta.setDisplayName(ChatColor.GOLD + name + " " + genderSymbol);
 
         List<String> lore = new ArrayList<>();
@@ -165,7 +176,7 @@ public class DespawnCommand {
             player.getInventory().addItem(item);
         }
 
-        player.sendMessage(lang.get("messages.horse-despawned"));
+        player.sendMessage(lang.getFormatted("messages.horse-despawned", "%mount%", mountName));
         return true;
     }
 

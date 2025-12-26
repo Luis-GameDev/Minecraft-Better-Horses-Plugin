@@ -56,16 +56,16 @@ public class RespawnCommand {
                 : null;
 
         int growthStage = storedStage != null ? storedStage : 10;
+        SupportedMountType mountType = SupportedMountType.fromNameOrDefault(mountTypeName);
+        String mountName = mountType.getDisplayName(lang);
 
         if (health == null || speed == null || jump == null || gender == null) {
-            player.sendMessage(lang.get("messages.invalid-horse-data"));
+            player.sendMessage(lang.getFormatted("messages.invalid-horse-data", "%mount%", mountName));
             return true;
         }
 
-        SupportedMountType mountType = SupportedMountType.fromNameOrDefault(mountTypeName);
-
         if (!mountType.isEnabled(BetterHorses.getInstance().getConfig())) {
-            player.sendMessage(lang.get("messages.invalid-horse-data"));
+            player.sendMessage(lang.getFormatted("messages.invalid-horse-data", "%mount%", mountName));
             return true;
         }
 
@@ -152,7 +152,7 @@ public class RespawnCommand {
         }
 
         item.setAmount(item.getAmount() - 1);
-        player.sendMessage(lang.get("messages.horse-respawned"));
+        player.sendMessage(lang.getFormatted("messages.horse-respawned", "%mount%", mountName));
         return true;
     }
 
