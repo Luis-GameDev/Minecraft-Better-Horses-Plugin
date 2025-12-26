@@ -2,6 +2,7 @@ package me.luisgamedev.betterhorses.listeners;
 
 import me.luisgamedev.betterhorses.BetterHorses;
 import me.luisgamedev.betterhorses.language.LanguageManager;
+import me.luisgamedev.betterhorses.utils.MountConfig;
 import me.luisgamedev.betterhorses.utils.SupportedMountType;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
@@ -74,8 +75,7 @@ public class RightClickListener implements Listener {
             return;
         }
 
-        SupportedMountType mountType = SupportedMountType.fromName(mountTypeName)
-                .orElse(SupportedMountType.HORSE);
+        SupportedMountType mountType = SupportedMountType.fromNameOrDefault(mountTypeName);
 
         if (!mountType.isEnabled(config)) {
             player.sendMessage(lang.get("messages.invalid-horse-data"));
@@ -100,7 +100,7 @@ public class RightClickListener implements Listener {
         float minScale = (growthStage >= threshold) ? 0.85f : 0.7f;
         double scale = minScale + ((maxScale - minScale) / 10.0) * growthStage;
 
-        if (config.getBoolean("horse-growth-settings.enabled")) {
+        if (MountConfig.isGrowthEnabled(config, mountType)) {
             setAttribute(horse, Attribute.valueOf("SCALE"), scale);
             if (growthStage >= threshold) {
                 horse.setAdult();

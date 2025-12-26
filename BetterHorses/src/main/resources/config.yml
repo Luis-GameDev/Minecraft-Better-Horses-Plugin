@@ -11,18 +11,46 @@ mutation-factor:
   health: 3.0
   speed: 0.05
   jump: 0.05
+  skeleton-horses:
+    health: 3.0
+    speed: 0.05
+    jump: 0.05
+  zombie-horses:
+    health: 3.0
+    speed: 0.05
+    jump: 0.05
+  camels:
+    health: 3.0
+    speed: 0.05
+    jump: 0.05
 
 # Max stats a horse can reach
 max-stats:
   health: 300.0
   speed: 0.4
   jump: 1.2
+  skeleton-horses:
+    health: 300.0
+    speed: 0.4
+    jump: 1.2
+  zombie-horses:
+    health: 300.0
+    speed: 0.4
+    jump: 1.2
+  camels:
+    health: 300.0
+    speed: 0.4
+    jump: 1.2
 
 # Settings that determine horse growth
 horse-growth-settings:
 
   # If false, horses will remain their Vanilla size, this feature only works for Paper 1.20.6 & Java 21 or above
   enabled: true
+  mount-types:
+    skeleton-horses: true
+    zombie-horses: true
+    camels: true
 
   # The time in minutes that needs to pass until a horse is fully grown
   time-until-adult: 3

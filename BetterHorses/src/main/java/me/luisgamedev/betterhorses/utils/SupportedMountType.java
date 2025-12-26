@@ -68,6 +68,10 @@ public enum SupportedMountType {
         }
     }
 
+    public static SupportedMountType fromNameOrDefault(String name) {
+        return fromName(name).orElse(SupportedMountType.HORSE);
+    }
+
     public static boolean isSupported(Entity entity) {
         return fromEntity(entity)
                 .map(type -> type.isEnabled(BetterHorses.getInstance().getConfig()))
