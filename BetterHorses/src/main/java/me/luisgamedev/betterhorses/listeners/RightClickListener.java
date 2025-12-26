@@ -1,6 +1,8 @@
 package me.luisgamedev.betterhorses.listeners;
 
 import me.luisgamedev.betterhorses.BetterHorses;
+import me.luisgamedev.betterhorses.api.BetterHorsesAPI;
+import me.luisgamedev.betterhorses.api.events.BetterHorseSpawnEvent;
 import me.luisgamedev.betterhorses.language.LanguageManager;
 import me.luisgamedev.betterhorses.utils.MountConfig;
 import me.luisgamedev.betterhorses.utils.SupportedMountType;
@@ -96,6 +98,8 @@ public class RightClickListener implements Listener {
             player.sendMessage(lang.get("messages.cant-spawn"));
             return;
         }
+
+        BetterHorsesAPI.callSpawnEvent(horse, item.clone(), BetterHorseSpawnEvent.SpawnCause.ITEM);
 
         double maxScale = config.getDouble("horse-growth-settings.max-size", 1.3);
         int threshold = config.getInt("horse-growth-settings.ride-and-breed-threshhold", 7);

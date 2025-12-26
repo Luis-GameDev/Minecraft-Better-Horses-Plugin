@@ -1,6 +1,8 @@
 package me.luisgamedev.betterhorses.listeners;
 
 import me.luisgamedev.betterhorses.BetterHorses;
+import me.luisgamedev.betterhorses.api.BetterHorsesAPI;
+import me.luisgamedev.betterhorses.api.events.BetterHorseSpawnEvent;
 import me.luisgamedev.betterhorses.utils.MountConfig;
 import me.luisgamedev.betterhorses.utils.SupportedMountType;
 import org.bukkit.NamespacedKey;
@@ -71,5 +73,6 @@ public class HorseSpawnListener implements Listener {
         }
 
         data.set(growthKey, PersistentDataType.INTEGER, stage);
+        BetterHorsesAPI.callSpawnEvent(horse, null, BetterHorseSpawnEvent.SpawnCause.NATURAL);
     }
 }
