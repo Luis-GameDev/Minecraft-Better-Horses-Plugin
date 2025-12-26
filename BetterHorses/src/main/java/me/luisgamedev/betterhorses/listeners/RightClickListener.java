@@ -71,15 +71,16 @@ public class RightClickListener implements Listener {
                 ? data.get(new NamespacedKey(BetterHorses.getInstance(), "cooldown"), PersistentDataType.LONG)
                 : null;
 
+        SupportedMountType mountType = SupportedMountType.fromNameOrDefault(mountTypeName);
+        String mountName = mountType.getDisplayName(lang);
+
         if (health == null || speed == null || jump == null || gender == null) {
-            player.sendMessage(lang.get("messages.invalid-horse-data"));
+            player.sendMessage(lang.getFormatted("messages.invalid-horse-data", "%mount%", mountName));
             return;
         }
 
-        SupportedMountType mountType = SupportedMountType.fromNameOrDefault(mountTypeName);
-
         if (!mountType.isEnabled(config)) {
-            player.sendMessage(lang.get("messages.invalid-horse-data"));
+            player.sendMessage(lang.getFormatted("messages.invalid-horse-data", "%mount%", mountName));
             return;
         }
 
@@ -159,7 +160,7 @@ public class RightClickListener implements Listener {
         }
 
         item.setAmount(item.getAmount() - 1);
-        player.sendMessage(lang.get("messages.horse-respawned"));
+        player.sendMessage(lang.getFormatted("messages.horse-respawned", "%mount%", mountName));
     }
 
     private static void setAttribute(AbstractHorse horse, Attribute attribute, double value) {
