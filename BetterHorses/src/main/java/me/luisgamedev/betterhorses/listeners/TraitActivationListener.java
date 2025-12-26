@@ -1,7 +1,9 @@
 package me.luisgamedev.betterhorses.listeners;
 
 import me.luisgamedev.betterhorses.BetterHorses;
+import me.luisgamedev.betterhorses.api.events.BetterHorseAbilityUseEvent;
 import me.luisgamedev.betterhorses.traits.TraitRegistry;
+import org.bukkit.Bukkit;
 import org.bukkit.NamespacedKey;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Horse;
@@ -29,7 +31,15 @@ public class TraitActivationListener implements Listener {
         String trait = data.get(traitKey, PersistentDataType.STRING);
         if (trait == null) return;
 
-        switch (trait.toLowerCase()) {
+        BetterHorseAbilityUseEvent abilityEvent = new BetterHorseAbilityUseEvent(player, horse, trait.toLowerCase());
+        Bukkit.getPluginManager().callEvent(abilityEvent);
+        if (abilityEvent.isCancelled()) {
+            event.setCancelled(true);
+            return;
+        }
+
+        String selectedTrait = abilityEvent.getTraitKey();
+        switch (selectedTrait.toLowerCase()) {
             case "hellmare":
                 TraitRegistry.activateHellmare(player, horse);
                 break;

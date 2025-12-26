@@ -1,9 +1,11 @@
 package me.luisgamedev.betterhorses.listeners;
 
 import me.luisgamedev.betterhorses.BetterHorses;
+import me.luisgamedev.betterhorses.api.BetterHorseKeys;
+import me.luisgamedev.betterhorses.api.events.BetterHorseBreedEvent;
 import me.luisgamedev.betterhorses.utils.MountConfig;
 import me.luisgamedev.betterhorses.utils.SupportedMountType;
-import org.bukkit.NamespacedKey;
+import org.bukkit.Bukkit;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.configuration.ConfigurationSection;
@@ -14,17 +16,10 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityBreedEvent;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
-import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.Set;
 
 public class HorseBreedListener implements Listener {
-
-    private final NamespacedKey genderKey = new NamespacedKey(JavaPlugin.getPlugin(BetterHorses.class), "gender");
-    private final NamespacedKey traitKey = new NamespacedKey(JavaPlugin.getPlugin(BetterHorses.class), "trait");
-    private final NamespacedKey neuterKey = new NamespacedKey(BetterHorses.getInstance(), "neutered");
-    private final NamespacedKey growthKey = new NamespacedKey(BetterHorses.getInstance(), "growth_stage");
-    private final NamespacedKey cooldownKey = new NamespacedKey(BetterHorses.getInstance(), "cooldown");
 
     @EventHandler
     public void onHorseBreed(EntityBreedEvent event) {
@@ -50,16 +45,16 @@ public class HorseBreedListener implements Listener {
         PersistentDataContainer dataMother = mother.getPersistentDataContainer();
 
         // Cancel if either parent has cooldown that hasn't expired
-        if (dataFather.has(cooldownKey, PersistentDataType.LONG) && !config.getBoolean("settings.male-ignore-cooldown")) {
-            long last = dataFather.get(cooldownKey, PersistentDataType.LONG);
+        if (dataFather.has(BetterHorseKeys.COOLDOWN, PersistentDataType.LONG) && !config.getBoolean("settings.male-ignore-cooldown")) {
+            long last = dataFather.get(BetterHorseKeys.COOLDOWN, PersistentDataType.LONG);
             Double cooldownLeft = (cooldownMillis - (now - last)) / 1000.0;
             if (cooldownLeft > 0) {
                 event.setCancelled(true);
                 return;
             }
         }
-        if (dataMother.has(cooldownKey, PersistentDataType.LONG)) {
-            long last = dataMother.get(cooldownKey, PersistentDataType.LONG);
+        if (dataMother.has(BetterHorseKeys.COOLDOWN, PersistentDataType.LONG)) {
+            long last = dataMother.get(BetterHorseKeys.COOLDOWN, PersistentDataType.LONG);
             Double cooldownLeft = (cooldownMillis - (now - last)) / 1000.0;
             if (cooldownLeft > 0) {
                 event.setCancelled(true);
@@ -95,17 +90,8 @@ public class HorseBreedListener implements Listener {
         double childSpeed = mutate(avg(getSpeed(father), getSpeed(mother)), mutationSpeed, maxSpeed);
         double childJump = mutate(avg(getJump(father), getJump(mother)), mutationJump, maxJump);
 
-        setHealth(child, childHealth);
-        setSpeed(child, childSpeed);
-        setJump(child, childJump);
-
         String gender = Math.random() < 0.5 ? "male" : "female";
-        child.getPersistentDataContainer().set(genderKey, PersistentDataType.STRING, gender);
-        child.getPersistentDataContainer().set(growthKey, PersistentDataType.INTEGER, 1);
-
-        if (MountConfig.isGrowthEnabled(config, childType)) {
-            child.setAgeLock(true);
-        }
+        String selectedTrait = null;
 
         if (config.getBoolean("traits.enabled")) {
             ConfigurationSection traitsSection = config.getConfigurationSection("traits");
@@ -119,16 +105,44 @@ public class HorseBreedListener implements Listener {
 
                     double chance = tSec.getDouble("chance", 0);
                     if (Math.random() < chance) {
-                        child.getPersistentDataContainer().set(traitKey, PersistentDataType.STRING, trait.toLowerCase());
+                        selectedTrait = trait.toLowerCase();
                         break;
                     }
                 }
             }
         }
 
+        BetterHorseBreedEvent betterBreedEvent = new BetterHorseBreedEvent(child, father, mother, childHealth, childSpeed, childJump, gender, selectedTrait);
+        Bukkit.getPluginManager().callEvent(betterBreedEvent);
+        if (betterBreedEvent.isCancelled()) {
+            event.setCancelled(true);
+            return;
+        }
+
+        childHealth = betterBreedEvent.getHealth();
+        childSpeed = betterBreedEvent.getSpeed();
+        childJump = betterBreedEvent.getJump();
+        gender = betterBreedEvent.getGender();
+        selectedTrait = betterBreedEvent.getTrait();
+
+        setHealth(child, childHealth);
+        setSpeed(child, childSpeed);
+        setJump(child, childJump);
+
+        child.getPersistentDataContainer().set(BetterHorseKeys.GENDER, PersistentDataType.STRING, gender);
+        child.getPersistentDataContainer().set(BetterHorseKeys.GROWTH_STAGE, PersistentDataType.INTEGER, 1);
+
+        if (MountConfig.isGrowthEnabled(config, childType)) {
+            child.setAgeLock(true);
+        }
+
+        if (selectedTrait != null && !selectedTrait.isBlank()) {
+            child.getPersistentDataContainer().set(BetterHorseKeys.TRAIT, PersistentDataType.STRING, selectedTrait.toLowerCase());
+        }
+
         // Apply cooldown to both parents
-        dataFather.set(cooldownKey, PersistentDataType.LONG, now);
-        dataMother.set(cooldownKey, PersistentDataType.LONG, now);
+        dataFather.set(BetterHorseKeys.COOLDOWN, PersistentDataType.LONG, now);
+        dataMother.set(BetterHorseKeys.COOLDOWN, PersistentDataType.LONG, now);
 
         father.setAge(0);
         mother.setAge(0);
@@ -136,17 +150,17 @@ public class HorseBreedListener implements Listener {
 
     private String getGender(AbstractHorse horse) {
         PersistentDataContainer data = horse.getPersistentDataContainer();
-        if (!data.has(genderKey, PersistentDataType.STRING)) {
+        if (!data.has(BetterHorseKeys.GENDER, PersistentDataType.STRING)) {
             String gender = Math.random() < 0.5 ? "male" : "female";
-            data.set(genderKey, PersistentDataType.STRING, gender);
+            data.set(BetterHorseKeys.GENDER, PersistentDataType.STRING, gender);
             return gender;
         }
-        return data.getOrDefault(genderKey, PersistentDataType.STRING, "unknown");
+        return data.getOrDefault(BetterHorseKeys.GENDER, PersistentDataType.STRING, "unknown");
     }
 
     private boolean isNeutered(AbstractHorse horse) {
         PersistentDataContainer data = horse.getPersistentDataContainer();
-        return data.has(neuterKey, PersistentDataType.BYTE) && data.get(neuterKey, PersistentDataType.BYTE) == (byte) 1;
+        return data.has(BetterHorseKeys.NEUTERED, PersistentDataType.BYTE) && data.get(BetterHorseKeys.NEUTERED, PersistentDataType.BYTE) == (byte) 1;
     }
 
     private double avg(double a, double b) {
