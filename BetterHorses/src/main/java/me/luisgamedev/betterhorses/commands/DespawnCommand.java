@@ -10,6 +10,7 @@ import org.bukkit.NamespacedKey;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.entity.AbstractHorse;
+import org.bukkit.entity.AnimalTamer;
 import org.bukkit.entity.Horse;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.AbstractHorseInventory;
@@ -42,7 +43,8 @@ public class DespawnCommand {
             return true;
         }
 
-        if (!horse.isTamed() || !horse.getOwner().getUniqueId().equals(player.getUniqueId())) {
+        AnimalTamer owner = horse.getOwner();
+        if (!horse.isTamed() || owner == null || !owner.getUniqueId().equals(player.getUniqueId())) {
             player.sendMessage(lang.get("messages.not-horse-owner"));
             return true;
         }
