@@ -17,6 +17,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.inventory.ArmoredHorseInventory;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -152,7 +153,9 @@ public class RightClickListener implements Listener {
             horse.getInventory().setSaddle(new ItemStack(Material.valueOf(saddleStr)));
         }
         if (armorStr != null) {
-            horse.getInventory().setArmor(new ItemStack(Material.valueOf(armorStr)));
+            if (horse.getInventory() instanceof ArmoredHorseInventory armoredInventory) {
+                armoredInventory.setArmor(new ItemStack(Material.valueOf(armorStr)));
+            }
         }
 
         item.setAmount(item.getAmount() - 1);

@@ -11,6 +11,7 @@ import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.entity.AbstractHorse;
 import org.bukkit.entity.Horse;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ArmoredHorseInventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataContainer;
@@ -145,7 +146,9 @@ public class RespawnCommand {
             horse.getInventory().setSaddle(new ItemStack(Material.valueOf(saddleStr)));
         }
         if (armorStr != null) {
-            horse.getInventory().setArmor(new ItemStack(Material.valueOf(armorStr)));
+            if (horse.getInventory() instanceof ArmoredHorseInventory armoredInventory) {
+                armoredInventory.setArmor(new ItemStack(Material.valueOf(armorStr)));
+            }
         }
 
         item.setAmount(item.getAmount() - 1);
