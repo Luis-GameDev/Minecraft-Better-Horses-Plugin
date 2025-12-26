@@ -13,6 +13,7 @@ import org.bukkit.entity.AbstractHorse;
 import org.bukkit.entity.Horse;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.AbstractHorseInventory;
+import org.bukkit.inventory.ArmoredHorseInventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataContainer;
@@ -87,7 +88,7 @@ public class DespawnCommand {
         Horse.Color color = horse instanceof Horse ? ((Horse) horse).getColor() : Horse.Color.WHITE;
         AbstractHorseInventory inv = horse.getInventory();
         ItemStack saddle = inv.getSaddle();
-        ItemStack armor = inv.getArmor();
+        ItemStack armor = inv instanceof ArmoredHorseInventory armoredInv ? armoredInv.getArmor() : null;
 
         String itemMaterialName = BetterHorses.getInstance().getConfig().getString("settings.horse-item", "SADDLE");
         Material material = Material.getMaterial(itemMaterialName.toUpperCase());
