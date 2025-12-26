@@ -1,6 +1,7 @@
 package me.luisgamedev.betterhorses.commands;
 
 import me.luisgamedev.betterhorses.BetterHorses;
+import me.luisgamedev.betterhorses.api.BetterHorsesAPI;
 import me.luisgamedev.betterhorses.language.LanguageManager;
 import me.luisgamedev.betterhorses.traits.TraitRegistry;
 import me.luisgamedev.betterhorses.utils.MountConfig;
@@ -158,6 +159,10 @@ public class DespawnCommand {
 
         item.setItemMeta(meta);
         boolean wasLeashed = horse.isLeashed();
+
+        if (BetterHorsesAPI.callDespawnEvent(horse, item)) {
+            return true;
+        }
 
         horse.remove();
 

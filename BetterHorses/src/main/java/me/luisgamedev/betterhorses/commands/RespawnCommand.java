@@ -1,6 +1,8 @@
 package me.luisgamedev.betterhorses.commands;
 
 import me.luisgamedev.betterhorses.BetterHorses;
+import me.luisgamedev.betterhorses.api.BetterHorsesAPI;
+import me.luisgamedev.betterhorses.api.events.BetterHorseSpawnEvent;
 import me.luisgamedev.betterhorses.language.LanguageManager;
 import me.luisgamedev.betterhorses.utils.MountConfig;
 import me.luisgamedev.betterhorses.utils.SupportedMountType;
@@ -152,6 +154,7 @@ public class RespawnCommand {
         }
 
         item.setAmount(item.getAmount() - 1);
+        BetterHorsesAPI.callSpawnEvent(horse, item, BetterHorseSpawnEvent.SpawnCause.ITEM);
         player.sendMessage(lang.getFormatted("messages.horse-respawned", "%mount%", mountName));
         return true;
     }
