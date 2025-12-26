@@ -1,8 +1,10 @@
 package me.luisgamedev.betterhorses.commands;
 
 import me.luisgamedev.betterhorses.BetterHorses;
+import me.luisgamedev.betterhorses.api.events.BetterHorseNeuterEvent;
 import me.luisgamedev.betterhorses.language.LanguageManager;
 import org.bukkit.ChatColor;
+import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.configuration.file.FileConfiguration;
@@ -40,6 +42,16 @@ public class HorseNeuterCommand {
             player.sendMessage(lang.get("messages.already-castrated"));
             return true;
         }
+
+        BetterHorseNeuterEvent neuterEvent = new BetterHorseNeuterEvent(player, item.clone());
+        Bukkit.getPluginManager().callEvent(neuterEvent);
+        if (neuterEvent.isCancelled()) {
+            return true;
+        }
+
+        item = neuterEvent.getHorseItem();
+        player.getInventory().setItemInMainHand(item);
+        meta = item.getItemMeta();
 
         meta.getPersistentDataContainer().set(neuteredKey, PersistentDataType.BYTE, (byte) 1);
 
