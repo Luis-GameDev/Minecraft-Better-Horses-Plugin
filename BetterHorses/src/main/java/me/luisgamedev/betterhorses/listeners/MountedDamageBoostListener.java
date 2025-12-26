@@ -1,9 +1,10 @@
 package me.luisgamedev.betterhorses.listeners;
 
 import me.luisgamedev.betterhorses.BetterHorses;
+import me.luisgamedev.betterhorses.utils.SupportedMountType;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Entity;
-import org.bukkit.entity.Horse;
+import org.bukkit.entity.AbstractHorse;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -18,7 +19,7 @@ public class MountedDamageBoostListener implements Listener {
         if (!(damager instanceof Player player)) return;
 
         Entity vehicle = player.getVehicle();
-        if (!(vehicle instanceof Horse)) return;
+        if (!(vehicle instanceof AbstractHorse mount) || !SupportedMountType.isSupported(mount)) return;
 
         FileConfiguration config = BetterHorses.getInstance().getConfig();
         double percentage = config.getDouble("settings.mounted-damage-boost.percentage", 0.0);

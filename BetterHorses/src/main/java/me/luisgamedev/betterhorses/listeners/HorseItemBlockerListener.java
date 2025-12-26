@@ -9,7 +9,9 @@ import org.bukkit.entity.Llama;
 import org.bukkit.entity.Mule;
 import org.bukkit.entity.Pig;
 import org.bukkit.entity.Player;
+import org.bukkit.entity.SkeletonHorse;
 import org.bukkit.entity.Strider;
+import org.bukkit.entity.ZombieHorse;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockPlaceEvent;
@@ -43,7 +45,8 @@ public class HorseItemBlockerListener implements Listener {
     }
 
     private boolean isMountEntity(Object e) {
-        return e instanceof Horse || e instanceof Donkey || e instanceof Mule
+        return e instanceof Horse || e instanceof SkeletonHorse || e instanceof ZombieHorse
+                || e instanceof Donkey || e instanceof Mule
                 || e instanceof Llama || e instanceof Camel
                 || e instanceof Pig || e instanceof Strider;
     }
