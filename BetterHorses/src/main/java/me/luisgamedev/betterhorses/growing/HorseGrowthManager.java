@@ -1,12 +1,14 @@
 package me.luisgamedev.betterhorses.growing;
 
 import me.luisgamedev.betterhorses.BetterHorses;
+import me.luisgamedev.betterhorses.utils.SupportedMountType;
 import org.bukkit.Bukkit;
 import org.bukkit.NamespacedKey;
 import org.bukkit.World;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.entity.AbstractHorse;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Horse;
 import org.bukkit.persistence.PersistentDataContainer;
@@ -32,6 +34,7 @@ public class HorseGrowthManager {
                 public void run() {
                     for (World world : Bukkit.getWorlds()) {
                         for (Horse horse : world.getEntitiesByClass(Horse.class)) {
+                            if (!SupportedMountType.isSupported(horse)) continue;
                             if (!horse.isAdult()) {
                                 horse.setAgeLock(false);
                             }
@@ -60,8 +63,9 @@ public class HorseGrowthManager {
             @Override
             public void run() {
                 for (World world : Bukkit.getWorlds()) {
-                    for (Entity entity : world.getEntitiesByClass(Horse.class)) {
-                        if (!(entity instanceof Horse horse)) continue;
+                    for (Entity entity : world.getEntitiesByClass(AbstractHorse.class)) {
+                        if (!(entity instanceof AbstractHorse horse)) continue;
+                        if (!SupportedMountType.isSupported(horse)) continue;
                         if (!horse.isValid() || horse.getPassengers().size() > 0) continue;
 
                         PersistentDataContainer data = horse.getPersistentDataContainer();

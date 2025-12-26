@@ -2,9 +2,12 @@ package me.luisgamedev.betterhorses.commands;
 
 import me.luisgamedev.betterhorses.BetterHorses;
 import me.luisgamedev.betterhorses.language.LanguageManager;
-import org.bukkit.*;
+import me.luisgamedev.betterhorses.utils.SupportedMountType;
+import org.bukkit.Material;
+import org.bukkit.NamespacedKey;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
+import org.bukkit.entity.AbstractHorse;
 import org.bukkit.entity.Horse;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
@@ -45,6 +48,7 @@ public class RespawnCommand {
         String trait = data.get(new NamespacedKey(BetterHorses.getInstance(), "trait"), PersistentDataType.STRING);
         Byte neutered = data.get(new NamespacedKey(BetterHorses.getInstance(), "neutered"), PersistentDataType.BYTE);
         Integer storedStage = data.get(new NamespacedKey(BetterHorses.getInstance(), "growth_stage"), PersistentDataType.INTEGER);
+        String mountTypeName = data.get(new NamespacedKey(BetterHorses.getInstance(), "mount_type"), PersistentDataType.STRING);
         Long cooldown = data.has(new NamespacedKey(BetterHorses.getInstance(), "cooldown"), PersistentDataType.LONG)
                 ? data.get(new NamespacedKey(BetterHorses.getInstance(), "cooldown"), PersistentDataType.LONG)
                 : null;
@@ -56,9 +60,17 @@ public class RespawnCommand {
             return true;
         }
 
-        Horse horse;
+        SupportedMountType mountType = SupportedMountType.fromName(mountTypeName)
+                .orElse(SupportedMountType.HORSE);
+
+        if (!mountType.isEnabled(BetterHorses.getInstance().getConfig())) {
+            player.sendMessage(lang.get("messages.invalid-horse-data"));
+            return true;
+        }
+
+        AbstractHorse horse;
         try {
-            horse = player.getWorld().spawn(player.getLocation(), Horse.class);
+            horse = mountType.spawn(player.getLocation());
         } catch (Exception e) {
             player.sendMessage(lang.get("messages.cant-spawn"));
             return true;
@@ -103,6 +115,7 @@ public class RespawnCommand {
 
         horseData.set(new NamespacedKey(BetterHorses.getInstance(), "owner"), PersistentDataType.STRING, ownerUUID);
         horseData.set(new NamespacedKey(BetterHorses.getInstance(), "gender"), PersistentDataType.STRING, gender);
+        horseData.set(new NamespacedKey(BetterHorses.getInstance(), "mount_type"), PersistentDataType.STRING, mountType.getEntityType().name());
 
         if (trait != null && !trait.isBlank()) {
             horseData.set(new NamespacedKey(BetterHorses.getInstance(), "trait"), PersistentDataType.STRING, trait);
@@ -121,10 +134,12 @@ public class RespawnCommand {
             horse.setCustomNameVisible(true);
         }
 
-        try {
-            horse.setStyle(Horse.Style.valueOf(styleStr));
-            horse.setColor(Horse.Color.valueOf(colorStr));
-        } catch (Exception ignored) {}
+        if (horse instanceof Horse h) {
+            try {
+                h.setStyle(Horse.Style.valueOf(styleStr));
+                h.setColor(Horse.Color.valueOf(colorStr));
+            } catch (Exception ignored) {}
+        }
 
         if (saddleStr != null) {
             horse.getInventory().setSaddle(new ItemStack(Material.valueOf(saddleStr)));
@@ -138,7 +153,7 @@ public class RespawnCommand {
         return true;
     }
 
-    private static void setAttribute(Horse horse, Attribute attribute, double value) {
+    private static void setAttribute(AbstractHorse horse, Attribute attribute, double value) {
         AttributeInstance attr = horse.getAttribute(attribute);
         if (attr != null) {
             attr.setBaseValue(value);

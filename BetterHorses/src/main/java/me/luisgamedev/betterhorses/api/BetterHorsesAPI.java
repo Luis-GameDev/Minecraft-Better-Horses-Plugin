@@ -2,6 +2,7 @@ package me.luisgamedev.betterhorses.api;
 
 import me.luisgamedev.betterhorses.BetterHorses;
 import me.luisgamedev.betterhorses.language.LanguageManager;
+import me.luisgamedev.betterhorses.utils.SupportedMountType;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
@@ -53,6 +54,7 @@ public class BetterHorsesAPI {
         data.set(new NamespacedKey(plugin, "style"), PersistentDataType.STRING, Horse.Style.WHITE.name());
         data.set(new NamespacedKey(plugin, "color"), PersistentDataType.STRING, Horse.Color.CREAMY.name());
         data.set(new NamespacedKey(BetterHorses.getInstance(), "growth_stage"), PersistentDataType.INTEGER, growth);
+        data.set(new NamespacedKey(plugin, "mount_type"), PersistentDataType.STRING, SupportedMountType.HORSE.getEntityType().name());
 
         FileConfiguration config = plugin.getConfig();
         if (config.getBoolean("traits.enabled")) {

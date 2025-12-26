@@ -37,6 +37,12 @@ settings:
   # Customizes the original item a horse item is
   horse-item: SADDLE
 
+  # Allow additional mount types to be treated like BetterHorses horses
+  mount-types:
+    skeleton-horses: false
+    zombie-horses: false
+    camels: false
+
   # Allows two horses of the same gender to breed
   allow-same-gender-breeding: false
 
@@ -134,4 +140,3 @@ traits:
     chance: 0.001 # 0.1%
     strength: 0.4
     particles: true
-

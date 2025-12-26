@@ -3,12 +3,15 @@ package me.luisgamedev.betterhorses.commands;
 import me.luisgamedev.betterhorses.BetterHorses;
 import me.luisgamedev.betterhorses.language.LanguageManager;
 import me.luisgamedev.betterhorses.traits.TraitRegistry;
+import me.luisgamedev.betterhorses.utils.SupportedMountType;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.attribute.Attribute;
+import org.bukkit.attribute.AttributeInstance;
+import org.bukkit.entity.AbstractHorse;
 import org.bukkit.entity.Horse;
 import org.bukkit.entity.Player;
-import org.bukkit.inventory.HorseInventory;
+import org.bukkit.inventory.AbstractHorseInventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataContainer;
@@ -23,7 +26,16 @@ public class DespawnCommand {
     public static boolean despawnHorseToItem(Player player) {
         LanguageManager lang = BetterHorses.getInstance().getLang();
 
-        if (!(player.getVehicle() instanceof Horse horse)) {
+        if (!(player.getVehicle() instanceof AbstractHorse horse)) {
+            player.sendMessage(lang.get("messages.invalid-vehicle"));
+            return true;
+        }
+
+        SupportedMountType mountType = SupportedMountType.fromEntity(horse)
+                .filter(type -> type.isEnabled(BetterHorses.getInstance().getConfig()))
+                .orElse(null);
+
+        if (mountType == null) {
             player.sendMessage(lang.get("messages.invalid-vehicle"));
             return true;
         }
@@ -67,11 +79,12 @@ public class DespawnCommand {
         double maxHealth = horse.getAttribute(Attribute.GENERIC_MAX_HEALTH).getBaseValue();
         double currentHealth = horse.getHealth();
         double speed = horse.getAttribute(Attribute.GENERIC_MOVEMENT_SPEED).getBaseValue();
-        double jump = horse.getAttribute(Attribute.valueOf("HORSE_JUMP_STRENGTH")).getBaseValue();
+        AttributeInstance jumpAttr = horse.getAttribute(Attribute.valueOf("HORSE_JUMP_STRENGTH"));
+        double jump = jumpAttr != null ? jumpAttr.getBaseValue() : 0.0;
 
-        Horse.Style style = horse.getStyle();
-        Horse.Color color = horse.getColor();
-        HorseInventory inv = horse.getInventory();
+        Horse.Style style = horse instanceof Horse ? ((Horse) horse).getStyle() : Horse.Style.WHITE;
+        Horse.Color color = horse instanceof Horse ? ((Horse) horse).getColor() : Horse.Color.WHITE;
+        AbstractHorseInventory inv = horse.getInventory();
         ItemStack saddle = inv.getSaddle();
         ItemStack armor = inv.getArmor();
 
@@ -115,6 +128,7 @@ public class DespawnCommand {
         itemData.set(new NamespacedKey(BetterHorses.getInstance(), "style"), PersistentDataType.STRING, style.name());
         itemData.set(new NamespacedKey(BetterHorses.getInstance(), "color"), PersistentDataType.STRING, color.name());
         itemData.set(new NamespacedKey(BetterHorses.getInstance(), "growth_stage"), PersistentDataType.INTEGER, growthStage);
+        itemData.set(new NamespacedKey(BetterHorses.getInstance(), "mount_type"), PersistentDataType.STRING, mountType.getEntityType().name());
         if (trait != null) {
             itemData.set(traitKey, PersistentDataType.STRING, trait.toLowerCase());
         }

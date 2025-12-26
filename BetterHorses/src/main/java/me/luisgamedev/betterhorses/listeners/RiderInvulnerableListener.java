@@ -1,9 +1,10 @@
 package me.luisgamedev.betterhorses.listeners;
 
 import me.luisgamedev.betterhorses.BetterHorses;
+import me.luisgamedev.betterhorses.utils.SupportedMountType;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Entity;
-import org.bukkit.entity.Horse;
+import org.bukkit.entity.AbstractHorse;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -20,7 +21,7 @@ public class RiderInvulnerableListener implements Listener {
         FileConfiguration config = BetterHorses.getInstance().getConfig();
         if (!config.getBoolean("settings.rider-invulnerable", false)) return;
 
-        if (player.getVehicle() instanceof Horse) {
+        if (player.getVehicle() instanceof AbstractHorse mount && SupportedMountType.isSupported(mount)) {
             event.setCancelled(true);
         }
     }
