@@ -1,17 +1,18 @@
 package me.luisgamedev.betterhorses.listeners;
 
 import me.luisgamedev.betterhorses.BetterHorses;
+import me.luisgamedev.betterhorses.utils.MountConfig;
+import me.luisgamedev.betterhorses.utils.SupportedMountType;
+import org.bukkit.NamespacedKey;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
-import org.bukkit.entity.EntityType;
-import org.bukkit.entity.Horse;
+import org.bukkit.entity.AbstractHorse;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.CreatureSpawnEvent;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.bukkit.NamespacedKey;
 
 import java.util.Random;
 
@@ -24,10 +25,10 @@ public class HorseSpawnListener implements Listener {
 
     @EventHandler
     public void onHorseSpawn(CreatureSpawnEvent event) {
-        if (event.getEntityType() != EntityType.HORSE) return;
+        if (!(event.getEntity() instanceof AbstractHorse horse)) return;
+        SupportedMountType mountType = SupportedMountType.fromEntity(horse).orElse(null);
+        if (mountType == null || !mountType.isEnabled(BetterHorses.getInstance().getConfig())) return;
         if (event.getSpawnReason() != CreatureSpawnEvent.SpawnReason.NATURAL) return;
-
-        Horse horse = (Horse) event.getEntity();
 
         // Set gender
         String gender = GENDERS[random.nextInt(GENDERS.length)];
@@ -37,7 +38,7 @@ public class HorseSpawnListener implements Listener {
         int stage = 10;
 
         //if (BetterHorses.getInstance().getConfig().getBoolean("horse-growth-settings.enabled")) {
-        boolean growthEnabled = BetterHorses.getInstance().getConfig().getBoolean("horse-growth-settings.enabled");
+        boolean growthEnabled = MountConfig.isGrowthEnabled(BetterHorses.getInstance().getConfig(), mountType);
         if (growthEnabled) {
             // Set random growth stage
             stage = random.nextInt(11); // 0–10

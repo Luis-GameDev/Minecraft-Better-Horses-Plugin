@@ -1,19 +1,19 @@
 package me.luisgamedev.betterhorses.growing;
 
 import me.luisgamedev.betterhorses.BetterHorses;
+import me.luisgamedev.betterhorses.utils.MountConfig;
 import me.luisgamedev.betterhorses.utils.SupportedMountType;
 import org.bukkit.Bukkit;
 import org.bukkit.NamespacedKey;
-import org.bukkit.World;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.AbstractHorse;
 import org.bukkit.entity.Entity;
-import org.bukkit.entity.Horse;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.scheduler.BukkitRunnable;
+import org.bukkit.World;
 
 public class HorseGrowthManager {
 
@@ -32,32 +32,19 @@ public class HorseGrowthManager {
             new BukkitRunnable() {
                 @Override
                 public void run() {
-                    for (World world : Bukkit.getWorlds()) {
-                        for (Horse horse : world.getEntitiesByClass(Horse.class)) {
-                            if (!SupportedMountType.isSupported(horse)) continue;
-                            if (!horse.isAdult()) {
-                                horse.setAgeLock(false);
-                            }
-                            try {
-                                Attribute attr = Attribute.valueOf("SCALE");
-                                AttributeInstance instance = horse.getAttribute(attr);
-                                if (instance != null) {
-                                    instance.setBaseValue(1.0);
-                                }
-                            } catch (IllegalArgumentException | NoSuchFieldError ignored) {}
-                        }
-                    }
+                    Bukkit.getWorlds().forEach(world -> world.getEntitiesByClass(AbstractHorse.class).forEach(horse -> {
+                        if (!SupportedMountType.isSupported(horse)) return;
+                        resetGrowthForHorse(horse);
+                    }));
                 }
             }.runTask(BetterHorses.getInstance());
             return;
         }
 
-        if (!config.getBoolean("horse-growth-settings.enabled")) return;
-
         int minutes = config.getInt("horse-growth-settings.time-until-adult", 60);
         long intervalTicks = (minutes * 60L * 20L) / maxStage;
         float maxScale = (float) config.getDouble("horse-growth-settings.max-size", 1.3f);
-        int threshold = 7;
+        int threshold = config.getInt("horse-growth-settings.ride-and-breed-threshhold", 7);
 
         new BukkitRunnable() {
             @Override
@@ -65,7 +52,12 @@ public class HorseGrowthManager {
                 for (World world : Bukkit.getWorlds()) {
                     for (Entity entity : world.getEntitiesByClass(AbstractHorse.class)) {
                         if (!(entity instanceof AbstractHorse horse)) continue;
-                        if (!SupportedMountType.isSupported(horse)) continue;
+                        SupportedMountType mountType = SupportedMountType.fromEntity(horse).orElse(null);
+                        if (mountType == null || !mountType.isEnabled(config)) continue;
+                        if (!MountConfig.isGrowthEnabled(config, mountType)) {
+                            resetGrowthForHorse(horse);
+                            continue;
+                        }
                         if (!horse.isValid() || horse.getPassengers().size() > 0) continue;
 
                         PersistentDataContainer data = horse.getPersistentDataContainer();
@@ -106,7 +98,14 @@ public class HorseGrowthManager {
         }.runTaskTimer(BetterHorses.getInstance(), 0L, intervalTicks);
     }
 
-    private void setScaleSafe(Horse horse, double scale) {
+    private void resetGrowthForHorse(AbstractHorse horse) {
+        if (!horse.isAdult()) {
+            horse.setAgeLock(false);
+        }
+        setScaleSafe(horse, 1.0);
+    }
+
+    private void setScaleSafe(AbstractHorse horse, double scale) {
         try {
             Attribute attr = Attribute.valueOf("SCALE");
             AttributeInstance instance = horse.getAttribute(attr);
