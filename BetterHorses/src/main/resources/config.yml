@@ -50,7 +50,7 @@ horse-growth-settings:
   mount-types:
     skeleton-horses: true
     zombie-horses: true
-    camels: true
+    camels: false
 
   # The time in minutes that needs to pass until a horse is fully grown
   time-until-adult: 3
