@@ -3,6 +3,7 @@ package me.luisgamedev.betterhorses.commands;
 import me.luisgamedev.betterhorses.BetterHorses;
 import me.luisgamedev.betterhorses.language.LanguageManager;
 import me.luisgamedev.betterhorses.traits.TraitRegistry;
+import me.luisgamedev.betterhorses.utils.MountConfig;
 import me.luisgamedev.betterhorses.utils.SupportedMountType;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
@@ -66,7 +67,7 @@ public class DespawnCommand {
         Long cooldown = data.has(cooldownKey, PersistentDataType.LONG) ? data.get(cooldownKey, PersistentDataType.LONG) : null;
 
         int growthStage;
-        if (BetterHorses.getInstance().getConfig().getBoolean("horse-growth-settings.enabled")) {
+        if (MountConfig.isGrowthEnabled(BetterHorses.getInstance().getConfig(), mountType)) {
             growthStage = data.has(growthKey, PersistentDataType.INTEGER) ? data.get(growthKey, PersistentDataType.INTEGER) : 10;
         } else {
             growthStage = 10;
