@@ -39,8 +39,8 @@ settings:
 
   # Allow additional mount types to be treated like BetterHorses horses
   mount-types:
-    skeleton-horses: false
-    zombie-horses: false
+    skeleton-horses: true
+    zombie-horses: true
     camels: false
 
   # Allows two horses of the same gender to breed
