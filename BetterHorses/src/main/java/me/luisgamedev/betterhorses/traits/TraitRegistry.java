@@ -171,7 +171,7 @@ public class TraitRegistry {
         }.runTaskLater(BetterHorses.getInstance(), duration * 20L);
     }
 
-    public static void revertDashBoostIfActive(Horse horse) {
+    public static void revertDashBoostIfActive(AbstractHorse horse) {
         if (horse == null) return;
 
         Double storedOriginal = dashBoostOriginalSpeeds.remove(horse.getUniqueId());
