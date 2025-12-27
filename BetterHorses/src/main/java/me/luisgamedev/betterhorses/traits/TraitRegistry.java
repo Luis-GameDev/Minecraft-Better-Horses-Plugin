@@ -33,7 +33,7 @@ public class TraitRegistry {
     static FileConfiguration config = BetterHorses.getInstance().getConfig();
     private static final Map<UUID, Double> dashBoostOriginalSpeeds = new HashMap<>();
 
-    public static void activateHellmare(Player player, Horse horse) {
+    public static void activateHellmare(Player player, AbstractHorse horse) {
         if (!config.getBoolean("traits.hellmare.enabled")) return;
 
         String key = "hellmare";
@@ -91,13 +91,13 @@ public class TraitRegistry {
         }.runTaskTimer(BetterHorses.getInstance(), 0, 5);
     }
 
-    public static void activateFireheart(Player player, Horse horse) {
+    public static void activateFireheart(Player player, AbstractHorse horse) {
         if (!config.getBoolean("traits.fireheart.enabled")) return;
         horse.addPotionEffect(new PotionEffect(PotionEffectType.FIRE_RESISTANCE, 10000, 0));
         player.addPotionEffect(new PotionEffect(PotionEffectType.FIRE_RESISTANCE, 20, 0));
     }
 
-    public static void activateHeavenHooves(Player player, Horse horse, Event event) {
+    public static void activateHeavenHooves(Player player, AbstractHorse horse, Event event) {
         if (!config.getBoolean("traits.heavenhooves.enabled")) return;
 
         horse.addPotionEffect(new PotionEffect(PotionEffectType.SLOW_FALLING, 10000, 0));
@@ -133,7 +133,7 @@ public class TraitRegistry {
 
 
 
-    public static void activateDashBoost(Player player, Horse horse) {
+    public static void activateDashBoost(Player player, AbstractHorse horse) {
         if (!config.getBoolean("traits.dashboost.enabled")) return;
 
         String key = "dashboost";
@@ -185,13 +185,13 @@ public class TraitRegistry {
         }
     }
 
-    public static void activateFeatherHooves(Player player, Horse horse) {
+    public static void activateFeatherHooves(Player player, AbstractHorse horse) {
         if (!config.getBoolean("traits.featherhooves.enabled")) return;
         player.addPotionEffect(new PotionEffect(PotionEffectType.SLOW_FALLING, 10, 0));
         horse.addPotionEffect(new PotionEffect(PotionEffectType.SLOW_FALLING, 10000, 0));
     }
 
-    public static void activateGhostHorse(Player player, Horse horse) {
+    public static void activateGhostHorse(Player player, AbstractHorse horse) {
         if (!config.getBoolean("traits.ghosthorse.enabled")) return;
 
         String key = "ghosthorse";
@@ -221,7 +221,7 @@ public class TraitRegistry {
         setCooldown(horse, key, config.getInt("traits.ghosthorse.cooldown", 30));
     }
 
-    public static void activateSkyburst(Player player, Horse horse) {
+    public static void activateSkyburst(Player player, AbstractHorse horse) {
         if (!config.getBoolean("traits.skyburst.enabled")) return;
 
         double radius = config.getDouble("traits.skyburst.radius", 3.0);
@@ -241,7 +241,7 @@ public class TraitRegistry {
         }
     }
 
-    public static void activateRevenantCurse(Player player, Horse horse) {
+    public static void activateRevenantCurse(Player player, AbstractHorse horse) {
         if (!config.getBoolean("traits.revenantcurse.enabled")) return;
 
         String key = "revenantcurse";
@@ -265,7 +265,7 @@ public class TraitRegistry {
         setCooldown(horse, key, config.getInt("traits.revenantcurse.cooldown", 30));
     }
 
-    public static void activateKickback(Player player, Horse horse) {
+    public static void activateKickback(Player player, AbstractHorse horse) {
         if (!config.getBoolean("traits.kickback.enabled")) return;
 
         String key = "kickback";
@@ -293,7 +293,7 @@ public class TraitRegistry {
         setCooldown(horse, key, config.getInt("traits.kickback.cooldown", 10));
     }
 
-    public static void activateFrostHooves(Player player, Horse horse) {
+    public static void activateFrostHooves(Player player, AbstractHorse horse) {
         if (!config.getBoolean("traits.frosthooves.enabled")) return;
 
         Location center = horse.getLocation().subtract(0, 1, 0);
@@ -320,7 +320,7 @@ public class TraitRegistry {
         }
     }
 
-    private static void showCooldownBar(Player player, Horse horse, String key) {
+    private static void showCooldownBar(Player player, AbstractHorse horse, String key) {
         int fullCooldown = config.getInt("traits." + key + ".cooldown", 30);
         long now = System.currentTimeMillis();
         long until = cooldowns.get(horse.getUniqueId()).getOrDefault(key, 0L);
@@ -332,7 +332,7 @@ public class TraitRegistry {
         }
     }
 
-    private static boolean isOnCooldown(Horse horse, String key) {
+    private static boolean isOnCooldown(AbstractHorse horse, String key) {
         UUID id = horse.getUniqueId();
         Map<String, Long> horseCooldowns = cooldowns.get(id);
         if (horseCooldowns == null) return false;
@@ -342,7 +342,7 @@ public class TraitRegistry {
         return now < until;
     }
 
-    private static void setCooldown(Horse horse, String key, int seconds) {
+    private static void setCooldown(AbstractHorse horse, String key, int seconds) {
         UUID id = horse.getUniqueId();
         cooldowns.putIfAbsent(id, new HashMap<>());
         cooldowns.get(id).put(key, System.currentTimeMillis() + seconds * 1000L);
