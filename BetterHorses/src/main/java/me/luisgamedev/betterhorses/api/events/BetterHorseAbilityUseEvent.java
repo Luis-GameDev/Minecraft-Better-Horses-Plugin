@@ -1,5 +1,6 @@
 package me.luisgamedev.betterhorses.api.events;
 
+import org.bukkit.entity.AbstractHorse;
 import org.bukkit.entity.Horse;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Cancellable;
@@ -19,13 +20,17 @@ public class BetterHorseAbilityUseEvent extends Event implements Cancellable {
     private static final HandlerList HANDLERS = new HandlerList();
 
     private final Player player;
-    private final Horse horse;
+    private final AbstractHorse mount;
     private String traitKey;
     private boolean cancelled;
 
     public BetterHorseAbilityUseEvent(@NotNull Player player, @NotNull Horse horse, @NotNull String traitKey) {
+        this(player, (AbstractHorse) horse, traitKey);
+    }
+
+    public BetterHorseAbilityUseEvent(@NotNull Player player, @NotNull AbstractHorse mount, @NotNull String traitKey) {
         this.player = Objects.requireNonNull(player, "player");
-        this.horse = Objects.requireNonNull(horse, "horse");
+        this.mount = Objects.requireNonNull(mount, "mount");
         this.traitKey = Objects.requireNonNull(traitKey, "traitKey");
     }
 
@@ -33,8 +38,15 @@ public class BetterHorseAbilityUseEvent extends Event implements Cancellable {
         return player;
     }
 
-    public @NotNull Horse getHorse() {
-        return horse;
+    /**
+     * @return The mount as a Horse when applicable, or {@code null} for other supported mount types.
+     */
+    public Horse getHorse() {
+        return mount instanceof Horse ? (Horse) mount : null;
+    }
+
+    public @NotNull AbstractHorse getMount() {
+        return mount;
     }
 
     public @NotNull String getTraitKey() {

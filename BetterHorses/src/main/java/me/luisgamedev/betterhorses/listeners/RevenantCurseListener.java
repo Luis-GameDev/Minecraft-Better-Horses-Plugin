@@ -1,8 +1,9 @@
 package me.luisgamedev.betterhorses.listeners;
 
 import me.luisgamedev.betterhorses.BetterHorses;
+import me.luisgamedev.betterhorses.utils.SupportedMountType;
 import org.bukkit.NamespacedKey;
-import org.bukkit.entity.Horse;
+import org.bukkit.entity.AbstractHorse;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -20,7 +21,7 @@ public class RevenantCurseListener implements Listener {
     public void onHorseOrRiderHit(EntityDamageByEntityEvent event) {
         if (!(event.getDamager() instanceof LivingEntity attacker)) return;
 
-        if (event.getEntity() instanceof Horse horse) {
+        if (event.getEntity() instanceof AbstractHorse horse) {
             if (hasActiveCurse(horse)) {
                 applyDebuff(attacker);
             }
@@ -28,13 +29,14 @@ public class RevenantCurseListener implements Listener {
         }
 
         if (event.getEntity() instanceof Player rider) {
-            if (rider.getVehicle() instanceof Horse horse && hasActiveCurse(horse)) {
+            if (rider.getVehicle() instanceof AbstractHorse horse && SupportedMountType.isSupported(horse) && hasActiveCurse(horse)) {
                 applyDebuff(attacker);
             }
         }
     }
 
-    private boolean hasActiveCurse(Horse horse) {
+    private boolean hasActiveCurse(AbstractHorse horse) {
+        if (!SupportedMountType.isSupported(horse)) return false;
         if (!horse.getPersistentDataContainer().has(CURSE_KEY, PersistentDataType.LONG)) return false;
         long until = horse.getPersistentDataContainer().get(CURSE_KEY, PersistentDataType.LONG);
         return System.currentTimeMillis() <= until;
