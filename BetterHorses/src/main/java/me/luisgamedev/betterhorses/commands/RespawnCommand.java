@@ -4,6 +4,8 @@ import me.luisgamedev.betterhorses.BetterHorses;
 import me.luisgamedev.betterhorses.api.BetterHorsesAPI;
 import me.luisgamedev.betterhorses.api.events.BetterHorseSpawnEvent;
 import me.luisgamedev.betterhorses.language.LanguageManager;
+import me.luisgamedev.betterhorses.utils.AttributeResolver;
+import me.luisgamedev.betterhorses.utils.HorseArmorUtils;
 import me.luisgamedev.betterhorses.utils.MountConfig;
 import me.luisgamedev.betterhorses.utils.SupportedMountType;
 import org.bukkit.Material;
@@ -13,7 +15,6 @@ import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.entity.AbstractHorse;
 import org.bukkit.entity.Horse;
 import org.bukkit.entity.Player;
-import org.bukkit.inventory.ArmoredHorseInventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataContainer;
@@ -107,8 +108,8 @@ public class RespawnCommand {
                 growthStage
         );
 
-        setAttribute(horse, Attribute.GENERIC_MAX_HEALTH, health);
-        setAttribute(horse, Attribute.GENERIC_MOVEMENT_SPEED, speed);
+        setAttribute(horse, AttributeResolver.generic("MAX_HEALTH"), health);
+        setAttribute(horse, AttributeResolver.generic("MOVEMENT_SPEED"), speed);
         setAttribute(horse, Attribute.valueOf("HORSE_JUMP_STRENGTH"), jump);
         horse.setHealth(currentHealth != null ? currentHealth : health);
         horse.setTamed(true);
@@ -148,9 +149,7 @@ public class RespawnCommand {
             horse.getInventory().setSaddle(new ItemStack(Material.valueOf(saddleStr)));
         }
         if (armorStr != null) {
-            if (horse.getInventory() instanceof ArmoredHorseInventory armoredInventory) {
-                armoredInventory.setArmor(new ItemStack(Material.valueOf(armorStr)));
-            }
+            HorseArmorUtils.setArmor(horse.getInventory(), new ItemStack(Material.valueOf(armorStr)));
         }
 
         item.setAmount(item.getAmount() - 1);

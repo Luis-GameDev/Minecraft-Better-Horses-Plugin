@@ -1,5 +1,6 @@
 package me.luisgamedev.betterhorses.api;
 
+import me.luisgamedev.betterhorses.utils.AttributeResolver;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.entity.AbstractHorse;
@@ -25,21 +26,21 @@ public final class BetterHorse {
     }
 
     public double getMaxHealth() {
-        AttributeInstance attr = handle.getAttribute(Attribute.GENERIC_MAX_HEALTH);
+        AttributeInstance attr = handle.getAttribute(AttributeResolver.generic("MAX_HEALTH"));
         return attr != null ? attr.getBaseValue() : 0.0;
     }
 
     public void setMaxHealth(double value) {
-        setAttribute(Attribute.GENERIC_MAX_HEALTH, BetterHorseKeys.HEALTH, value);
+        setAttribute(AttributeResolver.generic("MAX_HEALTH"), BetterHorseKeys.HEALTH, value);
     }
 
     public double getSpeed() {
-        AttributeInstance attr = handle.getAttribute(Attribute.GENERIC_MOVEMENT_SPEED);
+        AttributeInstance attr = handle.getAttribute(AttributeResolver.generic("MOVEMENT_SPEED"));
         return attr != null ? attr.getBaseValue() : 0.0;
     }
 
     public void setSpeed(double value) {
-        setAttribute(Attribute.GENERIC_MOVEMENT_SPEED, BetterHorseKeys.SPEED, value);
+        setAttribute(AttributeResolver.generic("MOVEMENT_SPEED"), BetterHorseKeys.SPEED, value);
     }
 
     public double getJump() {

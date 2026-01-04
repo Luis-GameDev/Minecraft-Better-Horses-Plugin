@@ -6,6 +6,7 @@ import me.luisgamedev.betterhorses.api.events.BetterHorseBreedEvent;
 import me.luisgamedev.betterhorses.utils.MountConfig;
 import me.luisgamedev.betterhorses.utils.SupportedMountType;
 import org.bukkit.Bukkit;
+import me.luisgamedev.betterhorses.utils.AttributeResolver;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.configuration.ConfigurationSection;
@@ -173,12 +174,12 @@ public class HorseBreedListener implements Listener {
     }
 
     private double getHealth(AbstractHorse horse) {
-        AttributeInstance attribute = horse.getAttribute(Attribute.GENERIC_MAX_HEALTH);
+        AttributeInstance attribute = horse.getAttribute(AttributeResolver.generic("MAX_HEALTH"));
         return attribute != null ? attribute.getBaseValue() : 0.0;
     }
 
     private double getSpeed(AbstractHorse horse) {
-        AttributeInstance attribute = horse.getAttribute(Attribute.GENERIC_MOVEMENT_SPEED);
+        AttributeInstance attribute = horse.getAttribute(AttributeResolver.generic("MOVEMENT_SPEED"));
         return attribute != null ? attribute.getBaseValue() : 0.0;
     }
 
@@ -188,7 +189,7 @@ public class HorseBreedListener implements Listener {
     }
 
     private void setHealth(AbstractHorse horse, double value) {
-        AttributeInstance attr = horse.getAttribute(Attribute.GENERIC_MAX_HEALTH);
+        AttributeInstance attr = horse.getAttribute(AttributeResolver.generic("MAX_HEALTH"));
         if (attr != null) {
             attr.setBaseValue(value);
         }
@@ -196,7 +197,7 @@ public class HorseBreedListener implements Listener {
     }
 
     private void setSpeed(AbstractHorse horse, double value) {
-        AttributeInstance attribute = horse.getAttribute(Attribute.GENERIC_MOVEMENT_SPEED);
+        AttributeInstance attribute = horse.getAttribute(AttributeResolver.generic("MOVEMENT_SPEED"));
         if (attribute != null) {
             attribute.setBaseValue(value);
         }

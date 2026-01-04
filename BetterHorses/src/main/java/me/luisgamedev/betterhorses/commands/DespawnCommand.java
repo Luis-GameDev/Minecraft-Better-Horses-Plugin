@@ -4,6 +4,8 @@ import me.luisgamedev.betterhorses.BetterHorses;
 import me.luisgamedev.betterhorses.api.BetterHorsesAPI;
 import me.luisgamedev.betterhorses.language.LanguageManager;
 import me.luisgamedev.betterhorses.traits.TraitRegistry;
+import me.luisgamedev.betterhorses.utils.AttributeResolver;
+import me.luisgamedev.betterhorses.utils.HorseArmorUtils;
 import me.luisgamedev.betterhorses.utils.MountConfig;
 import me.luisgamedev.betterhorses.utils.SupportedMountType;
 import org.bukkit.Material;
@@ -15,7 +17,6 @@ import org.bukkit.entity.AnimalTamer;
 import org.bukkit.entity.Horse;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.AbstractHorseInventory;
-import org.bukkit.inventory.ArmoredHorseInventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataContainer;
@@ -92,9 +93,9 @@ public class DespawnCommand {
 
         TraitRegistry.revertDashBoostIfActive(horse);
 
-        double maxHealth = horse.getAttribute(Attribute.GENERIC_MAX_HEALTH).getBaseValue();
+        double maxHealth = horse.getAttribute(AttributeResolver.generic("MAX_HEALTH")).getBaseValue();
         double currentHealth = horse.getHealth();
-        double speed = horse.getAttribute(Attribute.GENERIC_MOVEMENT_SPEED).getBaseValue();
+        double speed = horse.getAttribute(AttributeResolver.generic("MOVEMENT_SPEED")).getBaseValue();
         AttributeInstance jumpAttr = horse.getAttribute(Attribute.valueOf("HORSE_JUMP_STRENGTH"));
         double jump = jumpAttr != null ? jumpAttr.getBaseValue() : 0.0;
 
@@ -102,7 +103,7 @@ public class DespawnCommand {
         Horse.Color color = horse instanceof Horse ? ((Horse) horse).getColor() : Horse.Color.WHITE;
         AbstractHorseInventory inv = horse.getInventory();
         ItemStack saddle = inv.getSaddle();
-        ItemStack armor = inv instanceof ArmoredHorseInventory armoredInv ? armoredInv.getArmor() : null;
+        ItemStack armor = HorseArmorUtils.getArmor(inv);
 
         String itemMaterialName = BetterHorses.getInstance().getConfig().getString("settings.horse-item", "SADDLE");
         Material material = Material.getMaterial(itemMaterialName.toUpperCase());

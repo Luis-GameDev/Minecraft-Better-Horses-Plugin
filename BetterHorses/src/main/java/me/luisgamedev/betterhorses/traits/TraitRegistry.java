@@ -5,6 +5,7 @@ import me.luisgamedev.betterhorses.language.LanguageManager;
 import me.luisgamedev.betterhorses.utils.ArmorHider;
 import me.luisgamedev.betterhorses.utils.CooldownDisplay;
 import org.bukkit.*;
+import me.luisgamedev.betterhorses.utils.AttributeResolver;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.block.Block;
@@ -143,7 +144,7 @@ public class TraitRegistry {
         }
 
         int duration = config.getInt("traits.dashboost.duration", 5);
-        AttributeInstance speedAttr = horse.getAttribute(Attribute.GENERIC_MOVEMENT_SPEED);
+        AttributeInstance speedAttr = horse.getAttribute(AttributeResolver.generic("MOVEMENT_SPEED"));
         if (speedAttr == null) return;
 
         double originalSpeed = speedAttr.getBaseValue();
@@ -162,7 +163,7 @@ public class TraitRegistry {
                 double revertSpeed = storedOriginal != null ? storedOriginal : originalSpeed;
 
                 if (horse.isValid()) {
-                    AttributeInstance speedAttr = horse.getAttribute(Attribute.GENERIC_MOVEMENT_SPEED);
+                    AttributeInstance speedAttr = horse.getAttribute(AttributeResolver.generic("MOVEMENT_SPEED"));
                     if (speedAttr != null) {
                         speedAttr.setBaseValue(revertSpeed);
                     }
@@ -179,7 +180,7 @@ public class TraitRegistry {
 
         if (!horse.isValid()) return;
 
-        AttributeInstance speedAttr = horse.getAttribute(Attribute.GENERIC_MOVEMENT_SPEED);
+        AttributeInstance speedAttr = horse.getAttribute(AttributeResolver.generic("MOVEMENT_SPEED"));
         if (speedAttr != null) {
             speedAttr.setBaseValue(storedOriginal);
         }
