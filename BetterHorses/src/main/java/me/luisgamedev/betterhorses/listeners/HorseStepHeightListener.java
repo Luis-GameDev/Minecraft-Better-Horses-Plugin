@@ -2,6 +2,7 @@ package me.luisgamedev.betterhorses.listeners;
 
 import me.luisgamedev.betterhorses.BetterHorses;
 import me.luisgamedev.betterhorses.utils.SupportedMountType;
+import me.luisgamedev.betterhorses.utils.AttributeResolver;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.configuration.file.FileConfiguration;
@@ -37,7 +38,7 @@ public class HorseStepHeightListener implements Listener {
 
     private void setStepHeightSafe(AbstractHorse horse, double stepHeight) {
         try {
-            Attribute attr = Attribute.valueOf("GENERIC_STEP_HEIGHT");
+            Attribute attr = AttributeResolver.generic("STEP_HEIGHT");
             AttributeInstance instance = horse.getAttribute(attr);
             if (instance != null) {
                 instance.setBaseValue(stepHeight);
