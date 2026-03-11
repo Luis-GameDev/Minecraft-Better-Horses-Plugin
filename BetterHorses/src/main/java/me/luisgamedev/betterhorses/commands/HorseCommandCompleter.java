@@ -1,5 +1,6 @@
 package me.luisgamedev.betterhorses.commands;
 
+import me.luisgamedev.betterhorses.BetterHorses;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
@@ -16,6 +17,9 @@ public class HorseCommandCompleter implements TabCompleter {
             List<String> suggestions = new ArrayList<>(Arrays.asList("spawn", "despawn", "neuter"));
             if (sender.hasPermission("betterhorses.reload")) {
                 suggestions.add("reload");
+            }
+            if (BetterHorses.getInstance().isDebugModeEnabled()) {
+                suggestions.add("info");
             }
             return suggestions;
         }
