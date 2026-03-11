@@ -19,6 +19,7 @@ public class HorseGrowthManager {
 
     private final NamespacedKey growthKey;
     private final int maxStage = 10;
+    BetterHorses plugin = BetterHorses.getInstance();
 
     public HorseGrowthManager(BetterHorses plugin) {
         this.growthKey = new NamespacedKey(plugin, "growth_stage");
@@ -112,7 +113,8 @@ public class HorseGrowthManager {
             if (instance != null) {
                 instance.setBaseValue(scale);
             }
-        } catch (IllegalArgumentException | NoSuchFieldError ignored) {
+        } catch (IllegalArgumentException | NoSuchFieldError e) {
+            plugin.debugLog("GROWTH_MANAGER", "SET_SCALE", false, e.getMessage());
         }
     }
 

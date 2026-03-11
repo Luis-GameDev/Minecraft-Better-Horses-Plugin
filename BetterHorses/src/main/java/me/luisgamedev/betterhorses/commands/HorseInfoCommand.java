@@ -106,7 +106,7 @@ public final class HorseInfoCommand {
 
         AttributeInstance maxHealth = horse.getAttribute(Attribute.GENERIC_MAX_HEALTH);
         AttributeInstance speed = horse.getAttribute(Attribute.GENERIC_MOVEMENT_SPEED);
-        AttributeInstance jump = horse.getAttribute(Attribute.HORSE_JUMP_STRENGTH);
+        AttributeInstance jump = horse.getAttribute(Attribute.valueOf("HORSE_JUMP_STRENGTH"));
 
         player.sendMessage(ChatColor.YELLOW + "Health: " + ChatColor.WHITE + String.format("%.2f / %.2f",
                 horse.getHealth(), maxHealth == null ? 0.0 : maxHealth.getBaseValue()));

@@ -106,9 +106,14 @@ public class RightClickListener implements Listener {
         int threshold = config.getInt("horse-growth-settings.ride-and-breed-threshhold", 7);
         float minScale = (growthStage >= threshold) ? 0.85f : 0.7f;
         double scale = minScale + ((maxScale - minScale) / 10.0) * growthStage;
+        BetterHorses plugin = BetterHorses.getInstance();
 
         if (MountConfig.isGrowthEnabled(config, mountType)) {
-            setAttribute(horse, Attribute.valueOf("SCALE"), scale);
+            try {
+                setAttribute(horse, Attribute.valueOf("SCALE"), scale);
+            } catch (NoSuchFieldError | Exception e) {
+                plugin.debugLog("RIGHTCLICK_SPAWN", "SET_SCALE", false, e.getMessage());
+            }
             if (growthStage >= threshold) {
                 horse.setAdult();
                 horse.setAgeLock(false);
