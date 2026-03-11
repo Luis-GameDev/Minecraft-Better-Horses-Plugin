@@ -17,7 +17,6 @@ import org.bukkit.command.SimpleCommandMap;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.plugin.PluginManager;
-import org.bukkit.command.SimpleCommandMap;
 
 import java.util.List;
 import java.util.logging.Level;
@@ -82,6 +81,24 @@ public class BetterHorses extends JavaPlugin {
 
     public boolean isProtocolLibAvailable() {
         return protocolLibAvailable;
+    }
+
+    public boolean isDebugModeEnabled() {
+        return getConfig().getBoolean("debug.enabled", false);
+    }
+
+    public void debugLog(String action, String checkpoint, boolean success, String details) {
+        if (!isDebugModeEnabled()) {
+            return;
+        }
+
+        String status = success ? "PASS" : "FAIL";
+        String message = String.format("[DEBUG][%s][%s][%s] %s", action, checkpoint, status, details);
+        if (success) {
+            getLogger().info(message);
+            return;
+        }
+        getLogger().warning(message);
     }
 
     private void applyHorseCommandAliases() {
