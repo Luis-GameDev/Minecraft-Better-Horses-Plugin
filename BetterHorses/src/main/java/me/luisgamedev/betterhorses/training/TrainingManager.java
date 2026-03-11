@@ -133,6 +133,24 @@ public final class TrainingManager {
         return lines;
     }
 
+    public static void ensureTrainingLorePresent(List<String> lore, PersistentDataContainer data) {
+        FileConfiguration config = BetterHorses.getInstance().getConfig();
+        if (!isTrainingEnabled(config)) return;
+
+        List<String> trainingLines = getTrainingLoreLines(data);
+        if (trainingLines.isEmpty()) return;
+
+        String titleLine = trainingLines.size() > 1 ? trainingLines.get(1) : trainingLines.get(0);
+        String normalizedTitle = ChatColor.stripColor(titleLine);
+        boolean hasTrainingTitle = lore.stream()
+                .map(ChatColor::stripColor)
+                .anyMatch(existing -> existing != null && existing.equalsIgnoreCase(normalizedTitle));
+
+        if (!hasTrainingTitle) {
+            lore.addAll(trainingLines);
+        }
+    }
+
     public static double getProgressPercent(FileConfiguration config, PersistentDataContainer data, String category, NamespacedKey unitsKey) {
         if (!isTrainingEnabled(config) || !isCategoryEnabled(config, category)) return 0.0;
         ensureTrainingData(data);

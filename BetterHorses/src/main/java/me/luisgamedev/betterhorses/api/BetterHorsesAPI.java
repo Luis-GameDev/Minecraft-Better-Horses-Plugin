@@ -75,7 +75,7 @@ public class BetterHorsesAPI {
         data.set(BetterHorseKeys.MOUNT_TYPE, PersistentDataType.STRING, targetMountType.getEntityType().name());
         TrainingManager.ensureTrainingData(data);
 
-        lore.addAll(TrainingManager.getTrainingLoreLines(data));
+        TrainingManager.ensureTrainingLorePresent(lore, data);
 
         FileConfiguration config = plugin.getConfig();
         if (config.getBoolean("traits.enabled")) {
