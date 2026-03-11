@@ -22,6 +22,7 @@ public class TraitActivationListener implements Listener {
     @EventHandler
     public void onTraitKeyPressed(PlayerSwapHandItemsEvent event) {
         Player player = event.getPlayer();
+        BetterHorses plugin = BetterHorses.getInstance();
         Entity vehicle = player.getVehicle();
 
         if (!(vehicle instanceof AbstractHorse mount)) return;
@@ -36,11 +37,13 @@ public class TraitActivationListener implements Listener {
         BetterHorseAbilityUseEvent abilityEvent = new BetterHorseAbilityUseEvent(player, mount, trait.toLowerCase());
         Bukkit.getPluginManager().callEvent(abilityEvent);
         if (abilityEvent.isCancelled()) {
+            plugin.debugLog("TRAIT_ACTIVATION", "EVENT", false, "Ability use cancelled for " + player.getName() + " trait=" + trait + ".");
             event.setCancelled(true);
             return;
         }
 
         String selectedTrait = abilityEvent.getTraitKey();
+        plugin.debugLog("TRAIT_ACTIVATION", "TRIGGER", true, "Player " + player.getName() + " activated trait " + selectedTrait + ".");
         switch (selectedTrait.toLowerCase()) {
             case "hellmare":
                 TraitRegistry.activateHellmare(player, mount);
