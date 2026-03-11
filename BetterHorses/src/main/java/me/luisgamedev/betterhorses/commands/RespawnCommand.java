@@ -23,7 +23,9 @@ import org.bukkit.persistence.PersistentDataType;
 public class RespawnCommand {
 
     public static boolean spawnHorseFromItem(Player player) {
-        LanguageManager lang = BetterHorses.getInstance().getLang();
+        BetterHorses plugin = BetterHorses.getInstance();
+        LanguageManager lang = plugin.getLang();
+        plugin.debugLog("HORSE_RESPAWN", "START", true, "Player " + player.getName() + " requested item spawn.");
 
         ItemStack item = player.getInventory().getItemInMainHand();
         String configuredItem = BetterHorses.getInstance().getConfig().getString("settings.horse-item", "SADDLE");
@@ -33,6 +35,7 @@ public class RespawnCommand {
 
         if (item == null || item.getType() != expectedMaterial || !item.hasItemMeta()) {
             player.sendMessage(lang.get("messages.invalid-item"));
+            plugin.debugLog("HORSE_RESPAWN", "VALIDATION", false, "Invalid item used by " + player.getName() + ".");
             return true;
         }
 
@@ -64,11 +67,13 @@ public class RespawnCommand {
 
         if (health == null || speed == null || jump == null || gender == null) {
             player.sendMessage(lang.getFormatted("messages.invalid-horse-data", "%mount%", mountName));
+            plugin.debugLog("HORSE_RESPAWN", "DATA", false, "Missing critical horse data for " + player.getName() + ".");
             return true;
         }
 
         if (!mountType.isEnabled(BetterHorses.getInstance().getConfig())) {
             player.sendMessage(lang.getFormatted("messages.invalid-horse-data", "%mount%", mountName));
+            plugin.debugLog("HORSE_RESPAWN", "MOUNT_TYPE", false, "Mount type disabled: " + mountType.getEntityType());
             return true;
         }
 
@@ -77,11 +82,13 @@ public class RespawnCommand {
             horse = mountType.spawn(player.getLocation());
         } catch (Exception e) {
             player.sendMessage(lang.get("messages.cant-spawn"));
+            plugin.debugLog("HORSE_RESPAWN", "SPAWN", false, "Mount spawn failed with exception: " + e.getMessage());
             return true;
         }
 
         if (horse == null || !horse.isValid()) {
             player.sendMessage(lang.get("messages.cant-spawn"));
+            plugin.debugLog("HORSE_RESPAWN", "SPAWN", false, "Spawn returned invalid entity for " + player.getName() + ".");
             return true;
         }
 
@@ -155,6 +162,7 @@ public class RespawnCommand {
         item.setAmount(item.getAmount() - 1);
         BetterHorsesAPI.callSpawnEvent(horse, item, BetterHorseSpawnEvent.SpawnCause.ITEM);
         player.sendMessage(lang.getFormatted("messages.horse-respawned", "%mount%", mountName));
+        plugin.debugLog("HORSE_RESPAWN", "COMPLETE", true, "Player " + player.getName() + " spawned " + mountName + ".");
         return true;
     }
 

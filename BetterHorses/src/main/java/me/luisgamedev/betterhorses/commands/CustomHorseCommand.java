@@ -20,20 +20,25 @@ public class CustomHorseCommand implements CommandExecutor {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        LanguageManager lang = BetterHorses.getInstance().getLang();
+        BetterHorses plugin = BetterHorses.getInstance();
+        LanguageManager lang = plugin.getLang();
+        plugin.debugLog("HORSE_CREATE", "RECEIVED", true, "Sender=" + sender.getName() + ", args=" + args.length + ".");
 
         if (!(sender instanceof Player player)) {
             sender.sendMessage(lang.get("messages.only-players"));
+            plugin.debugLog("HORSE_CREATE", "PLAYER_REQUIRED", false, "Non-player sender attempted /horsecreate.");
             return true;
         }
 
         if (!player.hasPermission("betterhorses.create")) {
             player.sendMessage(lang.getFormatted("messages.insufficient-permission", "%command%", "/horsecreate"));
+            plugin.debugLog("HORSE_CREATE", "PERMISSION", false, "Player " + player.getName() + " lacks betterhorses.create.");
             return true;
         }
 
         if (args.length < 3) {
             player.sendMessage(lang.get("messages.horsecreate-usage"));
+            plugin.debugLog("HORSE_CREATE", "USAGE", false, "Player " + player.getName() + " provided too few arguments.");
             return true;
         }
 
@@ -52,11 +57,13 @@ public class CustomHorseCommand implements CommandExecutor {
             SupportedMountType mountType = mountTypeArg == null ? SupportedMountType.HORSE : SupportedMountType.fromUserInput(mountTypeArg).orElse(null);
             if (mountType == null) {
                 player.sendMessage(lang.getFormatted("messages.invalid-mount-type", "%types%", getEnabledMountTypes(config)));
+                plugin.debugLog("HORSE_CREATE", "MOUNT_TYPE", false, "Invalid mount type input: " + mountTypeArg);
                 return true;
             }
 
             if (!mountType.isEnabled(config)) {
                 player.sendMessage(lang.get("messages.mount-type-disabled"));
+                plugin.debugLog("HORSE_CREATE", "MOUNT_TYPE", false, "Disabled mount type requested: " + mountType.getEntityType());
                 return true;
             }
 
@@ -65,12 +72,14 @@ public class CustomHorseCommand implements CommandExecutor {
             if (trait != null && !trait.equalsIgnoreCase("none")) {
                 if (!config.getBoolean("traits.enabled", false)) {
                     player.sendMessage(lang.get("messages.traits-disabled"));
+                    plugin.debugLog("HORSE_CREATE", "TRAIT", false, "Trait requested while traits are disabled.");
                     return true;
                 }
 
                 ConfigurationSection traitSection = config.getConfigurationSection("traits." + trait);
                 if (traitSection == null || !traitSection.getBoolean("enabled", false)) {
                     player.sendMessage(lang.get("messages.traits-error"));
+                    plugin.debugLog("HORSE_CREATE", "TRAIT", false, "Invalid or disabled trait requested: " + trait);
                     return true;
                 }
 
@@ -79,10 +88,12 @@ public class CustomHorseCommand implements CommandExecutor {
 
             Inventory target = player.getInventory();
             BetterHorsesAPI.createHorseItem(health, speed, jump, gender, name, player, target, true, validatedTrait, growthStage, mountType);
+            plugin.debugLog("HORSE_CREATE", "COMPLETE", true, "Created item for " + player.getName() + " with mount=" + mountType.getEntityType() + ", trait=" + validatedTrait + ".");
             return true;
 
         } catch (NumberFormatException e) {
             player.sendMessage(lang.get("messages.invalid-number-format"));
+            plugin.debugLog("HORSE_CREATE", "PARSE", false, "Invalid numeric argument from " + player.getName() + ": " + e.getMessage());
             return true;
         }
     }
