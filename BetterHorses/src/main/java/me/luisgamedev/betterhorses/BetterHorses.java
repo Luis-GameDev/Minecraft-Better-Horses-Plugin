@@ -8,6 +8,7 @@ import me.luisgamedev.betterhorses.commands.HorseCommandCompleter;
 import me.luisgamedev.betterhorses.commands.HorseCreateTabCompleter;
 import me.luisgamedev.betterhorses.growing.HorseGrowthManager;
 import me.luisgamedev.betterhorses.language.LanguageManager;
+import me.luisgamedev.betterhorses.listeners.HorseMountListener;
 import me.luisgamedev.betterhorses.listeners.*;
 import me.luisgamedev.betterhorses.tasks.TraitParticleTask;
 import org.bukkit.Bukkit;
@@ -113,6 +114,7 @@ public class BetterHorses extends JavaPlugin {
         pluginManager.registerEvents(new HorseBreedListener(), this);
         pluginManager.registerEvents(new HorseFeedListener(), this);
         pluginManager.registerEvents(new HorseItemBlockerListener(), this);
+        pluginManager.registerEvents(new HorseMountListener(), this);
 
         if (config.getBoolean("settings.allow-rightclick-spawn", true)) {
             pluginManager.registerEvents(new RightClickListener(), this);

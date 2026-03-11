@@ -74,6 +74,9 @@ settings:
   # Allows two horses of the same gender to breed
   allow-same-gender-breeding: false
 
+  # Restricts mounting a tamed horse to its respective owner
+  restrict-mounting-to-owner: false
+
   # Allows spawning the horse by rightclicking with the horse item
   allow-rightclick-spawn: true
 

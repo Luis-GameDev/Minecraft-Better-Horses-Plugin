@@ -1,5 +1,6 @@
 package me.luisgamedev.betterhorses.api;
 
+import jdk.jfr.Description;
 import me.luisgamedev.betterhorses.BetterHorses;
 import me.luisgamedev.betterhorses.api.events.BetterHorseDespawnEvent;
 import me.luisgamedev.betterhorses.api.events.BetterHorseSpawnEvent;
@@ -20,6 +21,8 @@ import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
 
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -28,7 +31,8 @@ import java.util.Optional;
 
 public class BetterHorsesAPI {
 
-    public static ItemStack createHorseItem(double health, double speed, double jump, String gender, String name, Player owner, Inventory targetInventory, boolean dropIfFull, String traitOverride, Integer growthStage, SupportedMountType mountType) {
+    @Description("Creates a horseitem and either returns the ItemStack or directly puts it into the provided Inventory")
+    public static ItemStack createHorseItem(@Nonnull double health, @Nonnull double speed, @Nonnull double jump, @Nonnull String gender, @Nullable String name, @Nullable Player owner, @Nullable Inventory targetInventory, @Nullable boolean dropIfFull, @Nullable String traitOverride, @Nonnull Integer growthStage, @Nullable SupportedMountType mountType) {
 
         BetterHorses plugin = BetterHorses.getInstance();
         LanguageManager lang = plugin.getLang();
@@ -58,7 +62,9 @@ public class BetterHorsesAPI {
         data.set(BetterHorseKeys.CURRENT_HEALTH, PersistentDataType.DOUBLE, health);
         data.set(BetterHorseKeys.SPEED, PersistentDataType.DOUBLE, speed);
         data.set(BetterHorseKeys.JUMP, PersistentDataType.DOUBLE, jump);
-        data.set(BetterHorseKeys.OWNER, PersistentDataType.STRING, owner.getUniqueId().toString());
+        if(owner != null) {
+            data.set(BetterHorseKeys.OWNER, PersistentDataType.STRING, owner.getUniqueId().toString());
+        }
         data.set(BetterHorseKeys.NAME, PersistentDataType.STRING, name.replace(ChatColor.GOLD.toString(), ""));
         data.set(BetterHorseKeys.STYLE, PersistentDataType.STRING, Horse.Style.WHITE.name());
         data.set(BetterHorseKeys.COLOR, PersistentDataType.STRING, Horse.Color.CREAMY.name());
@@ -97,9 +103,11 @@ public class BetterHorsesAPI {
         meta.setDisplayName(name);
         item.setItemMeta(meta);
 
-        HashMap<Integer, ItemStack> leftovers = targetInventory.addItem(item);
-        if (!leftovers.isEmpty() && dropIfFull) {
-            owner.getWorld().dropItem(owner.getLocation(), item);
+        if(targetInventory != null) {
+            HashMap<Integer, ItemStack> leftovers = targetInventory.addItem(item);
+            if (!leftovers.isEmpty() && dropIfFull) {
+                owner.getWorld().dropItem(owner.getLocation(), item);
+            }
         }
 
         return item;

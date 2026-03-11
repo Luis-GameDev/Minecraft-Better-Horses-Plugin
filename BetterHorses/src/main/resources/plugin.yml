@@ -31,3 +31,6 @@ permissions:
   betterhorses.reload:
     description: Allows reloading the BetterHorses configuration
     default: op
+
+  betterhorses.bypass:
+    description: Allows riding horses of other players
