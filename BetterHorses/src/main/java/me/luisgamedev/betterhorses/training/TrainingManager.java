@@ -114,9 +114,9 @@ public final class TrainingManager {
         if (!isTrainingEnabled(config)) return lines;
 
         lines.add(color(config.getString("training.lore.title", "&6Training")));
-        addCategoryLore(lines, config, horse, "riding", BetterHorseKeys.TRAINING_RIDING_UNITS, "&7Riding: &f%bar% &7(%percent%%)");
-        addCategoryLore(lines, config, horse, "brushing", BetterHorseKeys.TRAINING_BRUSHING_UNITS, "&7Brushing: &f%bar% &7(%percent%%)");
-        addCategoryLore(lines, config, horse, "feeding", BetterHorseKeys.TRAINING_FEEDING_UNITS, "&7Feeding: &f%bar% &7(%percent%%)");
+        addCategoryLore(lines, config, horse, "riding", BetterHorseKeys.TRAINING_RIDING_UNITS, "&7Riding Progress: %bar% &b%percent%%");
+        addCategoryLore(lines, config, horse, "brushing", BetterHorseKeys.TRAINING_BRUSHING_UNITS, "&7Brushing Progress: %bar% &b%percent%%");
+        addCategoryLore(lines, config, horse, "feeding", BetterHorseKeys.TRAINING_FEEDING_UNITS, "&7Feeding Progress: %bar% &b%percent%%");
         return lines;
     }
 
@@ -139,10 +139,10 @@ public final class TrainingManager {
 
     private static String progressBar(FileConfiguration config, double percent) {
         int length = Math.max(5, config.getInt("training.lore.progress-bar.length", 20));
-        char filledChar = config.getString("training.lore.progress-bar.filled-char", "|").charAt(0);
-        char emptyChar = config.getString("training.lore.progress-bar.empty-char", "|").charAt(0);
-        String filledColor = color(config.getString("training.lore.progress-bar.filled-color", "&a"));
-        String emptyColor = color(config.getString("training.lore.progress-bar.empty-color", "&7"));
+        char filledChar = config.getString("training.lore.progress-bar.filled-char", "■").charAt(0);
+        char emptyChar = config.getString("training.lore.progress-bar.empty-char", "■").charAt(0);
+        String filledColor = color(config.getString("training.lore.progress-bar.filled-color", "&b"));
+        String emptyColor = color(config.getString("training.lore.progress-bar.empty-color", "&8"));
 
         int filled = (int) Math.round((percent / 100.0) * length);
         StringBuilder builder = new StringBuilder();
