@@ -185,7 +185,7 @@ training:
 
   lore:
     progress-bar:
-      length: 20
+      length: 15
 
   categories:
     riding:

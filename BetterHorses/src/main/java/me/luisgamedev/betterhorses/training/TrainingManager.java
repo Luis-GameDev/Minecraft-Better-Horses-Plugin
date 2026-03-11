@@ -121,6 +121,7 @@ public final class TrainingManager {
 
         ensureTrainingData(horse.getPersistentDataContainer());
 
+        lines.add("");
         lines.add(color(language.getString("training-lore.title", "&6Training")));
         addCategoryLore(lines, config, language, horse, "riding", BetterHorseKeys.TRAINING_RIDING_UNITS, "&7Riding Progress: %bar% &b%percent%%");
         addCategoryLore(lines, config, language, horse, "brushing", BetterHorseKeys.TRAINING_BRUSHING_UNITS, "&7Brushing Progress: %bar% &b%percent%%");

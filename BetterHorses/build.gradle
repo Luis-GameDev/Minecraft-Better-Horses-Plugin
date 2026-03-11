@@ -3,7 +3,7 @@ plugins {
 }
 
 group = 'dev.luisgamedev'
-version = '5.8'
+version = '5.9'
 
 repositories {
     mavenLocal()

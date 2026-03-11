@@ -70,6 +70,6 @@ training-lore:
     filled-color: "&b"
     empty-color: "&8"
   categories:
-    riding: "&7Riding Progress: %bar% &b%percent%%"
-    brushing: "&7Brushing Progress: %bar% &b%percent%%"
-    feeding: "&7Feeding Progress: %bar% &b%percent%%"
+    riding: "&7Riding: %bar% &b%percent%%"
+    brushing: "&7Brushing: %bar% &b%percent%%"
+    feeding: "&7Feeding: %bar% &b%percent%%"
