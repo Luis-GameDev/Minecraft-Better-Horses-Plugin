@@ -4,6 +4,8 @@ import me.luisgamedev.betterhorses.BetterHorses;
 import me.luisgamedev.betterhorses.api.BetterHorsesAPI;
 import me.luisgamedev.betterhorses.api.events.BetterHorseSpawnEvent;
 import me.luisgamedev.betterhorses.language.LanguageManager;
+import me.luisgamedev.betterhorses.training.TrainingManager;
+import me.luisgamedev.betterhorses.api.BetterHorseKeys;
 import me.luisgamedev.betterhorses.utils.AttributeResolver;
 import me.luisgamedev.betterhorses.utils.HorseArmorUtils;
 import me.luisgamedev.betterhorses.utils.MountConfig;
@@ -59,6 +61,12 @@ public class RightClickListener implements Listener {
         Double currentHealth = data.get(new NamespacedKey(BetterHorses.getInstance(), "current_health"), PersistentDataType.DOUBLE);
         Double speed = data.get(new NamespacedKey(BetterHorses.getInstance(), "speed"), PersistentDataType.DOUBLE);
         Double jump = data.get(new NamespacedKey(BetterHorses.getInstance(), "jump"), PersistentDataType.DOUBLE);
+        Double baseHealth = data.get(BetterHorseKeys.BASE_HEALTH, PersistentDataType.DOUBLE);
+        Double baseSpeed = data.get(BetterHorseKeys.BASE_SPEED, PersistentDataType.DOUBLE);
+        Double baseJump = data.get(BetterHorseKeys.BASE_JUMP, PersistentDataType.DOUBLE);
+        Double ridingUnits = data.get(BetterHorseKeys.TRAINING_RIDING_UNITS, PersistentDataType.DOUBLE);
+        Double brushingUnits = data.get(BetterHorseKeys.TRAINING_BRUSHING_UNITS, PersistentDataType.DOUBLE);
+        Double feedingUnits = data.get(BetterHorseKeys.TRAINING_FEEDING_UNITS, PersistentDataType.DOUBLE);
         String gender = data.get(new NamespacedKey(BetterHorses.getInstance(), "gender"), PersistentDataType.STRING);
         String ownerUUID = player.getUniqueId().toString();
         String styleStr = data.get(new NamespacedKey(BetterHorses.getInstance(), "style"), PersistentDataType.STRING);
@@ -135,6 +143,12 @@ public class RightClickListener implements Listener {
         horseData.set(new NamespacedKey(BetterHorses.getInstance(), "gender"), PersistentDataType.STRING, gender);
         horseData.set(new NamespacedKey(BetterHorses.getInstance(), "growth_stage"), PersistentDataType.INTEGER, growthStage == 0 ? 10 : growthStage);
         horseData.set(new NamespacedKey(BetterHorses.getInstance(), "mount_type"), PersistentDataType.STRING, mountType.getEntityType().name());
+        horseData.set(BetterHorseKeys.BASE_HEALTH, PersistentDataType.DOUBLE, baseHealth != null ? baseHealth : health);
+        horseData.set(BetterHorseKeys.BASE_SPEED, PersistentDataType.DOUBLE, baseSpeed != null ? baseSpeed : speed);
+        horseData.set(BetterHorseKeys.BASE_JUMP, PersistentDataType.DOUBLE, baseJump != null ? baseJump : jump);
+        horseData.set(BetterHorseKeys.TRAINING_RIDING_UNITS, PersistentDataType.DOUBLE, ridingUnits != null ? ridingUnits : 0.0);
+        horseData.set(BetterHorseKeys.TRAINING_BRUSHING_UNITS, PersistentDataType.DOUBLE, brushingUnits != null ? brushingUnits : 0.0);
+        horseData.set(BetterHorseKeys.TRAINING_FEEDING_UNITS, PersistentDataType.DOUBLE, feedingUnits != null ? feedingUnits : 0.0);
 
         if (trait != null && !trait.isBlank()) {
             horseData.set(new NamespacedKey(BetterHorses.getInstance(), "trait"), PersistentDataType.STRING, trait);
@@ -166,6 +180,8 @@ public class RightClickListener implements Listener {
         if (armorStr != null) {
             HorseArmorUtils.setArmor(horse.getInventory(), new ItemStack(Material.valueOf(armorStr)));
         }
+
+        TrainingManager.recalculateAndApplyBonuses(horse);
 
         item.setAmount(item.getAmount() - 1);
         player.sendMessage(lang.getFormatted("messages.horse-respawned", "%mount%", mountName));

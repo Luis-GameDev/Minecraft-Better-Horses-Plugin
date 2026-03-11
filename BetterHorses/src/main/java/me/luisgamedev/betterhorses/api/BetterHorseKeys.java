@@ -26,6 +26,13 @@ public final class BetterHorseKeys {
     public static final NamespacedKey COOLDOWN = key("cooldown");
     public static final NamespacedKey SADDLE = key("saddle");
     public static final NamespacedKey ARMOR = key("armor");
+    public static final NamespacedKey BASE_HEALTH = key("base_health");
+    public static final NamespacedKey BASE_SPEED = key("base_speed");
+    public static final NamespacedKey BASE_JUMP = key("base_jump");
+    public static final NamespacedKey TRAINING_RIDING_UNITS = key("training_riding_units");
+    public static final NamespacedKey TRAINING_BRUSHING_UNITS = key("training_brushing_units");
+    public static final NamespacedKey TRAINING_FEEDING_UNITS = key("training_feeding_units");
+    public static final NamespacedKey TRAINING_BRUSH_COOLDOWN = key("training_brush_cooldown");
 
     private static NamespacedKey key(String key) {
         return new NamespacedKey(BetterHorses.getInstance(), key);

@@ -139,6 +139,8 @@ public class BetterHorses extends JavaPlugin {
         pluginManager.registerEvents(new HorseFeedListener(), this);
         pluginManager.registerEvents(new HorseItemBlockerListener(), this);
         pluginManager.registerEvents(new HorseMountListener(), this);
+        pluginManager.registerEvents(new HorseTrainingRidingListener(), this);
+        pluginManager.registerEvents(new HorseTrainingBrushingListener(), this);
         debugLog("LISTENER", "REGISTER_BASE", true, "Registered core horse listeners.");
 
         if (config.getBoolean("settings.allow-rightclick-spawn", true)) {
