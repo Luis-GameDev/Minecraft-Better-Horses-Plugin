@@ -56,6 +56,8 @@ public class RightClickListener implements Listener {
 
         ItemMeta meta = item.getItemMeta();
         PersistentDataContainer data = meta.getPersistentDataContainer();
+        TrainingManager.ensureTrainingData(data);
+        item.setItemMeta(meta);
 
         Double health = data.get(new NamespacedKey(BetterHorses.getInstance(), "health"), PersistentDataType.DOUBLE);
         Double currentHealth = data.get(new NamespacedKey(BetterHorses.getInstance(), "current_health"), PersistentDataType.DOUBLE);
