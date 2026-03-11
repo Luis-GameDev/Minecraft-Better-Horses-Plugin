@@ -42,6 +42,7 @@ public final class TrainingManager {
         if (!isTrainingEnabled(config) || !isCategoryEnabled(config, "riding")) return;
 
         PersistentDataContainer data = horse.getPersistentDataContainer();
+        ensureTrainingData(data);
         double current = data.getOrDefault(BetterHorseKeys.TRAINING_RIDING_UNITS, PersistentDataType.DOUBLE, 0.0);
         data.set(BetterHorseKeys.TRAINING_RIDING_UNITS, PersistentDataType.DOUBLE, current + units);
         recalculateAndApplyBonuses(horse);
@@ -53,6 +54,7 @@ public final class TrainingManager {
         if (!isTrainingEnabled(config) || !isCategoryEnabled(config, "brushing")) return;
 
         PersistentDataContainer data = horse.getPersistentDataContainer();
+        ensureTrainingData(data);
         double current = data.getOrDefault(BetterHorseKeys.TRAINING_BRUSHING_UNITS, PersistentDataType.DOUBLE, 0.0);
         data.set(BetterHorseKeys.TRAINING_BRUSHING_UNITS, PersistentDataType.DOUBLE, current + units);
         recalculateAndApplyBonuses(horse);
@@ -64,6 +66,7 @@ public final class TrainingManager {
         if (!isTrainingEnabled(config) || !isCategoryEnabled(config, "feeding")) return;
 
         PersistentDataContainer data = horse.getPersistentDataContainer();
+        ensureTrainingData(data);
         double current = data.getOrDefault(BetterHorseKeys.TRAINING_FEEDING_UNITS, PersistentDataType.DOUBLE, 0.0);
         data.set(BetterHorseKeys.TRAINING_FEEDING_UNITS, PersistentDataType.DOUBLE, current + units);
         recalculateAndApplyBonuses(horse);
@@ -73,6 +76,7 @@ public final class TrainingManager {
         FileConfiguration config = BetterHorses.getInstance().getConfig();
         PersistentDataContainer data = horse.getPersistentDataContainer();
 
+        ensureTrainingData(data);
         ensureBaseStats(horse);
 
         double baseHealth = data.getOrDefault(BetterHorseKeys.BASE_HEALTH, PersistentDataType.DOUBLE, readAttribute(horse, Attribute.GENERIC_MAX_HEALTH));
@@ -115,6 +119,8 @@ public final class TrainingManager {
         List<String> lines = new ArrayList<>();
         if (!isTrainingEnabled(config)) return lines;
 
+        ensureTrainingData(horse.getPersistentDataContainer());
+
         lines.add(color(language.getString("training-lore.title", "&6Training")));
         addCategoryLore(lines, config, language, horse, "riding", BetterHorseKeys.TRAINING_RIDING_UNITS, "&7Riding Progress: %bar% &b%percent%%");
         addCategoryLore(lines, config, language, horse, "brushing", BetterHorseKeys.TRAINING_BRUSHING_UNITS, "&7Brushing Progress: %bar% &b%percent%%");
@@ -124,9 +130,22 @@ public final class TrainingManager {
 
     public static double getProgressPercent(FileConfiguration config, PersistentDataContainer data, String category, NamespacedKey unitsKey) {
         if (!isTrainingEnabled(config) || !isCategoryEnabled(config, category)) return 0.0;
+        ensureTrainingData(data);
         double units = data.getOrDefault(unitsKey, PersistentDataType.DOUBLE, 0.0);
         double unitsPerPercent = Math.max(0.0001, config.getDouble("training.categories." + category + ".units-per-percent", 10.0));
         return Math.max(0.0, Math.min(100.0, units / unitsPerPercent));
+    }
+
+    public static void ensureTrainingData(PersistentDataContainer data) {
+        ensureTrainingUnits(data, BetterHorseKeys.TRAINING_RIDING_UNITS);
+        ensureTrainingUnits(data, BetterHorseKeys.TRAINING_BRUSHING_UNITS);
+        ensureTrainingUnits(data, BetterHorseKeys.TRAINING_FEEDING_UNITS);
+    }
+
+    private static void ensureTrainingUnits(PersistentDataContainer data, NamespacedKey unitsKey) {
+        if (!data.has(unitsKey, PersistentDataType.DOUBLE)) {
+            data.set(unitsKey, PersistentDataType.DOUBLE, 0.0);
+        }
     }
 
     private static void addCategoryLore(List<String> lines, FileConfiguration config, FileConfiguration language, AbstractHorse horse, String category, NamespacedKey key, String formatDefault) {
