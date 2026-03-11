@@ -10,9 +10,6 @@ import org.bukkit.NamespacedKey;
  */
 public final class BetterHorseKeys {
 
-    private BetterHorseKeys() {
-    }
-
     public static final NamespacedKey GENDER = key("gender");
     public static final NamespacedKey CURRENT_HEALTH = key("current_health");
     public static final NamespacedKey HEALTH = key("health");

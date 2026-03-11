@@ -54,7 +54,7 @@ public final class HorseInfoCommand {
             player.sendMessage(ChatColor.YELLOW + "Lore: " + ChatColor.WHITE + "<none>");
         }
 
-        if (meta.hasItemFlags()) {
+        if (!meta.getItemFlags().isEmpty()) {
             player.sendMessage(ChatColor.YELLOW + "ItemFlags:");
             for (ItemFlag itemFlag : meta.getItemFlags()) {
                 player.sendMessage(ChatColor.GRAY + "  - " + itemFlag.name());
