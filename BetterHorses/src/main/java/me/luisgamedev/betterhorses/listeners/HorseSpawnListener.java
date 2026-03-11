@@ -27,10 +27,12 @@ public class HorseSpawnListener implements Listener {
 
     @EventHandler
     public void onHorseSpawn(CreatureSpawnEvent event) {
+        BetterHorses plugin = BetterHorses.getInstance();
         if (!(event.getEntity() instanceof AbstractHorse horse)) return;
         SupportedMountType mountType = SupportedMountType.fromEntity(horse).orElse(null);
-        if (mountType == null || !mountType.isEnabled(BetterHorses.getInstance().getConfig())) return;
+        if (mountType == null || !mountType.isEnabled(plugin.getConfig())) return;
         if (event.getSpawnReason() != CreatureSpawnEvent.SpawnReason.NATURAL) return;
+        plugin.debugLog("HORSE_SPAWN", "NATURAL", true, "Natural mount spawn detected for " + horse.getUniqueId() + ".");
 
         // Set gender
         String gender = GENDERS[random.nextInt(GENDERS.length)];
@@ -74,5 +76,6 @@ public class HorseSpawnListener implements Listener {
 
         data.set(growthKey, PersistentDataType.INTEGER, stage);
         BetterHorsesAPI.callSpawnEvent(horse, null, BetterHorseSpawnEvent.SpawnCause.NATURAL);
+        plugin.debugLog("HORSE_SPAWN", "COMPLETE", true, "Initialized natural mount " + horse.getUniqueId() + " stage=" + stage + ".");
     }
 }

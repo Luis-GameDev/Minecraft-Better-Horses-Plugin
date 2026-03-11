@@ -29,10 +29,13 @@ import java.util.List;
 public class DespawnCommand {
 
     public static boolean despawnHorseToItem(Player player) {
-        LanguageManager lang = BetterHorses.getInstance().getLang();
+        BetterHorses plugin = BetterHorses.getInstance();
+        LanguageManager lang = plugin.getLang();
+        plugin.debugLog("HORSE_DESPAWN", "START", true, "Player " + player.getName() + " requested despawn.");
 
         if (!(player.getVehicle() instanceof AbstractHorse horse)) {
             player.sendMessage(lang.get("messages.invalid-vehicle"));
+            plugin.debugLog("HORSE_DESPAWN", "VALIDATION", false, "Player " + player.getName() + " is not riding a supported mount.");
             return true;
         }
 
@@ -42,6 +45,7 @@ public class DespawnCommand {
 
         if (mountType == null) {
             player.sendMessage(lang.get("messages.invalid-vehicle"));
+            plugin.debugLog("HORSE_DESPAWN", "MOUNT_TYPE", false, "Mount type disabled or unsupported for player " + player.getName() + ".");
             return true;
         }
 
@@ -66,6 +70,7 @@ public class DespawnCommand {
 
         if (ownershipRequired && !isOwner) {
             player.sendMessage(lang.getFormatted("messages.not-horse-owner", "%mount%", mountName));
+            plugin.debugLog("HORSE_DESPAWN", "OWNERSHIP", false, "Player " + player.getName() + " is not owner of " + horse.getUniqueId() + ".");
             return true;
         }
 
@@ -162,6 +167,7 @@ public class DespawnCommand {
         boolean wasLeashed = horse.isLeashed();
 
         if (BetterHorsesAPI.callDespawnEvent(horse, item)) {
+            plugin.debugLog("HORSE_DESPAWN", "EVENT", false, "Despawn was cancelled for horse " + horse.getUniqueId() + ".");
             return true;
         }
 
@@ -169,6 +175,7 @@ public class DespawnCommand {
 
         if (horse.isValid()) {
             player.sendMessage(lang.get("messages.cant-despawn"));
+            plugin.debugLog("HORSE_DESPAWN", "REMOVE", false, "Horse remained valid after remove call: " + horse.getUniqueId());
             return true;
         }
 
@@ -183,6 +190,7 @@ public class DespawnCommand {
         }
 
         player.sendMessage(lang.getFormatted("messages.horse-despawned", "%mount%", mountName));
+        plugin.debugLog("HORSE_DESPAWN", "COMPLETE", true, "Player " + player.getName() + " despawned " + mountName + ".");
         return true;
     }
 

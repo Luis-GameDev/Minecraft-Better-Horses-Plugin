@@ -17,7 +17,6 @@ import org.bukkit.command.SimpleCommandMap;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.plugin.PluginManager;
-import org.bukkit.command.SimpleCommandMap;
 
 import java.util.List;
 import java.util.logging.Level;
@@ -31,6 +30,7 @@ public class BetterHorses extends JavaPlugin {
 
     @Override
     public void onEnable() {
+        debugLog("PLUGIN", "ENABLE_START", true, "Starting BetterHorses plugin bootstrap.");
         if (getServer().getPluginManager().getPlugin("ProtocolLib") != null) {
             protocolLibAvailable = true;
             protocolManager = ProtocolLibrary.getProtocolManager();
@@ -64,6 +64,7 @@ public class BetterHorses extends JavaPlugin {
                 20L, // delay 1s
                 20L  // repeat every 1s
         );
+        debugLog("PLUGIN", "ENABLE_COMPLETE", true, "BetterHorses plugin enabled successfully.");
     }
 
     public static BetterHorses getInstance() {
@@ -78,15 +79,35 @@ public class BetterHorses extends JavaPlugin {
         reloadConfig();
         languageManager.reload();
         applyHorseCommandAliases();
+        debugLog("PLUGIN", "RELOAD", true, "Configuration and language files were reloaded.");
     }
 
     public boolean isProtocolLibAvailable() {
         return protocolLibAvailable;
     }
 
+    public boolean isDebugModeEnabled() {
+        return getConfig().getBoolean("debug.enabled", false);
+    }
+
+    public void debugLog(String action, String checkpoint, boolean success, String details) {
+        if (!isDebugModeEnabled()) {
+            return;
+        }
+
+        String status = success ? "PASS" : "FAIL";
+        String message = String.format("[DEBUG][%s][%s][%s] %s", action, checkpoint, status, details);
+        if (success) {
+            getLogger().info(message);
+            return;
+        }
+        getLogger().warning(message);
+    }
+
     private void applyHorseCommandAliases() {
         PluginCommand horseCommand = getCommand("horse");
         if (horseCommand == null) {
+            debugLog("PLUGIN", "COMMAND_ALIAS", false, "Horse command is unavailable while applying aliases.");
             return;
         }
         List<String> aliases = getConfig().getStringList("command-aliases");
@@ -100,10 +121,13 @@ public class BetterHorses extends JavaPlugin {
                 commandMap.register(getDescription().getName(), horseCommand);
             } else {
                 getLogger().warning("Unable to refresh horse command aliases because the command map is unavailable.");
+                debugLog("PLUGIN", "COMMAND_ALIAS", false, "Command map was unavailable for alias refresh.");
             }
         } catch (ReflectiveOperationException exception) {
             getLogger().log(Level.WARNING, "Failed to refresh horse command aliases.", exception);
+            debugLog("PLUGIN", "COMMAND_ALIAS", false, "Failed to refresh aliases due to reflection error: " + exception.getMessage());
         }
+        debugLog("PLUGIN", "COMMAND_ALIAS", true, "Applied /horse aliases: " + aliases);
     }
 
     private void registerListeners() {
@@ -115,43 +139,53 @@ public class BetterHorses extends JavaPlugin {
         pluginManager.registerEvents(new HorseFeedListener(), this);
         pluginManager.registerEvents(new HorseItemBlockerListener(), this);
         pluginManager.registerEvents(new HorseMountListener(), this);
+        debugLog("LISTENER", "REGISTER_BASE", true, "Registered core horse listeners.");
 
         if (config.getBoolean("settings.allow-rightclick-spawn", true)) {
             pluginManager.registerEvents(new RightClickListener(), this);
+            debugLog("LISTENER", "REGISTER", true, "Registered RightClickListener.");
         }
 
         if (config.getBoolean("settings.rider-invulnerable", false)) {
             pluginManager.registerEvents(new RiderInvulnerableListener(), this);
+            debugLog("LISTENER", "REGISTER", true, "Registered RiderInvulnerableListener.");
         }
 
         if (config.getBoolean("settings.fix-step-height", false)) {
             pluginManager.registerEvents(new HorseStepHeightListener(), this);
+            debugLog("LISTENER", "REGISTER", true, "Registered HorseStepHeightListener.");
         }
 
         if (config.getBoolean("settings.mounted-damage-boost.enabled", false)) {
             pluginManager.registerEvents(new MountedDamageBoostListener(), this);
+            debugLog("LISTENER", "REGISTER", true, "Registered MountedDamageBoostListener.");
         }
 
         boolean traitsEnabled = config.getBoolean("traits.enabled", true);
         if (!traitsEnabled) {
+            debugLog("LISTENER", "REGISTER_TRAITS", false, "Trait listeners were skipped because traits are disabled.");
             return;
         }
 
         if (isAnyTraitEnabled("hellmare", "dashboost", "kickback", "ghosthorse", "revenantcurse")) {
             pluginManager.registerEvents(new TraitActivationListener(), this);
+            debugLog("LISTENER", "REGISTER", true, "Registered TraitActivationListener.");
         }
 
         if (isAnyTraitEnabled("frosthooves", "featherhooves", "fireheart")) {
             pluginManager.registerEvents(new PassiveTraitListener(), this);
+            debugLog("LISTENER", "REGISTER", true, "Registered PassiveTraitListener.");
         }
 
         if (config.getBoolean("traits.revenantcurse.enabled", false)) {
             pluginManager.registerEvents(new RevenantCurseListener(), this);
+            debugLog("LISTENER", "REGISTER", true, "Registered RevenantCurseListener.");
         }
 
         if (config.getBoolean("traits.skyburst.enabled", false)
                 || config.getBoolean("traits.heavenhooves.enabled", false)) {
             pluginManager.registerEvents(new HorseJumpListener(), this);
+            debugLog("LISTENER", "REGISTER", true, "Registered HorseJumpListener.");
         }
     }
 

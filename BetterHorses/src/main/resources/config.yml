@@ -5,6 +5,12 @@ command-aliases:
   # - bh
   # - horses
 
+# Extensive debugging for command flow and horse item metadata inspection
+debug:
+  # When enabled, detailed BetterHorses debug logs are written to console
+  # and the /horse info command becomes available.
+  enabled: false
+
 # Customizes how big the maximum positive or negative mutation effect is (e.g. 0.05 = ±0.05)
 # e.g. health-factor 3 means the health of the child can be up to 3 HP higher or lower than the average HP of both parents
 mutation-factor:

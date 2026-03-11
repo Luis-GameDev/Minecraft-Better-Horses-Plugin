@@ -5,7 +5,7 @@ messages:
   camel: "Camel"
   lore-gender: "Gender: %value%"
   insufficient-permission: "You don't have permission to use %command%."
-  horse-usage: "Usage: /horse <spawn|despawn|neuter|reload>"
+  horse-usage: "Usage: /horse <spawn|despawn|neuter|reload|info*>"
   already-castrated: "This horse is already castrated."
   successfully-castrated: "You castrated the horse. It can no longer breed."
   horse-respawned: "%mount% respawned with stored stats."

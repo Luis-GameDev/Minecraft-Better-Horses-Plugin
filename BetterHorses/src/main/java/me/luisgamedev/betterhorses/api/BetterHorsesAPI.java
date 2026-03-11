@@ -36,6 +36,7 @@ public class BetterHorsesAPI {
 
         BetterHorses plugin = BetterHorses.getInstance();
         LanguageManager lang = plugin.getLang();
+        plugin.debugLog("API_CREATE_ITEM", "START", true, "Creating horse item health=" + health + ", speed=" + speed + ", jump=" + jump + ".");
         SupportedMountType targetMountType = mountType == null ? SupportedMountType.HORSE : mountType;
 
         String genderSymbol = gender.equals("male") ? lang.getRaw("messages.gender-male") : gender.equals("female") ? lang.getRaw("messages.gender-female") : "?";
@@ -43,6 +44,7 @@ public class BetterHorsesAPI {
         String materialName = plugin.getConfig().getString("settings.horse-item", "SADDLE");
         Material material = Material.getMaterial(materialName.toUpperCase());
         if (material == null || !material.isItem()) material = Material.SADDLE;
+        plugin.debugLog("API_CREATE_ITEM", "MATERIAL", true, "Using horse item material " + material + ".");
 
         ItemStack item = new ItemStack(material);
         ItemMeta meta = item.getItemMeta();
@@ -104,12 +106,14 @@ public class BetterHorsesAPI {
         item.setItemMeta(meta);
 
         if(targetInventory != null) {
+            plugin.debugLog("API_CREATE_ITEM", "INVENTORY", true, "Adding horse item to target inventory.");
             HashMap<Integer, ItemStack> leftovers = targetInventory.addItem(item);
             if (!leftovers.isEmpty() && dropIfFull) {
                 owner.getWorld().dropItem(owner.getLocation(), item);
             }
         }
 
+        plugin.debugLog("API_CREATE_ITEM", "COMPLETE", true, "Horse item created with mount type " + targetMountType.getEntityType() + ".");
         return item;
     }
 
@@ -142,13 +146,17 @@ public class BetterHorsesAPI {
     }
 
     public static void callSpawnEvent(AbstractHorse horse, ItemStack sourceItem, BetterHorseSpawnEvent.SpawnCause cause) {
+        BetterHorses.getInstance().debugLog("API_EVENT", "SPAWN", true, "Calling BetterHorseSpawnEvent for " + horse.getUniqueId() + " cause=" + cause + ".");
         Bukkit.getPluginManager().callEvent(new BetterHorseSpawnEvent(horse, sourceItem, cause));
     }
 
     public static boolean callDespawnEvent(AbstractHorse horse, ItemStack resultItem) {
+        BetterHorses.getInstance().debugLog("API_EVENT", "DESPAWN", true, "Calling BetterHorseDespawnEvent for " + horse.getUniqueId() + ".");
         BetterHorseDespawnEvent event = new BetterHorseDespawnEvent(horse, resultItem);
         Bukkit.getPluginManager().callEvent(event);
-        return event.isCancelled();
+        boolean cancelled = event.isCancelled();
+        BetterHorses.getInstance().debugLog("API_EVENT", "DESPAWN_RESULT", !cancelled, "Despawn event cancelled=" + cancelled + ".");
+        return cancelled;
     }
 
     private static String formatTraitName(String raw) {
