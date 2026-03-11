@@ -127,9 +127,9 @@ public final class TrainingManager {
 
         lines.add("");
         lines.add(color(language.getString("training-lore.title", "&6Training")));
-        addCategoryLore(lines, config, language, data, "riding", BetterHorseKeys.TRAINING_RIDING_UNITS, "&7Riding Progress: %bar% &b%percent%%");
-        addCategoryLore(lines, config, language, data, "brushing", BetterHorseKeys.TRAINING_BRUSHING_UNITS, "&7Brushing Progress: %bar% &b%percent%%");
-        addCategoryLore(lines, config, language, data, "feeding", BetterHorseKeys.TRAINING_FEEDING_UNITS, "&7Feeding Progress: %bar% &b%percent%%");
+        addCategoryLore(lines, config, language, data, "riding", BetterHorseKeys.TRAINING_RIDING_UNITS, "&7Riding: %bar% &b%percent%%");
+        addCategoryLore(lines, config, language, data, "brushing", BetterHorseKeys.TRAINING_BRUSHING_UNITS, "&7Brushing: %bar% &b%percent%%");
+        addCategoryLore(lines, config, language, data, "feeding", BetterHorseKeys.TRAINING_FEEDING_UNITS, "&7Feeding: %bar% &b%percent%%");
         return lines;
     }
 
