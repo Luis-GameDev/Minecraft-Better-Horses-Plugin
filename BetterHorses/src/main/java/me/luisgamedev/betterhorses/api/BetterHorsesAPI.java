@@ -5,6 +5,7 @@ import me.luisgamedev.betterhorses.BetterHorses;
 import me.luisgamedev.betterhorses.api.events.BetterHorseDespawnEvent;
 import me.luisgamedev.betterhorses.api.events.BetterHorseSpawnEvent;
 import me.luisgamedev.betterhorses.language.LanguageManager;
+import me.luisgamedev.betterhorses.training.TrainingManager;
 import me.luisgamedev.betterhorses.utils.SupportedMountType;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -72,6 +73,9 @@ public class BetterHorsesAPI {
         data.set(BetterHorseKeys.COLOR, PersistentDataType.STRING, Horse.Color.CREAMY.name());
         data.set(BetterHorseKeys.GROWTH_STAGE, PersistentDataType.INTEGER, growth);
         data.set(BetterHorseKeys.MOUNT_TYPE, PersistentDataType.STRING, targetMountType.getEntityType().name());
+        TrainingManager.ensureTrainingData(data);
+
+        lore.addAll(TrainingManager.getTrainingLoreLines(data));
 
         FileConfiguration config = plugin.getConfig();
         if (config.getBoolean("traits.enabled")) {

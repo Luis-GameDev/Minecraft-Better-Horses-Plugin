@@ -114,17 +114,21 @@ public final class TrainingManager {
     }
 
     public static List<String> getTrainingLoreLines(AbstractHorse horse) {
+        return getTrainingLoreLines(horse.getPersistentDataContainer());
+    }
+
+    public static List<String> getTrainingLoreLines(PersistentDataContainer data) {
         FileConfiguration config = BetterHorses.getInstance().getConfig();
         FileConfiguration language = BetterHorses.getInstance().getLang().getConfig();
         List<String> lines = new ArrayList<>();
         if (!isTrainingEnabled(config)) return lines;
 
-        ensureTrainingData(horse.getPersistentDataContainer());
+        ensureTrainingData(data);
 
         lines.add(color(language.getString("training-lore.title", "&6Training")));
-        addCategoryLore(lines, config, language, horse, "riding", BetterHorseKeys.TRAINING_RIDING_UNITS, "&7Riding Progress: %bar% &b%percent%%");
-        addCategoryLore(lines, config, language, horse, "brushing", BetterHorseKeys.TRAINING_BRUSHING_UNITS, "&7Brushing Progress: %bar% &b%percent%%");
-        addCategoryLore(lines, config, language, horse, "feeding", BetterHorseKeys.TRAINING_FEEDING_UNITS, "&7Feeding Progress: %bar% &b%percent%%");
+        addCategoryLore(lines, config, language, data, "riding", BetterHorseKeys.TRAINING_RIDING_UNITS, "&7Riding Progress: %bar% &b%percent%%");
+        addCategoryLore(lines, config, language, data, "brushing", BetterHorseKeys.TRAINING_BRUSHING_UNITS, "&7Brushing Progress: %bar% &b%percent%%");
+        addCategoryLore(lines, config, language, data, "feeding", BetterHorseKeys.TRAINING_FEEDING_UNITS, "&7Feeding Progress: %bar% &b%percent%%");
         return lines;
     }
 
@@ -148,9 +152,8 @@ public final class TrainingManager {
         }
     }
 
-    private static void addCategoryLore(List<String> lines, FileConfiguration config, FileConfiguration language, AbstractHorse horse, String category, NamespacedKey key, String formatDefault) {
+    private static void addCategoryLore(List<String> lines, FileConfiguration config, FileConfiguration language, PersistentDataContainer data, String category, NamespacedKey key, String formatDefault) {
         if (!isCategoryEnabled(config, category)) return;
-        PersistentDataContainer data = horse.getPersistentDataContainer();
         double percent = getProgressPercent(config, data, category, key);
         int rounded = (int) Math.round(percent);
         String bar = progressBar(config, language, percent);
