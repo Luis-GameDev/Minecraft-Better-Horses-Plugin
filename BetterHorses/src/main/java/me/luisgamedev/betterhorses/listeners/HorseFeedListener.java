@@ -1,6 +1,7 @@
 package me.luisgamedev.betterhorses.listeners;
 
 import me.luisgamedev.betterhorses.BetterHorses;
+import me.luisgamedev.betterhorses.training.TrainingManager;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.configuration.file.FileConfiguration;
@@ -13,7 +14,6 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
 
-import java.util.Locale;
 
 public class HorseFeedListener implements Listener {
 
@@ -41,6 +41,8 @@ public class HorseFeedListener implements Listener {
 
         if (!isFood) return;
 
+        final double feedingTrainingValue = TrainingManager.getFoodTrainingValue(type);
+
         final FileConfiguration config = BetterHorses.getInstance().getConfig();
 
         if (!horse.isAdult() && config.getBoolean("horse-growth-settings.enabled", false)) {
@@ -51,7 +53,12 @@ public class HorseFeedListener implements Listener {
         if (!horse.isTamed()) return;
 
         final long cooldownSeconds = config.getLong("settings.breeding-cooldown", 0L);
-        if (cooldownSeconds <= 0L) return;
+        if (cooldownSeconds <= 0L) {
+            if (feedingTrainingValue > 0) {
+                TrainingManager.addFeedingUnits(horse, feedingTrainingValue);
+            }
+            return;
+        }
 
         final long cooldownMillis = cooldownSeconds * 1000L;
         final long now = System.currentTimeMillis();
@@ -61,6 +68,9 @@ public class HorseFeedListener implements Listener {
             final String gender = data.getOrDefault(genderKey, PersistentDataType.STRING, "UNKNOWN");
             if ("male".equalsIgnoreCase(gender)) {
                 horse.setAge(0);
+                if (feedingTrainingValue > 0) {
+                    TrainingManager.addFeedingUnits(horse, feedingTrainingValue);
+                }
                 return;
             }
         }
@@ -78,6 +88,10 @@ public class HorseFeedListener implements Listener {
             } else {
                 data.remove(cooldownKey);
             }
+        }
+
+        if (!event.isCancelled() && feedingTrainingValue > 0) {
+            TrainingManager.addFeedingUnits(horse, feedingTrainingValue);
         }
     }
 }
