@@ -2,6 +2,7 @@ package me.luisgamedev.betterhorses.training;
 
 import me.luisgamedev.betterhorses.BetterHorses;
 import me.luisgamedev.betterhorses.api.BetterHorseKeys;
+import me.luisgamedev.betterhorses.utils.AttributeResolver;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
@@ -32,7 +33,7 @@ public final class TrainingManager {
         PersistentDataContainer data = horse.getPersistentDataContainer();
         saveBaseIfMissing(horse, data, Attribute.GENERIC_MAX_HEALTH, BetterHorseKeys.BASE_HEALTH);
         saveBaseIfMissing(horse, data, Attribute.GENERIC_MOVEMENT_SPEED, BetterHorseKeys.BASE_SPEED);
-        saveBaseIfMissing(horse, data, Attribute.HORSE_JUMP_STRENGTH, BetterHorseKeys.BASE_JUMP);
+        saveBaseIfMissing(horse, data, AttributeResolver.horseJumpStrength(), BetterHorseKeys.BASE_JUMP);
     }
 
     public static void addRidingUnits(AbstractHorse horse, double units) {
@@ -76,7 +77,7 @@ public final class TrainingManager {
 
         double baseHealth = data.getOrDefault(BetterHorseKeys.BASE_HEALTH, PersistentDataType.DOUBLE, readAttribute(horse, Attribute.GENERIC_MAX_HEALTH));
         double baseSpeed = data.getOrDefault(BetterHorseKeys.BASE_SPEED, PersistentDataType.DOUBLE, readAttribute(horse, Attribute.GENERIC_MOVEMENT_SPEED));
-        double baseJump = data.getOrDefault(BetterHorseKeys.BASE_JUMP, PersistentDataType.DOUBLE, readAttribute(horse, Attribute.HORSE_JUMP_STRENGTH));
+        double baseJump = data.getOrDefault(BetterHorseKeys.BASE_JUMP, PersistentDataType.DOUBLE, readAttribute(horse, AttributeResolver.horseJumpStrength()));
 
         double ridingPercent = getProgressPercent(config, data, "riding", BetterHorseKeys.TRAINING_RIDING_UNITS);
         double brushingPercent = getProgressPercent(config, data, "brushing", BetterHorseKeys.TRAINING_BRUSHING_UNITS);
@@ -91,7 +92,7 @@ public final class TrainingManager {
         double boostedHealth = baseHealth * (1.0 + (feedingPercent * healthBonusPerPercent / 100.0));
 
         setAttribute(horse, Attribute.GENERIC_MOVEMENT_SPEED, boostedSpeed);
-        setAttribute(horse, Attribute.HORSE_JUMP_STRENGTH, boostedJump);
+        setAttribute(horse, AttributeResolver.horseJumpStrength(), boostedJump);
 
         double oldHealth = readAttribute(horse, Attribute.GENERIC_MAX_HEALTH);
         setAttribute(horse, Attribute.GENERIC_MAX_HEALTH, boostedHealth);

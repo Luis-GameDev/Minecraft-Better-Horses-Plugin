@@ -31,6 +31,16 @@ public final class AttributeResolver {
         return resolveWithFallback(normalized, "GENERIC_" + normalized);
     }
 
+    /**
+     * Resolves horse jump strength across versions where it was renamed from
+     * {@code HORSE_JUMP_STRENGTH} to {@code JUMP_STRENGTH}.
+     *
+     * @return the matching jump strength {@link Attribute}
+     */
+    public static Attribute horseJumpStrength() {
+        return resolveWithFallback("HORSE_JUMP_STRENGTH", "JUMP_STRENGTH");
+    }
+
     private static Attribute resolveWithFallback(String primary, String fallback) {
         try {
             return Attribute.valueOf(primary);
