@@ -132,7 +132,7 @@ public class DespawnCommand {
         lore.add(ChatColor.GRAY + lang.getFormattedRaw("messages.lore-speed", "%value%", String.format("%.4f", speed)));
         lore.add(ChatColor.GRAY + lang.getFormattedRaw("messages.lore-jump", "%value%", String.format("%.4f", jump)));
         lore.add(ChatColor.GRAY + lang.getFormattedRaw("messages.lore-growth", "%value%", String.format("%d", growthStage)));
-        lore.addAll(TrainingManager.getTrainingLoreLines(horse));
+        TrainingManager.ensureTrainingLorePresent(lore, data);
 
         if (trait != null) {
             lore.add(ChatColor.GOLD + lang.getFormattedRaw("messages.trait-line", "%trait%", formatTraitName(trait)));
