@@ -54,12 +54,12 @@ public class DespawnCommand {
         String mountName = mountType.getDisplayName(lang);
 
         PersistentDataContainer data = horse.getPersistentDataContainer();
-        NamespacedKey genderKey = new NamespacedKey(BetterHorses.getInstance(), "gender");
-        NamespacedKey ownerKey = new NamespacedKey(BetterHorses.getInstance(), "owner");
-        NamespacedKey traitKey = new NamespacedKey(BetterHorses.getInstance(), "trait");
-        NamespacedKey neuterKey = new NamespacedKey(BetterHorses.getInstance(), "neutered");
-        NamespacedKey growthKey = new NamespacedKey(BetterHorses.getInstance(), "growth_stage");
-        NamespacedKey cooldownKey = new NamespacedKey(BetterHorses.getInstance(), "cooldown");
+        NamespacedKey genderKey = BetterHorseKeys.GENDER;
+        NamespacedKey ownerKey = BetterHorseKeys.OWNER;
+        NamespacedKey traitKey = BetterHorseKeys.TRAIT;
+        NamespacedKey neuterKey = BetterHorseKeys.NEUTERED;
+        NamespacedKey growthKey = BetterHorseKeys.GROWTH_STAGE;
+        NamespacedKey cooldownKey = BetterHorseKeys.COOLDOWN;
 
         String storedOwner = data.get(ownerKey, PersistentDataType.STRING);
         boolean ownershipRequired = mountType != SupportedMountType.CAMEL || storedOwner != null;
@@ -144,23 +144,23 @@ public class DespawnCommand {
         meta.setLore(lore);
 
         if (horse.getCustomName() != null) {
-            itemData.set(new NamespacedKey(BetterHorses.getInstance(), "name"), PersistentDataType.STRING, horse.getCustomName());
+            itemData.set(BetterHorseKeys.NAME, PersistentDataType.STRING, horse.getCustomName());
         }
-        itemData.set(new NamespacedKey(BetterHorses.getInstance(), "health"), PersistentDataType.DOUBLE, maxHealth);
-        itemData.set(new NamespacedKey(BetterHorses.getInstance(), "current_health"), PersistentDataType.DOUBLE, currentHealth);
-        itemData.set(new NamespacedKey(BetterHorses.getInstance(), "speed"), PersistentDataType.DOUBLE, speed);
-        itemData.set(new NamespacedKey(BetterHorses.getInstance(), "jump"), PersistentDataType.DOUBLE, jump);
+        itemData.set(BetterHorseKeys.HEALTH, PersistentDataType.DOUBLE, maxHealth);
+        itemData.set(BetterHorseKeys.CURRENT_HEALTH, PersistentDataType.DOUBLE, currentHealth);
+        itemData.set(BetterHorseKeys.SPEED, PersistentDataType.DOUBLE, speed);
+        itemData.set(BetterHorseKeys.JUMP, PersistentDataType.DOUBLE, jump);
         itemData.set(BetterHorseKeys.BASE_HEALTH, PersistentDataType.DOUBLE, data.getOrDefault(BetterHorseKeys.BASE_HEALTH, PersistentDataType.DOUBLE, maxHealth));
         itemData.set(BetterHorseKeys.BASE_SPEED, PersistentDataType.DOUBLE, data.getOrDefault(BetterHorseKeys.BASE_SPEED, PersistentDataType.DOUBLE, speed));
         itemData.set(BetterHorseKeys.BASE_JUMP, PersistentDataType.DOUBLE, data.getOrDefault(BetterHorseKeys.BASE_JUMP, PersistentDataType.DOUBLE, jump));
         itemData.set(BetterHorseKeys.TRAINING_RIDING_UNITS, PersistentDataType.DOUBLE, data.getOrDefault(BetterHorseKeys.TRAINING_RIDING_UNITS, PersistentDataType.DOUBLE, 0.0));
         itemData.set(BetterHorseKeys.TRAINING_BRUSHING_UNITS, PersistentDataType.DOUBLE, data.getOrDefault(BetterHorseKeys.TRAINING_BRUSHING_UNITS, PersistentDataType.DOUBLE, 0.0));
         itemData.set(BetterHorseKeys.TRAINING_FEEDING_UNITS, PersistentDataType.DOUBLE, data.getOrDefault(BetterHorseKeys.TRAINING_FEEDING_UNITS, PersistentDataType.DOUBLE, 0.0));
-        itemData.set(new NamespacedKey(BetterHorses.getInstance(), "owner"), PersistentDataType.STRING, player.getUniqueId().toString());
-        itemData.set(new NamespacedKey(BetterHorses.getInstance(), "style"), PersistentDataType.STRING, style.name());
-        itemData.set(new NamespacedKey(BetterHorses.getInstance(), "color"), PersistentDataType.STRING, color.name());
-        itemData.set(new NamespacedKey(BetterHorses.getInstance(), "growth_stage"), PersistentDataType.INTEGER, growthStage);
-        itemData.set(new NamespacedKey(BetterHorses.getInstance(), "mount_type"), PersistentDataType.STRING, mountType.getEntityType().name());
+        itemData.set(BetterHorseKeys.OWNER, PersistentDataType.STRING, player.getUniqueId().toString());
+        itemData.set(BetterHorseKeys.STYLE, PersistentDataType.STRING, style.name());
+        itemData.set(BetterHorseKeys.COLOR, PersistentDataType.STRING, color.name());
+        itemData.set(BetterHorseKeys.GROWTH_STAGE, PersistentDataType.INTEGER, growthStage);
+        itemData.set(BetterHorseKeys.MOUNT_TYPE, PersistentDataType.STRING, mountType.getEntityType().name());
         if (trait != null) {
             itemData.set(traitKey, PersistentDataType.STRING, trait.toLowerCase());
         }
@@ -168,10 +168,10 @@ public class DespawnCommand {
             itemData.set(neuterKey, PersistentDataType.BYTE, (byte) 1);
         }
         if (cooldown != null) {
-            itemData.set(cooldownKey, PersistentDataType.LONG, cooldown);
+            itemData.set(BetterHorseKeys.COOLDOWN, PersistentDataType.LONG, cooldown);
         }
-        if (saddle != null) itemData.set(new NamespacedKey(BetterHorses.getInstance(), "saddle"), PersistentDataType.STRING, saddle.getType().name());
-        if (armor != null) itemData.set(new NamespacedKey(BetterHorses.getInstance(), "armor"), PersistentDataType.STRING, armor.getType().name());
+        if (saddle != null) itemData.set(BetterHorseKeys.SADDLE, PersistentDataType.STRING, saddle.getType().name());
+        if (armor != null) itemData.set(BetterHorseKeys.ARMOR, PersistentDataType.STRING, armor.getType().name());
 
         item.setItemMeta(meta);
         boolean wasLeashed = horse.isLeashed();

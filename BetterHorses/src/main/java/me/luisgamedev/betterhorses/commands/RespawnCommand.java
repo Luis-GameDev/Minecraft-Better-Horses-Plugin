@@ -2,6 +2,7 @@ package me.luisgamedev.betterhorses.commands;
 
 import me.luisgamedev.betterhorses.BetterHorses;
 import me.luisgamedev.betterhorses.api.BetterHorsesAPI;
+import me.luisgamedev.betterhorses.api.BetterHorseKeys;
 import me.luisgamedev.betterhorses.api.events.BetterHorseSpawnEvent;
 import me.luisgamedev.betterhorses.language.LanguageManager;
 import me.luisgamedev.betterhorses.utils.AttributeResolver;
@@ -9,7 +10,6 @@ import me.luisgamedev.betterhorses.utils.HorseArmorUtils;
 import me.luisgamedev.betterhorses.utils.MountConfig;
 import me.luisgamedev.betterhorses.utils.SupportedMountType;
 import org.bukkit.Material;
-import org.bukkit.NamespacedKey;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.entity.AbstractHorse;
@@ -42,23 +42,23 @@ public class RespawnCommand {
         ItemMeta meta = item.getItemMeta();
         PersistentDataContainer data = meta.getPersistentDataContainer();
 
-        Double health = data.get(new NamespacedKey(BetterHorses.getInstance(), "health"), PersistentDataType.DOUBLE);
-        Double currentHealth = data.get(new NamespacedKey(BetterHorses.getInstance(), "current_health"), PersistentDataType.DOUBLE);
-        Double speed = data.get(new NamespacedKey(BetterHorses.getInstance(), "speed"), PersistentDataType.DOUBLE);
-        Double jump = data.get(new NamespacedKey(BetterHorses.getInstance(), "jump"), PersistentDataType.DOUBLE);
-        String gender = data.get(new NamespacedKey(BetterHorses.getInstance(), "gender"), PersistentDataType.STRING);
+        Double health = data.get(BetterHorseKeys.HEALTH, PersistentDataType.DOUBLE);
+        Double currentHealth = data.get(BetterHorseKeys.CURRENT_HEALTH, PersistentDataType.DOUBLE);
+        Double speed = data.get(BetterHorseKeys.SPEED, PersistentDataType.DOUBLE);
+        Double jump = data.get(BetterHorseKeys.JUMP, PersistentDataType.DOUBLE);
+        String gender = data.get(BetterHorseKeys.GENDER, PersistentDataType.STRING);
         String ownerUUID = player.getUniqueId().toString();
-        String styleStr = data.get(new NamespacedKey(BetterHorses.getInstance(), "style"), PersistentDataType.STRING);
-        String colorStr = data.get(new NamespacedKey(BetterHorses.getInstance(), "color"), PersistentDataType.STRING);
-        String saddleStr = data.get(new NamespacedKey(BetterHorses.getInstance(), "saddle"), PersistentDataType.STRING);
-        String armorStr = data.get(new NamespacedKey(BetterHorses.getInstance(), "armor"), PersistentDataType.STRING);
-        String customName = data.get(new NamespacedKey(BetterHorses.getInstance(), "name"), PersistentDataType.STRING);
-        String trait = data.get(new NamespacedKey(BetterHorses.getInstance(), "trait"), PersistentDataType.STRING);
-        Byte neutered = data.get(new NamespacedKey(BetterHorses.getInstance(), "neutered"), PersistentDataType.BYTE);
-        Integer storedStage = data.get(new NamespacedKey(BetterHorses.getInstance(), "growth_stage"), PersistentDataType.INTEGER);
-        String mountTypeName = data.get(new NamespacedKey(BetterHorses.getInstance(), "mount_type"), PersistentDataType.STRING);
-        Long cooldown = data.has(new NamespacedKey(BetterHorses.getInstance(), "cooldown"), PersistentDataType.LONG)
-                ? data.get(new NamespacedKey(BetterHorses.getInstance(), "cooldown"), PersistentDataType.LONG)
+        String styleStr = data.get(BetterHorseKeys.STYLE, PersistentDataType.STRING);
+        String colorStr = data.get(BetterHorseKeys.COLOR, PersistentDataType.STRING);
+        String saddleStr = data.get(BetterHorseKeys.SADDLE, PersistentDataType.STRING);
+        String armorStr = data.get(BetterHorseKeys.ARMOR, PersistentDataType.STRING);
+        String customName = data.get(BetterHorseKeys.NAME, PersistentDataType.STRING);
+        String trait = data.get(BetterHorseKeys.TRAIT, PersistentDataType.STRING);
+        Byte neutered = data.get(BetterHorseKeys.NEUTERED, PersistentDataType.BYTE);
+        Integer storedStage = data.get(BetterHorseKeys.GROWTH_STAGE, PersistentDataType.INTEGER);
+        String mountTypeName = data.get(BetterHorseKeys.MOUNT_TYPE, PersistentDataType.STRING);
+        Long cooldown = data.has(BetterHorseKeys.COOLDOWN, PersistentDataType.LONG)
+                ? data.get(BetterHorseKeys.COOLDOWN, PersistentDataType.LONG)
                 : null;
 
         int growthStage = storedStage != null ? storedStage : 10;
@@ -110,7 +110,7 @@ public class RespawnCommand {
         }
 
         horse.getPersistentDataContainer().set(
-                new NamespacedKey(BetterHorses.getInstance(), "growth_stage"),
+                BetterHorseKeys.GROWTH_STAGE,
                 PersistentDataType.INTEGER,
                 growthStage
         );
@@ -124,20 +124,33 @@ public class RespawnCommand {
 
         PersistentDataContainer horseData = horse.getPersistentDataContainer();
 
-        horseData.set(new NamespacedKey(BetterHorses.getInstance(), "owner"), PersistentDataType.STRING, ownerUUID);
-        horseData.set(new NamespacedKey(BetterHorses.getInstance(), "gender"), PersistentDataType.STRING, gender);
-        horseData.set(new NamespacedKey(BetterHorses.getInstance(), "mount_type"), PersistentDataType.STRING, mountType.getEntityType().name());
+        horseData.set(BetterHorseKeys.BASE_HEALTH, PersistentDataType.DOUBLE,
+                data.getOrDefault(BetterHorseKeys.BASE_HEALTH, PersistentDataType.DOUBLE, health));
+        horseData.set(BetterHorseKeys.BASE_SPEED, PersistentDataType.DOUBLE,
+                data.getOrDefault(BetterHorseKeys.BASE_SPEED, PersistentDataType.DOUBLE, speed));
+        horseData.set(BetterHorseKeys.BASE_JUMP, PersistentDataType.DOUBLE,
+                data.getOrDefault(BetterHorseKeys.BASE_JUMP, PersistentDataType.DOUBLE, jump));
+        horseData.set(BetterHorseKeys.TRAINING_RIDING_UNITS, PersistentDataType.DOUBLE,
+                data.getOrDefault(BetterHorseKeys.TRAINING_RIDING_UNITS, PersistentDataType.DOUBLE, 0.0));
+        horseData.set(BetterHorseKeys.TRAINING_BRUSHING_UNITS, PersistentDataType.DOUBLE,
+                data.getOrDefault(BetterHorseKeys.TRAINING_BRUSHING_UNITS, PersistentDataType.DOUBLE, 0.0));
+        horseData.set(BetterHorseKeys.TRAINING_FEEDING_UNITS, PersistentDataType.DOUBLE,
+                data.getOrDefault(BetterHorseKeys.TRAINING_FEEDING_UNITS, PersistentDataType.DOUBLE, 0.0));
+
+        horseData.set(BetterHorseKeys.OWNER, PersistentDataType.STRING, ownerUUID);
+        horseData.set(BetterHorseKeys.GENDER, PersistentDataType.STRING, gender);
+        horseData.set(BetterHorseKeys.MOUNT_TYPE, PersistentDataType.STRING, mountType.getEntityType().name());
 
         if (trait != null && !trait.isBlank()) {
-            horseData.set(new NamespacedKey(BetterHorses.getInstance(), "trait"), PersistentDataType.STRING, trait);
+            horseData.set(BetterHorseKeys.TRAIT, PersistentDataType.STRING, trait);
         }
 
         if (neutered != null && neutered == (byte) 1) {
-            horseData.set(new NamespacedKey(BetterHorses.getInstance(), "neutered"), PersistentDataType.BYTE, (byte) 1);
+            horseData.set(BetterHorseKeys.NEUTERED, PersistentDataType.BYTE, (byte) 1);
         }
 
         if (cooldown != null) {
-            horseData.set(new NamespacedKey(BetterHorses.getInstance(), "cooldown"), PersistentDataType.LONG, cooldown);
+            horseData.set(BetterHorseKeys.COOLDOWN, PersistentDataType.LONG, cooldown);
         }
 
         if (customName != null && !customName.isBlank()) {
