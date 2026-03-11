@@ -61,3 +61,15 @@ traits:
 
   revenantcurse: "Revenant Curse"
   revenantcurse-message: "The curse has been activated. Attackers will suffer."
+
+training-lore:
+  title: "&6Training"
+  progress-bar:
+    filled-char: "■"
+    empty-char: "■"
+    filled-color: "&b"
+    empty-color: "&8"
+  categories:
+    riding: "&7Riding Progress: %bar% &b%percent%%"
+    brushing: "&7Brushing Progress: %bar% &b%percent%%"
+    feeding: "&7Feeding Progress: %bar% &b%percent%%"

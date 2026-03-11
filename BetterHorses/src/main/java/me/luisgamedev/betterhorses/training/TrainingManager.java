@@ -110,13 +110,14 @@ public final class TrainingManager {
 
     public static List<String> getTrainingLoreLines(AbstractHorse horse) {
         FileConfiguration config = BetterHorses.getInstance().getConfig();
+        FileConfiguration language = BetterHorses.getInstance().getLang().getConfig();
         List<String> lines = new ArrayList<>();
         if (!isTrainingEnabled(config)) return lines;
 
-        lines.add(color(config.getString("training.lore.title", "&6Training")));
-        addCategoryLore(lines, config, horse, "riding", BetterHorseKeys.TRAINING_RIDING_UNITS, "&7Riding Progress: %bar% &b%percent%%");
-        addCategoryLore(lines, config, horse, "brushing", BetterHorseKeys.TRAINING_BRUSHING_UNITS, "&7Brushing Progress: %bar% &b%percent%%");
-        addCategoryLore(lines, config, horse, "feeding", BetterHorseKeys.TRAINING_FEEDING_UNITS, "&7Feeding Progress: %bar% &b%percent%%");
+        lines.add(color(language.getString("training-lore.title", "&6Training")));
+        addCategoryLore(lines, config, language, horse, "riding", BetterHorseKeys.TRAINING_RIDING_UNITS, "&7Riding Progress: %bar% &b%percent%%");
+        addCategoryLore(lines, config, language, horse, "brushing", BetterHorseKeys.TRAINING_BRUSHING_UNITS, "&7Brushing Progress: %bar% &b%percent%%");
+        addCategoryLore(lines, config, language, horse, "feeding", BetterHorseKeys.TRAINING_FEEDING_UNITS, "&7Feeding Progress: %bar% &b%percent%%");
         return lines;
     }
 
@@ -127,22 +128,22 @@ public final class TrainingManager {
         return Math.max(0.0, Math.min(100.0, units / unitsPerPercent));
     }
 
-    private static void addCategoryLore(List<String> lines, FileConfiguration config, AbstractHorse horse, String category, NamespacedKey key, String formatDefault) {
+    private static void addCategoryLore(List<String> lines, FileConfiguration config, FileConfiguration language, AbstractHorse horse, String category, NamespacedKey key, String formatDefault) {
         if (!isCategoryEnabled(config, category)) return;
         PersistentDataContainer data = horse.getPersistentDataContainer();
         double percent = getProgressPercent(config, data, category, key);
         int rounded = (int) Math.round(percent);
-        String bar = progressBar(config, percent);
-        String format = config.getString("training.categories." + category + ".lore-format", formatDefault);
+        String bar = progressBar(config, language, percent);
+        String format = language.getString("training-lore.categories." + category, formatDefault);
         lines.add(color(format.replace("%bar%", bar).replace("%percent%", String.valueOf(rounded))));
     }
 
-    private static String progressBar(FileConfiguration config, double percent) {
+    private static String progressBar(FileConfiguration config, FileConfiguration language, double percent) {
         int length = Math.max(5, config.getInt("training.lore.progress-bar.length", 20));
-        char filledChar = config.getString("training.lore.progress-bar.filled-char", "■").charAt(0);
-        char emptyChar = config.getString("training.lore.progress-bar.empty-char", "■").charAt(0);
-        String filledColor = color(config.getString("training.lore.progress-bar.filled-color", "&b"));
-        String emptyColor = color(config.getString("training.lore.progress-bar.empty-color", "&8"));
+        char filledChar = language.getString("training-lore.progress-bar.filled-char", "■").charAt(0);
+        char emptyChar = language.getString("training-lore.progress-bar.empty-char", "■").charAt(0);
+        String filledColor = color(language.getString("training-lore.progress-bar.filled-color", "&b"));
+        String emptyColor = color(language.getString("training-lore.progress-bar.empty-color", "&8"));
 
         int filled = (int) Math.round((percent / 100.0) * length);
         StringBuilder builder = new StringBuilder();
