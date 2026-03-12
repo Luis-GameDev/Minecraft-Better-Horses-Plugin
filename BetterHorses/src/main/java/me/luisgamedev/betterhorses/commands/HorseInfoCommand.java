@@ -120,6 +120,8 @@ public final class HorseInfoCommand {
                 + data.getOrDefault(BetterHorseKeys.GENDER, PersistentDataType.STRING, "<none>"));
         player.sendMessage(ChatColor.YELLOW + "Growth Stage: " + ChatColor.WHITE
                 + data.getOrDefault(BetterHorseKeys.GROWTH_STAGE, PersistentDataType.INTEGER, -1));
+        player.sendMessage(ChatColor.YELLOW + "Neutered: " + ChatColor.WHITE
+                + data.getOrDefault(BetterHorseKeys.NEUTERED, PersistentDataType.INTEGER, 0));
         plugin.debugLog("HORSE_INFO", "MOUNT_SCAN", true,
                 "Player " + player.getName() + " inspected mounted horse " + horse.getUniqueId() + ".");
         return true;
