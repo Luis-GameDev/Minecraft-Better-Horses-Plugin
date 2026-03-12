@@ -50,7 +50,8 @@ public class BetterHorses extends JavaPlugin {
         }
         instance = this;
         saveDefaultConfig();
-        updateConfigWithMissingSections();
+        updateYamlWithMissingSections("config.yml", false);
+        updateYamlWithMissingSections("language.yml", true);
         languageManager = new LanguageManager(this);
 
         registerListeners();
@@ -84,34 +85,38 @@ public class BetterHorses extends JavaPlugin {
     }
 
     public void reloadPluginConfiguration() {
-        updateConfigWithMissingSections();
+        updateYamlWithMissingSections("config.yml", false);
+        updateYamlWithMissingSections("language.yml", true);
         reloadConfig();
         languageManager.reload();
         applyHorseCommandAliases();
         debugLog("PLUGIN", "RELOAD", true, "Configuration and language files were reloaded.");
     }
 
-    private void updateConfigWithMissingSections() {
-        File configFile = new File(getDataFolder(), "config.yml");
-        if (!configFile.exists()) {
-            return;
+    private void updateYamlWithMissingSections(String fileName, boolean saveDefaultWhenMissing) {
+        File file = new File(getDataFolder(), fileName);
+        if (!file.exists()) {
+            if (!saveDefaultWhenMissing) {
+                return;
+            }
+            saveResource(fileName, false);
         }
 
-        YamlConfiguration currentConfig = YamlConfiguration.loadConfiguration(configFile);
+        YamlConfiguration currentConfig = YamlConfiguration.loadConfiguration(file);
         YamlConfiguration defaultConfig;
 
-        try (InputStream defaultConfigStream = getResource("config.yml")) {
+        try (InputStream defaultConfigStream = getResource(fileName)) {
             if (defaultConfigStream == null) {
-                getLogger().warning("Default config.yml resource was not found; skipping config update.");
-                debugLog("CONFIG", "UPDATE", false, "Missing default config.yml resource.");
+                getLogger().warning("Default " + fileName + " resource was not found; skipping file update.");
+                debugLog("CONFIG", "UPDATE", false, "Missing default resource: " + fileName + ".");
                 return;
             }
             defaultConfig = YamlConfiguration.loadConfiguration(
                     new InputStreamReader(defaultConfigStream, StandardCharsets.UTF_8)
             );
         } catch (IOException exception) {
-            getLogger().log(Level.WARNING, "Failed to read default config.yml while updating config.", exception);
-            debugLog("CONFIG", "UPDATE", false, "Unable to read default config.yml: " + exception.getMessage());
+            getLogger().log(Level.WARNING, "Failed to read default " + fileName + " while updating file.", exception);
+            debugLog("CONFIG", "UPDATE", false, "Unable to read default file " + fileName + ": " + exception.getMessage());
             return;
         }
 
@@ -121,13 +126,13 @@ public class BetterHorses extends JavaPlugin {
         }
 
         try {
-            currentConfig.save(configFile);
+            currentConfig.save(file);
             reloadConfig();
-            getLogger().info("Updated config.yml with newly added default values.");
-            debugLog("CONFIG", "UPDATE", true, "Added missing config entries from default config.yml.");
+            getLogger().info("Updated " + fileName + " with newly added default values.");
+            debugLog("CONFIG", "UPDATE", true, "Added missing entries from default " + fileName + ".");
         } catch (IOException exception) {
-            getLogger().log(Level.WARNING, "Failed to save updated config.yml.", exception);
-            debugLog("CONFIG", "UPDATE", false, "Failed to save updated config.yml: " + exception.getMessage());
+            getLogger().log(Level.WARNING, "Failed to save updated " + fileName + ".", exception);
+            debugLog("CONFIG", "UPDATE", false, "Failed to save updated " + fileName + ": " + exception.getMessage());
         }
     }
 
