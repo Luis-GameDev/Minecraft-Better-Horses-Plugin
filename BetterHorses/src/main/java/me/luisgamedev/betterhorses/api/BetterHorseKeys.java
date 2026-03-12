@@ -33,6 +33,7 @@ public final class BetterHorseKeys {
     public static final NamespacedKey TRAINING_BRUSHING_UNITS = key("training_brushing_units");
     public static final NamespacedKey TRAINING_FEEDING_UNITS = key("training_feeding_units");
     public static final NamespacedKey TRAINING_BRUSH_COOLDOWN = key("training_brush_cooldown");
+    public static final NamespacedKey TRAINING_FEED_COOLDOWN = key("training_feed_cooldown");
 
     private static NamespacedKey key(String key) {
         return new NamespacedKey(BetterHorses.getInstance(), key);

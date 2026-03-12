@@ -207,6 +207,7 @@ training:
 
     feeding:
       enabled: true
+      cooldown-seconds: 180
       # 1% progress = this much total food value
       units-per-percent: 2.0
       # 0.2 means +0.2% max HP per 1% progress
