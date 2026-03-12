@@ -33,7 +33,7 @@ import java.util.Optional;
 public class BetterHorsesAPI {
 
     @Description("Creates a horseitem and either returns the ItemStack or directly puts it into the provided Inventory")
-    public static ItemStack createHorseItem(@Nonnull double health, @Nonnull double speed, @Nonnull double jump, @Nonnull String gender, @Nullable String name, @Nullable Player owner, @Nullable Inventory targetInventory, @Nullable boolean dropIfFull, @Nullable String traitOverride, @Nonnull Integer growthStage, @Nullable SupportedMountType mountType) {
+    public static ItemStack createHorseItem(@Nonnull double health, @Nonnull double speed, @Nonnull double jump, @Nonnull String gender, @Nullable String name, @Nullable Player owner, @Nullable Inventory targetInventory, @Nullable boolean dropIfFull, @Nullable String traitOverride, @Nonnull boolean isNeutered, @Nonnull Integer growthStage, @Nullable SupportedMountType mountType) {
 
         BetterHorses plugin = BetterHorses.getInstance();
         LanguageManager lang = plugin.getLang();
@@ -73,8 +73,10 @@ public class BetterHorsesAPI {
         data.set(BetterHorseKeys.COLOR, PersistentDataType.STRING, Horse.Color.CREAMY.name());
         data.set(BetterHorseKeys.GROWTH_STAGE, PersistentDataType.INTEGER, growth);
         data.set(BetterHorseKeys.MOUNT_TYPE, PersistentDataType.STRING, targetMountType.getEntityType().name());
+        if (isNeutered) {
+            data.set(BetterHorseKeys.NEUTERED, PersistentDataType.BYTE, (byte) 1);
+        }
         TrainingManager.ensureTrainingData(data);
-
         TrainingManager.ensureTrainingLorePresent(lore, data);
 
         FileConfiguration config = plugin.getConfig();
@@ -87,6 +89,13 @@ public class BetterHorsesAPI {
                     if (traitConfig.getBoolean("enabled", false)) {
                         data.set(BetterHorseKeys.TRAIT, PersistentDataType.STRING, traitOverride.toLowerCase());
                         lore.add(ChatColor.GOLD + lang.getFormattedRaw("messages.trait-line", "%trait%", formatTraitName(traitOverride)));
+                        if(!isNeutered) {
+                            lore.add("");
+                        }
+                    }
+                    if (isNeutered) {
+                        lore.add(ChatColor.DARK_GRAY + lang.getRaw("messages.lore-neutered"));
+                        lore.add("");
                     }
                 }
             } else if (traitsSection != null) {

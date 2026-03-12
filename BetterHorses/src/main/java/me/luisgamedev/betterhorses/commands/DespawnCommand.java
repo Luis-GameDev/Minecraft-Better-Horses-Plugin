@@ -136,9 +136,13 @@ public class DespawnCommand {
 
         if (trait != null) {
             lore.add(ChatColor.GOLD + lang.getFormattedRaw("messages.trait-line", "%trait%", formatTraitName(trait)));
+            if(!isNeutered) {
+                lore.add("");
+            }
         }
         if (isNeutered) {
             lore.add(ChatColor.DARK_GRAY + lang.getRaw("messages.lore-neutered"));
+            lore.add("");
         }
 
         meta.setLore(lore);

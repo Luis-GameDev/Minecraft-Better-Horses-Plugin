@@ -46,6 +46,9 @@ public class HorseCreateTabCompleter implements TabCompleter {
                     }
                 }
             }
+            case 9 -> {
+                suggestions.addAll(List.of("false", "true"));
+            }
             default -> {
                 return Collections.emptyList();
             }

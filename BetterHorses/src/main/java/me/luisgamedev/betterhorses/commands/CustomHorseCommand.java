@@ -51,6 +51,7 @@ public class CustomHorseCommand implements CommandExecutor {
             String trait = args.length >= 6 ? args[5].toLowerCase() : null;
             int growthStage = args.length >= 7 ? Integer.parseInt(args[6]) : 10;
             String mountTypeArg = args.length >= 8 ? args[7] : null;
+            boolean isNeutered = args.length >= 9 ? Boolean.parseBoolean(args[8]) : false;
 
             FileConfiguration config = BetterHorses.getInstance().getConfig();
 
@@ -87,7 +88,7 @@ public class CustomHorseCommand implements CommandExecutor {
             }
 
             Inventory target = player.getInventory();
-            BetterHorsesAPI.createHorseItem(health, speed, jump, gender, name, player, target, true, validatedTrait, growthStage, mountType);
+            BetterHorsesAPI.createHorseItem(health, speed, jump, gender, name, player, target, true, validatedTrait, isNeutered, growthStage, mountType);
             plugin.debugLog("HORSE_CREATE", "COMPLETE", true, "Created item for " + player.getName() + " with mount=" + mountType.getEntityType() + ", trait=" + validatedTrait + ".");
             return true;
 
