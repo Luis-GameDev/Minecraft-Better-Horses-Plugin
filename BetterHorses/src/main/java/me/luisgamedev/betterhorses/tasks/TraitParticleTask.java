@@ -1,6 +1,7 @@
 package me.luisgamedev.betterhorses.tasks;
 
 import me.luisgamedev.betterhorses.BetterHorses;
+import me.luisgamedev.betterhorses.traits.TraitParticleResolver;
 import org.bukkit.Bukkit;
 import org.bukkit.NamespacedKey;
 import org.bukkit.Particle;
@@ -29,34 +30,34 @@ public class TraitParticleTask implements Runnable {
 
                 switch (trait.toLowerCase()) {
                     case "skyburst":
-                        spawn(horse, Particle.CLOUD, 1, 0.3, 0.1, 0.3);
+                        spawn(horse, TraitParticleResolver.getTraitParticle("skyburst", Particle.CLOUD), 1, 0.3, 0.1, 0.3);
                         break;
                     case "hellmare":
-                        spawn(horse, Particle.FLAME, 4, 0.3, 0.1, 0.3);
+                        spawn(horse, TraitParticleResolver.getTraitParticle("hellmare", Particle.FLAME), 4, 0.3, 0.1, 0.3);
                         break;
                     case "ghosthorse":
-                        spawn(horse, Particle.SMOKE, 4, 0.25, 0.2, 0.25);
+                        spawn(horse, TraitParticleResolver.getTraitParticle("ghosthorse", Particle.SMOKE), 4, 0.25, 0.2, 0.25);
                         break;
                     case "dashboost":
-                        spawn(horse, Particle.SWEEP_ATTACK, 2, 0.2, 0.1, 0.2);
+                        spawn(horse, TraitParticleResolver.getTraitParticle("dashboost", Particle.SWEEP_ATTACK), 2, 0.2, 0.1, 0.2);
                         break;
                     case "revenantcurse":
-                        spawn(horse, Particle.SOUL, 3, 0.25, 0.3, 0.25);
+                        spawn(horse, TraitParticleResolver.getTraitParticle("revenantcurse", Particle.SOUL), 3, 0.25, 0.3, 0.25);
                         break;
                     case "frosthooves":
-                        spawn(horse, Particle.SNOWFLAKE, 3, 0.3, 0.1, 0.3);
+                        spawn(horse, TraitParticleResolver.getTraitParticle("frosthooves", Particle.SNOWFLAKE), 3, 0.3, 0.1, 0.3);
                         break;
                     case "kickback":
-                        spawn(horse, Particle.CRIT, 2, 0.25, 0.2, 0.25);
+                        spawn(horse, TraitParticleResolver.getTraitParticle("kickback", Particle.CRIT), 2, 0.25, 0.2, 0.25);
                         break;
                     case "featherhooves":
-                        spawn(horse, Particle.CLOUD, 2, 0.2, 0.3, 0.2);
+                        spawn(horse, TraitParticleResolver.getTraitParticle("featherhooves", Particle.CLOUD), 2, 0.2, 0.3, 0.2);
                         break;
                     case "fireheart":
-                        spawn(horse, Particle.LAVA, 2, 0.2, 0.1, 0.2);
+                        spawn(horse, TraitParticleResolver.getTraitParticle("fireheart", Particle.LAVA), 2, 0.2, 0.1, 0.2);
                         break;
                     case "heavenhooves":
-                        spawn(horse, Particle.GLOW, 2, 0.2, 0.3, 0.2);
+                        spawn(horse, TraitParticleResolver.getTraitParticle("heavenhooves", Particle.GLOW), 2, 0.2, 0.3, 0.2);
                 }
             }
         }
