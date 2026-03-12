@@ -222,9 +222,18 @@ public class BetterHorses extends JavaPlugin {
         pluginManager.registerEvents(new HorseFeedListener(), this);
         pluginManager.registerEvents(new HorseItemBlockerListener(), this);
         pluginManager.registerEvents(new HorseMountListener(), this);
-        pluginManager.registerEvents(new HorseTrainingRidingListener(), this);
-        pluginManager.registerEvents(new HorseTrainingBrushingListener(), this);
+
         debugLog("LISTENER", "REGISTER_BASE", true, "Registered core horse listeners.");
+
+        if (config.getBoolean("training.enabled", true) && config.getBoolean("training.categories.riding.enabled", true)) {
+            pluginManager.registerEvents(new HorseTrainingRidingListener(), this);
+            debugLog("LISTENER", "REGISTER", true, "Registered HorseTrainingRidingListener.");
+        }
+
+        if (config.getBoolean("training.enabled", true) && config.getBoolean("training.categories.brushing.enabled", true)) {
+            pluginManager.registerEvents(new HorseTrainingBrushingListener(), this);
+            debugLog("LISTENER", "REGISTER", true, "Registered HorseTrainingBrushingListener.");
+        }
 
         if (config.getBoolean("settings.allow-rightclick-spawn", true)) {
             pluginManager.registerEvents(new RightClickListener(), this);
@@ -236,7 +245,7 @@ public class BetterHorses extends JavaPlugin {
             debugLog("LISTENER", "REGISTER", true, "Registered RiderInvulnerableListener.");
         }
 
-        if (config.getBoolean("settings.fix-step-height", false)) {
+        if (config.getBoolean("settings.fix-step-height", true)) {
             pluginManager.registerEvents(new HorseStepHeightListener(), this);
             debugLog("LISTENER", "REGISTER", true, "Registered HorseStepHeightListener.");
         }
