@@ -14,10 +14,17 @@ import me.luisgamedev.betterhorses.tasks.TraitParticleTask;
 import org.bukkit.Bukkit;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.command.SimpleCommandMap;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.plugin.PluginManager;
 
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.logging.Level;
 
@@ -43,6 +50,7 @@ public class BetterHorses extends JavaPlugin {
         }
         instance = this;
         saveDefaultConfig();
+        updateConfigWithMissingSections();
         languageManager = new LanguageManager(this);
 
         registerListeners();
@@ -76,10 +84,80 @@ public class BetterHorses extends JavaPlugin {
     }
 
     public void reloadPluginConfiguration() {
+        updateConfigWithMissingSections();
         reloadConfig();
         languageManager.reload();
         applyHorseCommandAliases();
         debugLog("PLUGIN", "RELOAD", true, "Configuration and language files were reloaded.");
+    }
+
+    private void updateConfigWithMissingSections() {
+        File configFile = new File(getDataFolder(), "config.yml");
+        if (!configFile.exists()) {
+            return;
+        }
+
+        YamlConfiguration currentConfig = YamlConfiguration.loadConfiguration(configFile);
+        YamlConfiguration defaultConfig;
+
+        try (InputStream defaultConfigStream = getResource("config.yml")) {
+            if (defaultConfigStream == null) {
+                getLogger().warning("Default config.yml resource was not found; skipping config update.");
+                debugLog("CONFIG", "UPDATE", false, "Missing default config.yml resource.");
+                return;
+            }
+            defaultConfig = YamlConfiguration.loadConfiguration(
+                    new InputStreamReader(defaultConfigStream, StandardCharsets.UTF_8)
+            );
+        } catch (IOException exception) {
+            getLogger().log(Level.WARNING, "Failed to read default config.yml while updating config.", exception);
+            debugLog("CONFIG", "UPDATE", false, "Unable to read default config.yml: " + exception.getMessage());
+            return;
+        }
+
+        boolean changed = addMissingConfigValues(currentConfig, defaultConfig, "");
+        if (!changed) {
+            return;
+        }
+
+        try {
+            currentConfig.save(configFile);
+            reloadConfig();
+            getLogger().info("Updated config.yml with newly added default values.");
+            debugLog("CONFIG", "UPDATE", true, "Added missing config entries from default config.yml.");
+        } catch (IOException exception) {
+            getLogger().log(Level.WARNING, "Failed to save updated config.yml.", exception);
+            debugLog("CONFIG", "UPDATE", false, "Failed to save updated config.yml: " + exception.getMessage());
+        }
+    }
+
+    private boolean addMissingConfigValues(ConfigurationSection target, ConfigurationSection defaults, String parentPath) {
+        boolean changed = false;
+
+        for (String key : defaults.getKeys(false)) {
+            String fullPath = parentPath.isEmpty() ? key : parentPath + "." + key;
+            Object defaultValue = defaults.get(key);
+
+            if (defaultValue instanceof ConfigurationSection defaultSection) {
+                if (!target.isConfigurationSection(key)) {
+                    target.createSection(key);
+                    changed = true;
+                }
+
+                ConfigurationSection targetSection = target.getConfigurationSection(key);
+                if (targetSection != null) {
+                    changed |= addMissingConfigValues(targetSection, defaultSection, fullPath);
+                }
+                continue;
+            }
+
+            if (!target.contains(key)) {
+                target.set(key, defaultValue);
+                changed = true;
+            }
+        }
+
+        return changed;
     }
 
     public boolean isProtocolLibAvailable() {
