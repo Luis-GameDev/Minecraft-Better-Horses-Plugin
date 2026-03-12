@@ -156,6 +156,8 @@ public class DespawnCommand {
         itemData.set(BetterHorseKeys.TRAINING_RIDING_UNITS, PersistentDataType.DOUBLE, data.getOrDefault(BetterHorseKeys.TRAINING_RIDING_UNITS, PersistentDataType.DOUBLE, 0.0));
         itemData.set(BetterHorseKeys.TRAINING_BRUSHING_UNITS, PersistentDataType.DOUBLE, data.getOrDefault(BetterHorseKeys.TRAINING_BRUSHING_UNITS, PersistentDataType.DOUBLE, 0.0));
         itemData.set(BetterHorseKeys.TRAINING_FEEDING_UNITS, PersistentDataType.DOUBLE, data.getOrDefault(BetterHorseKeys.TRAINING_FEEDING_UNITS, PersistentDataType.DOUBLE, 0.0));
+        itemData.set(BetterHorseKeys.TRAINING_BRUSH_COOLDOWN, PersistentDataType.LONG, data.getOrDefault(BetterHorseKeys.TRAINING_BRUSH_COOLDOWN, PersistentDataType.LONG, 0L));
+        itemData.set(BetterHorseKeys.TRAINING_FEED_COOLDOWN, PersistentDataType.LONG, data.getOrDefault(BetterHorseKeys.TRAINING_FEED_COOLDOWN, PersistentDataType.LONG, 0L));
         itemData.set(BetterHorseKeys.OWNER, PersistentDataType.STRING, player.getUniqueId().toString());
         itemData.set(BetterHorseKeys.STYLE, PersistentDataType.STRING, style.name());
         itemData.set(BetterHorseKeys.COLOR, PersistentDataType.STRING, color.name());

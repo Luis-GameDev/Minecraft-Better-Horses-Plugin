@@ -57,6 +57,8 @@ public class RespawnCommand {
         Byte neutered = data.get(BetterHorseKeys.NEUTERED, PersistentDataType.BYTE);
         Integer storedStage = data.get(BetterHorseKeys.GROWTH_STAGE, PersistentDataType.INTEGER);
         String mountTypeName = data.get(BetterHorseKeys.MOUNT_TYPE, PersistentDataType.STRING);
+        long brushTrainingCooldown = data.getOrDefault(BetterHorseKeys.TRAINING_BRUSH_COOLDOWN, PersistentDataType.LONG, 0L);
+        long feedTrainingCooldown = data.getOrDefault(BetterHorseKeys.TRAINING_FEED_COOLDOWN, PersistentDataType.LONG, 0L);
         Long cooldown = data.has(BetterHorseKeys.COOLDOWN, PersistentDataType.LONG)
                 ? data.get(BetterHorseKeys.COOLDOWN, PersistentDataType.LONG)
                 : null;
@@ -136,6 +138,8 @@ public class RespawnCommand {
                 data.getOrDefault(BetterHorseKeys.TRAINING_BRUSHING_UNITS, PersistentDataType.DOUBLE, 0.0));
         horseData.set(BetterHorseKeys.TRAINING_FEEDING_UNITS, PersistentDataType.DOUBLE,
                 data.getOrDefault(BetterHorseKeys.TRAINING_FEEDING_UNITS, PersistentDataType.DOUBLE, 0.0));
+        horseData.set(BetterHorseKeys.TRAINING_BRUSH_COOLDOWN, PersistentDataType.LONG, brushTrainingCooldown);
+        horseData.set(BetterHorseKeys.TRAINING_FEED_COOLDOWN, PersistentDataType.LONG, feedTrainingCooldown);
 
         horseData.set(BetterHorseKeys.OWNER, PersistentDataType.STRING, ownerUUID);
         horseData.set(BetterHorseKeys.GENDER, PersistentDataType.STRING, gender);
