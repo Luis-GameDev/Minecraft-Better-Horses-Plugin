@@ -125,6 +125,7 @@ traits:
   hellmare:
     enabled: true
     chance: 0.005 # 0.5%
+    particle: FLAME
     duration: 5
     cooldown: 90
     radius: 2 # Radius of the fire below the horse
@@ -132,25 +133,30 @@ traits:
   fireheart:
     enabled: true
     chance: 0.01 # 1%
+    particle: LAVA
 
   dashboost:
     enabled: true
     chance: 0.01 # 1%
+    particle: SWEEP_ATTACK
     duration: 10
     cooldown: 30
 
   featherhooves:
     enabled: true
     chance: 0.01 # 1%
+    particle: CLOUD
 
   frosthooves:
     enabled: true
     chance: 0.005 # 0.5%
+    particle: SNOWFLAKE
     radius: 3 # Radius of the ice below the horse
 
   kickback:
     enabled: true
     chance: 0.005 # 0.5%
+    particle: CRIT
     radius: 4
     strength: 6
     cooldown: 20
@@ -158,23 +164,27 @@ traits:
   ghosthorse:
     enabled: true
     chance: 0.005 # 0.5%
+    particle: SMOKE
     duration: 5
     cooldown: 30
 
   skyburst:
     enabled: true
     chance: 0.003 # 0.3%
+    particle: CLOUD
     radius: 4
 
   revenantcurse:
     enabled: true
     chance: 0.005 # 0.5%
+    particle: SOUL
     cooldown: 30
     duration: 10
 
   heavenhooves:
     enabled: true
     chance: 0.001 # 0.1%
+    particle: GLOW
     strength: 0.4
     particles: true
 
