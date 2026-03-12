@@ -88,8 +88,7 @@ settings:
         - brushing
         - feeding
         - blank
-    - trait:
-        - blank
+    - trait
     - neutered
 
   # Allow additional mount types to be treated like BetterHorses horses
