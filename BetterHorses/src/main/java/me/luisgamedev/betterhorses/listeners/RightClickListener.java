@@ -69,6 +69,8 @@ public class RightClickListener implements Listener {
         Double ridingUnits = data.get(BetterHorseKeys.TRAINING_RIDING_UNITS, PersistentDataType.DOUBLE);
         Double brushingUnits = data.get(BetterHorseKeys.TRAINING_BRUSHING_UNITS, PersistentDataType.DOUBLE);
         Double feedingUnits = data.get(BetterHorseKeys.TRAINING_FEEDING_UNITS, PersistentDataType.DOUBLE);
+        long brushTrainingCooldown = data.getOrDefault(BetterHorseKeys.TRAINING_BRUSH_COOLDOWN, PersistentDataType.LONG, 0L);
+        long feedTrainingCooldown = data.getOrDefault(BetterHorseKeys.TRAINING_FEED_COOLDOWN, PersistentDataType.LONG, 0L);
         String gender = data.get(new NamespacedKey(BetterHorses.getInstance(), "gender"), PersistentDataType.STRING);
         String ownerUUID = player.getUniqueId().toString();
         String styleStr = data.get(new NamespacedKey(BetterHorses.getInstance(), "style"), PersistentDataType.STRING);
@@ -151,6 +153,8 @@ public class RightClickListener implements Listener {
         horseData.set(BetterHorseKeys.TRAINING_RIDING_UNITS, PersistentDataType.DOUBLE, ridingUnits != null ? ridingUnits : 0.0);
         horseData.set(BetterHorseKeys.TRAINING_BRUSHING_UNITS, PersistentDataType.DOUBLE, brushingUnits != null ? brushingUnits : 0.0);
         horseData.set(BetterHorseKeys.TRAINING_FEEDING_UNITS, PersistentDataType.DOUBLE, feedingUnits != null ? feedingUnits : 0.0);
+        horseData.set(BetterHorseKeys.TRAINING_BRUSH_COOLDOWN, PersistentDataType.LONG, brushTrainingCooldown);
+        horseData.set(BetterHorseKeys.TRAINING_FEED_COOLDOWN, PersistentDataType.LONG, feedTrainingCooldown);
 
         if (trait != null && !trait.isBlank()) {
             horseData.set(new NamespacedKey(BetterHorses.getInstance(), "trait"), PersistentDataType.STRING, trait);
