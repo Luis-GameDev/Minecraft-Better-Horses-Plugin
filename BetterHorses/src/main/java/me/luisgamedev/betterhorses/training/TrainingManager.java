@@ -121,7 +121,7 @@ public final class TrainingManager {
         FileConfiguration config = BetterHorses.getInstance().getConfig();
         List<String> lines = new ArrayList<>();
         if (!isTrainingLoreEnabled(config)) return lines;
-        
+
         lines.addAll(getTrainingLoreContentLines(data));
         return lines;
     }
