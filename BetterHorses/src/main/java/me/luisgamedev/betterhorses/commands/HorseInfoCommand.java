@@ -202,17 +202,35 @@ public final class HorseInfoCommand {
 
     private static String resolveTimestamp(PersistentDataContainer container, NamespacedKey key) {
         Long timestamp = container.get(key, PersistentDataType.LONG);
-        final FileConfiguration config = BetterHorses.getInstance().getConfig();
-
         if (timestamp == null) {
             return "<missing>";
         }
 
-        long delta = timestamp - System.currentTimeMillis();
+        final FileConfiguration config = BetterHorses.getInstance().getConfig();
+        final long cooldownMillis = resolveCooldownMillis(config, key);
+        final long cooldownEnd = timestamp + cooldownMillis;
+
+        long delta = cooldownEnd - System.currentTimeMillis();
         if (delta > 0) {
             return timestamp + " (active, " + (delta / 1000.0) + "s remaining)";
         }
         return timestamp + " (ready)";
+    }
+
+    private static long resolveCooldownMillis(FileConfiguration config, NamespacedKey key) {
+        if (key.equals(BetterHorseKeys.COOLDOWN)) {
+            return Math.max(0L, config.getLong("settings.breeding-cooldown", 0L) * 1000L);
+        }
+
+        if (key.equals(BetterHorseKeys.TRAINING_BRUSH_COOLDOWN)) {
+            return Math.max(0L, config.getLong("training.categories.brushing.cooldown-seconds", 180L) * 1000L);
+        }
+
+        if (key.equals(BetterHorseKeys.TRAINING_FEED_COOLDOWN)) {
+            return Math.max(0L, config.getLong("training.categories.feeding.cooldown-seconds", 0L) * 1000L);
+        }
+
+        return 0L;
     }
 
     private static String resolveValue(PersistentDataContainer container, NamespacedKey key) {
