@@ -4,6 +4,7 @@ import me.luisgamedev.betterhorses.BetterHorses;
 import me.luisgamedev.betterhorses.training.TrainingManager;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
+import org.bukkit.Particle;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Horse;
 import org.bukkit.entity.Player;
@@ -92,6 +93,7 @@ public class HorseFeedListener implements Listener {
 
         if (!event.isCancelled() && feedingTrainingValue > 0) {
             TrainingManager.addFeedingUnits(horse, feedingTrainingValue);
+            horse.getWorld().spawnParticle(Particle.COMPOSTER, horse.getLocation().add(0, 1, 0), 5);
         }
     }
 }
