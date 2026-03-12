@@ -38,7 +38,7 @@ public class HorseTrainingBrushingListener implements Listener {
         long now = System.currentTimeMillis();
         long lastBrush = data.getOrDefault(BetterHorseKeys.TRAINING_BRUSH_COOLDOWN, PersistentDataType.LONG, 0L);
 
-        if (cooldownMillis == 0L || lastBrush == 0 || lastBrush + cooldownMillis > now) {
+        if (cooldownMillis == 0L || lastBrush + cooldownMillis > now) {
             return;
         }
         horse.getWorld().spawnParticle(Particle.COMPOSTER, horse.getEyeLocation(), 5);

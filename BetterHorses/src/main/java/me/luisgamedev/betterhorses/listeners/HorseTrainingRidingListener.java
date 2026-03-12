@@ -9,8 +9,8 @@ import org.bukkit.event.player.PlayerMoveEvent;
 
 public class HorseTrainingRidingListener implements Listener {
 
-    @EventHandler(ignoreCancelled = true)
     public void onMove(PlayerMoveEvent event) {
+        if(event.isCancelled()) return;
         Player player = event.getPlayer();
         if (!(player.getVehicle() instanceof AbstractHorse horse)) return;
         if (event.getTo() == null || event.getFrom().getWorld() != event.getTo().getWorld()) return;
