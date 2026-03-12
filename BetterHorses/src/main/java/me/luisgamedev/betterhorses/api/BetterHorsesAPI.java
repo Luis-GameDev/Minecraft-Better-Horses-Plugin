@@ -34,10 +34,10 @@ import org.bukkit.persistence.PersistentDataType;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Base64;
+import java.util.Map;
 import java.util.Optional;
 
 public class BetterHorsesAPI {
@@ -424,62 +424,151 @@ public class BetterHorsesAPI {
             boolean isNeutered
     ) {
         List<String> lore = new ArrayList<>();
-        List<String> layout = config.getStringList("settings.horse-item-lore-layout");
-        if (layout.isEmpty()) {
-            layout = Arrays.asList("gender", "health", "speed", "jump", "growth", "blank", "training", "trait", "neutered", "blank");
+        Object layout = config.get("settings.horse-item-lore-layout");
+        if (!(layout instanceof List<?>)) {
+            layout = getDefaultHorseLoreLayout();
         }
 
-        int pendingBlankLines = 0;
+        appendLoreLayoutNodes(
+                layout,
+                lore,
+                lang,
+                data,
+                genderSymbol,
+                currentHealth,
+                maxHealth,
+                speed,
+                jump,
+                growth,
+                trait,
+                isNeutered
+        );
 
-        for (String rawPart : layout) {
-            String part = rawPart == null ? "" : rawPart.trim().toLowerCase();
-            List<String> sectionLines = new ArrayList<>();
-
-            switch (part) {
-                case "gender" -> sectionLines.add(ChatColor.GRAY + lang.getFormattedRaw("messages.lore-gender", "%value%", genderSymbol));
-                case "health" -> sectionLines.add(ChatColor.GRAY + lang.getFormattedRaw("messages.lore-health", "%value%", String.format("%.2f", currentHealth), "%max%", String.format("%.2f", maxHealth)));
-                case "speed" -> sectionLines.add(ChatColor.GRAY + lang.getFormattedRaw("messages.lore-speed", "%value%", String.format("%.4f", speed)));
-                case "jump" -> sectionLines.add(ChatColor.GRAY + lang.getFormattedRaw("messages.lore-jump", "%value%", String.format("%.4f", jump)));
-                case "growth" -> sectionLines.add(ChatColor.GRAY + lang.getFormattedRaw("messages.lore-growth", "%value%", String.format("%d", growth)));
-                case "trait" -> {
-                    if (trait != null && !trait.isBlank()) {
-                        sectionLines.add(ChatColor.GOLD + lang.getFormattedRaw("messages.trait-line", "%trait%", formatTraitName(trait)));
-                    }
-                }
-                case "neutered" -> {
-                    if (isNeutered) {
-                        sectionLines.add(ChatColor.DARK_GRAY + lang.getRaw("messages.lore-neutered"));
-                    }
-                }
-                case "training" -> sectionLines.addAll(TrainingManager.getTrainingLoreLines(data));
-                case "blank" -> pendingBlankLines++;
-                default -> {
-                    if (part.startsWith("literal:")) {
-                        sectionLines.add(ChatColor.translateAlternateColorCodes('&', rawPart.substring("literal:".length())));
-                    }
-                }
-            }
-
-            if (!sectionLines.isEmpty()) {
-                for (int i = 0; i < pendingBlankLines; i++) {
-                    if (!lore.isEmpty()) {
-                        lore.add("");
-                    }
-                }
-                pendingBlankLines = 0;
-                lore.addAll(sectionLines);
-            }
-        }
-
-        return trimTrailingBlankLines(lore);
+        return lore;
     }
 
-    private static List<String> trimTrailingBlankLines(List<String> input) {
-        List<String> trimmed = new ArrayList<>(input);
-        while (!trimmed.isEmpty() && trimmed.get(trimmed.size() - 1).isBlank()) {
-            trimmed.remove(trimmed.size() - 1);
+    private static List<Object> getDefaultHorseLoreLayout() {
+        List<Object> layout = new ArrayList<>();
+
+        List<Object> statsChildren = new ArrayList<>();
+        statsChildren.add("gender");
+        statsChildren.add("health");
+        statsChildren.add("speed");
+        statsChildren.add("jump");
+        statsChildren.add("growth");
+        statsChildren.add("blank");
+        layout.add(Map.of("stats", statsChildren));
+
+        List<Object> trainingChildren = new ArrayList<>();
+        trainingChildren.add("riding");
+        trainingChildren.add("brushing");
+        trainingChildren.add("feeding");
+        trainingChildren.add("blank");
+        layout.add(Map.of("training", trainingChildren));
+
+        layout.add(Map.of("trait", List.of("blank")));
+        layout.add("neutered");
+        return layout;
+    }
+
+    private static void appendLoreLayoutNodes(
+            Object node,
+            List<String> lore,
+            LanguageManager lang,
+            PersistentDataContainer data,
+            String genderSymbol,
+            double currentHealth,
+            double maxHealth,
+            double speed,
+            double jump,
+            int growth,
+            @Nullable String trait,
+            boolean isNeutered
+    ) {
+        if (node instanceof List<?> list) {
+            for (Object child : list) {
+                appendLoreLayoutNodes(child, lore, lang, data, genderSymbol, currentHealth, maxHealth, speed, jump, growth, trait, isNeutered);
+            }
+            return;
         }
-        return trimmed;
+
+        if (node instanceof Map<?, ?> map) {
+            for (Map.Entry<?, ?> entry : map.entrySet()) {
+                String rawPart = String.valueOf(entry.getKey());
+                List<String> sectionLines = resolveHorseLoreLines(rawPart, lang, data, genderSymbol, currentHealth, maxHealth, speed, jump, growth, trait, isNeutered);
+                boolean parentIsGroup = sectionLines.isEmpty() && !isDirectLoreLineToken(rawPart);
+                if (!sectionLines.isEmpty()) {
+                    lore.addAll(sectionLines);
+                }
+
+                if (!sectionLines.isEmpty() || parentIsGroup) {
+                    appendLoreLayoutNodes(entry.getValue(), lore, lang, data, genderSymbol, currentHealth, maxHealth, speed, jump, growth, trait, isNeutered);
+                }
+            }
+            return;
+        }
+
+        if (node instanceof String rawPart) {
+            lore.addAll(resolveHorseLoreLines(rawPart, lang, data, genderSymbol, currentHealth, maxHealth, speed, jump, growth, trait, isNeutered));
+        }
+    }
+
+    private static boolean isDirectLoreLineToken(String rawPart) {
+        String part = rawPart == null ? "" : rawPart.trim().toLowerCase();
+        return switch (part) {
+            case "gender", "health", "speed", "jump", "growth", "trait", "neutered", "training", "blank", "riding", "brushing", "feeding" -> true;
+            default -> part.startsWith("literal:");
+        };
+    }
+
+    private static List<String> resolveHorseLoreLines(
+            String rawPart,
+            LanguageManager lang,
+            PersistentDataContainer data,
+            String genderSymbol,
+            double currentHealth,
+            double maxHealth,
+            double speed,
+            double jump,
+            int growth,
+            @Nullable String trait,
+            boolean isNeutered
+    ) {
+        String part = rawPart == null ? "" : rawPart.trim().toLowerCase();
+        List<String> sectionLines = new ArrayList<>();
+
+        switch (part) {
+            case "gender" -> sectionLines.add(ChatColor.GRAY + lang.getFormattedRaw("messages.lore-gender", "%value%", genderSymbol));
+            case "health" -> sectionLines.add(ChatColor.GRAY + lang.getFormattedRaw("messages.lore-health", "%value%", String.format("%.2f", currentHealth), "%max%", String.format("%.2f", maxHealth)));
+            case "speed" -> sectionLines.add(ChatColor.GRAY + lang.getFormattedRaw("messages.lore-speed", "%value%", String.format("%.4f", speed)));
+            case "jump" -> sectionLines.add(ChatColor.GRAY + lang.getFormattedRaw("messages.lore-jump", "%value%", String.format("%.4f", jump)));
+            case "growth" -> sectionLines.add(ChatColor.GRAY + lang.getFormattedRaw("messages.lore-growth", "%value%", String.format("%d", growth)));
+            case "trait" -> {
+                if (trait != null && !trait.isBlank()) {
+                    sectionLines.add(ChatColor.GOLD + lang.getFormattedRaw("messages.trait-line", "%trait%", formatTraitName(trait)));
+                }
+            }
+            case "neutered" -> {
+                if (isNeutered) {
+                    sectionLines.add(ChatColor.DARK_GRAY + lang.getRaw("messages.lore-neutered"));
+                }
+            }
+            case "training" -> sectionLines.addAll(TrainingManager.getTrainingLoreLines(data));
+            case "riding", "brushing", "feeding" -> {
+                String line = TrainingManager.getTrainingCategoryLine(data, part);
+                if (!line.isEmpty()) {
+                    sectionLines.add(line);
+                }
+            }
+            case "blank" -> sectionLines.add("");
+            default -> {
+                if (part.startsWith("literal:")) {
+                    sectionLines.add(ChatColor.translateAlternateColorCodes('&', rawPart.substring("literal:".length())));
+                }
+            }
+        }
+
+        return sectionLines;
     }
 
     public static boolean isBetterHorse(Entity entity) {

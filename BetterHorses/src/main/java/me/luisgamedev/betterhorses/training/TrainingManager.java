@@ -145,6 +145,35 @@ public final class TrainingManager {
         return isTrainingEnabled(config) && config.getBoolean("training.lore.enabled", true);
     }
 
+    public static String getTrainingCategoryLine(PersistentDataContainer data, String category) {
+        FileConfiguration config = BetterHorses.getInstance().getConfig();
+        FileConfiguration language = BetterHorses.getInstance().getLang().getConfig();
+        if (!isTrainingLoreEnabled(config) || !isCategoryEnabled(config, category)) return "";
+
+        ensureTrainingData(data);
+        NamespacedKey key = switch (category.toLowerCase()) {
+            case "riding" -> BetterHorseKeys.TRAINING_RIDING_UNITS;
+            case "brushing" -> BetterHorseKeys.TRAINING_BRUSHING_UNITS;
+            case "feeding" -> BetterHorseKeys.TRAINING_FEEDING_UNITS;
+            default -> null;
+        };
+
+        if (key == null) return "";
+
+        double percent = getProgressPercent(config, data, category, key);
+        int rounded = (int) Math.round(percent);
+        String bar = progressBar(config, language, percent);
+        String defaultFormat = switch (category.toLowerCase()) {
+            case "riding" -> "&7Riding: %bar% &b%percent%%";
+            case "brushing" -> "&7Brushing: %bar% &b%percent%%";
+            case "feeding" -> "&7Feeding: %bar% &b%percent%%";
+            default -> "";
+        };
+
+        String format = language.getString("training-lore.categories." + category.toLowerCase(), defaultFormat);
+        return color(format.replace("%bar%", bar).replace("%percent%", String.valueOf(rounded)));
+    }
+
     public static void ensureTrainingLorePresent(List<String> lore, PersistentDataContainer data) {
         FileConfiguration config = BetterHorses.getInstance().getConfig();
         if (!isTrainingEnabled(config)) return;
