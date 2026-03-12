@@ -138,7 +138,9 @@ public class HorseBreedListener implements Listener {
         }
 
         // Apply cooldown to both parents
-        dataFather.set(BetterHorseKeys.COOLDOWN, PersistentDataType.LONG, now);
+        if (!config.getBoolean("settings.male-ignore-cooldown", true)) {
+            dataFather.set(BetterHorseKeys.COOLDOWN, PersistentDataType.LONG, now);
+        }
         dataMother.set(BetterHorseKeys.COOLDOWN, PersistentDataType.LONG, now);
 
         father.setAge(0);
