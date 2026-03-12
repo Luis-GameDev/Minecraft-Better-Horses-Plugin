@@ -34,6 +34,7 @@ import org.bukkit.persistence.PersistentDataType;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Base64;
@@ -58,15 +59,7 @@ public class BetterHorsesAPI {
 
         ItemStack item = new ItemStack(material);
         ItemMeta meta = item.getItemMeta();
-        List<String> lore = new ArrayList<>();
-
         int growth = growthStage > 10 || growthStage < 1 ? 10 : growthStage;
-
-        lore.add(ChatColor.GRAY + lang.getFormattedRaw("messages.lore-gender", "%value%", genderSymbol));
-        lore.add(ChatColor.GRAY + lang.getFormattedRaw("messages.lore-health", "%value%", String.format("%.2f", health), "%max%", String.format("%.2f", health)));
-        lore.add(ChatColor.GRAY + lang.getFormattedRaw("messages.lore-speed", "%value%", String.format("%.4f", speed)));
-        lore.add(ChatColor.GRAY + lang.getFormattedRaw("messages.lore-jump", "%value%", String.format("%.4f", jump)));
-        lore.add(ChatColor.GRAY + lang.getFormattedRaw("messages.lore-growth", "%value%", String.format("%d", growth)));
 
         PersistentDataContainer data = meta.getPersistentDataContainer();
         data.set(BetterHorseKeys.GENDER, PersistentDataType.STRING, gender);
@@ -86,9 +79,9 @@ public class BetterHorsesAPI {
             data.set(BetterHorseKeys.NEUTERED, PersistentDataType.BYTE, (byte) 1);
         }
         TrainingManager.ensureTrainingData(data);
-        TrainingManager.ensureTrainingLorePresent(lore, data);
 
         FileConfiguration config = plugin.getConfig();
+        String traitForLore = null;
         if (config.getBoolean("traits.enabled")) {
             ConfigurationSection traitsSection = config.getConfigurationSection("traits");
 
@@ -97,14 +90,7 @@ public class BetterHorsesAPI {
                     ConfigurationSection traitConfig = traitsSection.getConfigurationSection(traitOverride);
                     if (traitConfig.getBoolean("enabled", false)) {
                         data.set(BetterHorseKeys.TRAIT, PersistentDataType.STRING, traitOverride.toLowerCase());
-                        lore.add(ChatColor.GOLD + lang.getFormattedRaw("messages.trait-line", "%trait%", formatTraitName(traitOverride)));
-                        if(!isNeutered) {
-                            lore.add("");
-                        }
-                    }
-                    if (isNeutered) {
-                        lore.add(ChatColor.DARK_GRAY + lang.getRaw("messages.lore-neutered"));
-                        lore.add("");
+                        traitForLore = traitOverride;
                     }
                 }
             } else if (traitsSection != null) {
@@ -116,12 +102,26 @@ public class BetterHorsesAPI {
                     double chance = tSec.getDouble("chance", 0);
                     if (Math.random() < chance) {
                         data.set(BetterHorseKeys.TRAIT, PersistentDataType.STRING, trait.toLowerCase());
-                        lore.add(ChatColor.GOLD + lang.getFormattedRaw("messages.trait-line", "%trait%", formatTraitName(trait)));
+                        traitForLore = trait;
                         break;
                     }
                 }
             }
         }
+
+        List<String> lore = buildHorseLore(
+                config,
+                lang,
+                data,
+                genderSymbol,
+                health,
+                health,
+                speed,
+                jump,
+                growth,
+                traitForLore,
+                isNeutered
+        );
 
         meta.setLore(lore);
         meta.setDisplayName(name);
@@ -340,21 +340,19 @@ public class BetterHorsesAPI {
         String name = horse.getCustomName() != null ? horse.getCustomName() : mountType.getDisplayName(lang);
         meta.setDisplayName(ChatColor.GOLD + name + " " + genderSymbol);
 
-        List<String> lore = new ArrayList<>();
-        lore.add(ChatColor.GRAY + lang.getFormattedRaw("messages.lore-gender", "%value%", genderSymbol));
-        lore.add(ChatColor.GRAY + lang.getFormattedRaw("messages.lore-health", "%value%", String.format("%.2f", currentHealth), "%max%", String.format("%.2f", maxHealth)));
-        lore.add(ChatColor.GRAY + lang.getFormattedRaw("messages.lore-speed", "%value%", String.format("%.4f", speed)));
-        lore.add(ChatColor.GRAY + lang.getFormattedRaw("messages.lore-jump", "%value%", String.format("%.4f", jump)));
-        lore.add(ChatColor.GRAY + lang.getFormattedRaw("messages.lore-growth", "%value%", String.format("%d", growthStage)));
-        TrainingManager.ensureTrainingLorePresent(lore, data);
-        if (trait != null) {
-            lore.add(ChatColor.GOLD + lang.getFormattedRaw("messages.trait-line", "%trait%", formatTraitName(trait)));
-            if (!isNeutered) lore.add("");
-        }
-        if (isNeutered) {
-            lore.add(ChatColor.DARK_GRAY + lang.getRaw("messages.lore-neutered"));
-            lore.add("");
-        }
+        List<String> lore = buildHorseLore(
+                plugin.getConfig(),
+                lang,
+                data,
+                genderSymbol,
+                currentHealth,
+                maxHealth,
+                speed,
+                jump,
+                growthStage,
+                trait,
+                isNeutered
+        );
         meta.setLore(lore);
 
         if (horse.getCustomName() != null) {
@@ -410,6 +408,64 @@ public class BetterHorsesAPI {
         } catch (IllegalArgumentException ignored) {
             return null;
         }
+    }
+
+    private static List<String> buildHorseLore(
+            FileConfiguration config,
+            LanguageManager lang,
+            PersistentDataContainer data,
+            String genderSymbol,
+            double currentHealth,
+            double maxHealth,
+            double speed,
+            double jump,
+            int growth,
+            @Nullable String trait,
+            boolean isNeutered
+    ) {
+        List<String> lore = new ArrayList<>();
+        List<String> layout = config.getStringList("settings.horse-item-lore-layout");
+        if (layout.isEmpty()) {
+            layout = Arrays.asList("gender", "health", "speed", "jump", "growth", "blank", "training", "trait", "neutered", "blank");
+        }
+
+        for (String rawPart : layout) {
+            String part = rawPart == null ? "" : rawPart.trim().toLowerCase();
+            switch (part) {
+                case "gender" -> lore.add(ChatColor.GRAY + lang.getFormattedRaw("messages.lore-gender", "%value%", genderSymbol));
+                case "health" -> lore.add(ChatColor.GRAY + lang.getFormattedRaw("messages.lore-health", "%value%", String.format("%.2f", currentHealth), "%max%", String.format("%.2f", maxHealth)));
+                case "speed" -> lore.add(ChatColor.GRAY + lang.getFormattedRaw("messages.lore-speed", "%value%", String.format("%.4f", speed)));
+                case "jump" -> lore.add(ChatColor.GRAY + lang.getFormattedRaw("messages.lore-jump", "%value%", String.format("%.4f", jump)));
+                case "growth" -> lore.add(ChatColor.GRAY + lang.getFormattedRaw("messages.lore-growth", "%value%", String.format("%d", growth)));
+                case "trait" -> {
+                    if (trait != null && !trait.isBlank()) {
+                        lore.add(ChatColor.GOLD + lang.getFormattedRaw("messages.trait-line", "%trait%", formatTraitName(trait)));
+                    }
+                }
+                case "neutered" -> {
+                    if (isNeutered) {
+                        lore.add(ChatColor.DARK_GRAY + lang.getRaw("messages.lore-neutered"));
+                    }
+                }
+                case "training" -> lore.addAll(TrainingManager.getTrainingLoreLines(data));
+                case "blank" -> lore.add("");
+                default -> {
+                    if (part.startsWith("literal:")) {
+                        lore.add(ChatColor.translateAlternateColorCodes('&', rawPart.substring("literal:".length())));
+                    }
+                }
+            }
+        }
+
+        return trimTrailingBlankLines(lore);
+    }
+
+    private static List<String> trimTrailingBlankLines(List<String> input) {
+        List<String> trimmed = new ArrayList<>(input);
+        while (!trimmed.isEmpty() && trimmed.get(trimmed.size() - 1).isBlank()) {
+            trimmed.remove(trimmed.size() - 1);
+        }
+        return trimmed;
     }
 
     public static boolean isBetterHorse(Entity entity) {

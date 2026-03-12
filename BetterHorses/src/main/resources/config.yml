@@ -71,6 +71,21 @@ settings:
   # Customizes the original item a horse item is
   horse-item: SADDLE
 
+  # Controls which lore parts are shown for horse items and in what order.
+  # Available values: gender, health, speed, jump, growth, training, trait, neutered, blank
+  # You can also add literal custom lines with: literal:&7Your custom text
+  horse-item-lore-layout:
+    - gender
+    - health
+    - speed
+    - jump
+    - growth
+    - blank
+    - training
+    - trait
+    - neutered
+    - blank
+
   # Allow additional mount types to be treated like BetterHorses horses
   mount-types:
     skeleton-horses: true
@@ -194,6 +209,9 @@ training:
   enabled: true
 
   lore:
+    # Controls whether training information should be displayed on horse-item lore.
+    enabled: true
+
     progress-bar:
       length: 15
 

@@ -119,19 +119,32 @@ public final class TrainingManager {
 
     public static List<String> getTrainingLoreLines(PersistentDataContainer data) {
         FileConfiguration config = BetterHorses.getInstance().getConfig();
+        List<String> lines = new ArrayList<>();
+        if (!isTrainingLoreEnabled(config)) return lines;
+
+        lines.add("");
+        lines.addAll(getTrainingLoreContentLines(data));
+        lines.add("");
+        return lines;
+    }
+
+    public static List<String> getTrainingLoreContentLines(PersistentDataContainer data) {
+        FileConfiguration config = BetterHorses.getInstance().getConfig();
         FileConfiguration language = BetterHorses.getInstance().getLang().getConfig();
         List<String> lines = new ArrayList<>();
         if (!isTrainingEnabled(config)) return lines;
 
         ensureTrainingData(data);
 
-        lines.add("");
         lines.add(color(language.getString("training-lore.title", "&6Training")));
         addCategoryLore(lines, config, language, data, "riding", BetterHorseKeys.TRAINING_RIDING_UNITS, "&7Riding: %bar% &b%percent%%");
         addCategoryLore(lines, config, language, data, "brushing", BetterHorseKeys.TRAINING_BRUSHING_UNITS, "&7Brushing: %bar% &b%percent%%");
         addCategoryLore(lines, config, language, data, "feeding", BetterHorseKeys.TRAINING_FEEDING_UNITS, "&7Feeding: %bar% &b%percent%%");
-        lines.add("");
         return lines;
+    }
+
+    public static boolean isTrainingLoreEnabled(FileConfiguration config) {
+        return isTrainingEnabled(config) && config.getBoolean("training.lore.enabled", true);
     }
 
     public static void ensureTrainingLorePresent(List<String> lore, PersistentDataContainer data) {
