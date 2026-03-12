@@ -36,6 +36,7 @@ import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Base64;
 import java.util.Optional;
 
 public class BetterHorsesAPI {
@@ -164,6 +165,7 @@ public class BetterHorsesAPI {
         String colorStr = data.get(BetterHorseKeys.COLOR, PersistentDataType.STRING);
         String saddleStr = data.get(BetterHorseKeys.SADDLE, PersistentDataType.STRING);
         String armorStr = data.get(BetterHorseKeys.ARMOR, PersistentDataType.STRING);
+        String armorData = data.get(BetterHorseKeys.ARMOR_DATA, PersistentDataType.STRING);
         String customName = data.get(BetterHorseKeys.NAME, PersistentDataType.STRING);
         String trait = data.get(BetterHorseKeys.TRAIT, PersistentDataType.STRING);
         Byte neutered = data.get(BetterHorseKeys.NEUTERED, PersistentDataType.BYTE);
@@ -268,7 +270,10 @@ public class BetterHorsesAPI {
             horse.getInventory().setSaddle(new ItemStack(Material.valueOf(saddleStr)));
         }
         if (armorStr != null) {
-            HorseArmorUtils.setArmor(horse.getInventory(), new ItemStack(Material.valueOf(armorStr)));
+            ItemStack armorItem = restoreArmorItem(armorStr, armorData);
+            if (armorItem != null) {
+                HorseArmorUtils.setArmor(horse.getInventory(), armorItem);
+            }
         }
 
         return horse;
@@ -383,10 +388,28 @@ public class BetterHorsesAPI {
         if (isNeutered) itemData.set(neuterKey, PersistentDataType.BYTE, (byte) 1);
         if (cooldown != null) itemData.set(BetterHorseKeys.COOLDOWN, PersistentDataType.LONG, cooldown);
         if (saddle != null) itemData.set(BetterHorseKeys.SADDLE, PersistentDataType.STRING, saddle.getType().name());
-        if (armor != null) itemData.set(BetterHorseKeys.ARMOR, PersistentDataType.STRING, armor.getType().name());
+        if (armor != null) {
+            itemData.set(BetterHorseKeys.ARMOR, PersistentDataType.STRING, armor.getType().name());
+            itemData.set(BetterHorseKeys.ARMOR_DATA, PersistentDataType.STRING, Base64.getEncoder().encodeToString(armor.serializeAsBytes()));
+        }
 
         item.setItemMeta(meta);
         return item;
+    }
+
+    private static @Nullable ItemStack restoreArmorItem(String armorMaterial, @Nullable String serializedArmor) {
+        if (serializedArmor != null && !serializedArmor.isBlank()) {
+            try {
+                return ItemStack.deserializeBytes(Base64.getDecoder().decode(serializedArmor));
+            } catch (IllegalArgumentException ignored) {
+            }
+        }
+
+        try {
+            return new ItemStack(Material.valueOf(armorMaterial));
+        } catch (IllegalArgumentException ignored) {
+            return null;
+        }
     }
 
     public static boolean isBetterHorse(Entity entity) {

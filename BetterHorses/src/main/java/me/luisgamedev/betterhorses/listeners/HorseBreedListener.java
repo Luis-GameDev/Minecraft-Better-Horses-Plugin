@@ -15,12 +15,33 @@ import org.bukkit.entity.AbstractHorse;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityBreedEvent;
+import org.bukkit.event.entity.EntityEnterLoveModeEvent;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
 
 import java.util.Set;
 
 public class HorseBreedListener implements Listener {
+
+    @EventHandler
+    public void onHorseEnterLoveMode(EntityEnterLoveModeEvent event) {
+        if (!(event.getEntity() instanceof AbstractHorse horse)) return;
+
+        SupportedMountType mountType = SupportedMountType.fromEntity(horse).orElse(null);
+        if (mountType == null) return;
+
+        FileConfiguration config = BetterHorses.getInstance().getConfig();
+        if (!mountType.isEnabled(config)) return;
+
+        if (isNeutered(horse) || isOnBreedingCooldown(horse, config)) {
+            event.setCancelled(true);
+            return;
+        }
+
+        if (horse.getAge() != 0) {
+            horse.setAge(0);
+        }
+    }
 
     @EventHandler
     public void onHorseBreed(EntityBreedEvent event) {
@@ -38,41 +59,16 @@ public class HorseBreedListener implements Listener {
         if (!childType.equals(fatherType) || !childType.equals(motherType)) return;
         if (!childType.isEnabled(config)) return;
 
-        long cooldownSeconds = config.getLong("settings.breeding-cooldown", 0);
-        long cooldownMillis = cooldownSeconds * 1000L;
+        father.setAge(0);
+        mother.setAge(0);
+
         long now = System.currentTimeMillis();
 
         PersistentDataContainer dataFather = father.getPersistentDataContainer();
         PersistentDataContainer dataMother = mother.getPersistentDataContainer();
 
-        // Cancel if either parent has cooldown that hasn't expired
-        if (dataFather.has(BetterHorseKeys.COOLDOWN, PersistentDataType.LONG) && !config.getBoolean("settings.male-ignore-cooldown")) {
-            long last = dataFather.get(BetterHorseKeys.COOLDOWN, PersistentDataType.LONG);
-            Double cooldownLeft = (cooldownMillis - (now - last)) / 1000.0;
-            if (cooldownLeft > 0) {
-                event.setCancelled(true);
-                return;
-            }
-        }
-        if (dataMother.has(BetterHorseKeys.COOLDOWN, PersistentDataType.LONG)) {
-            long last = dataMother.get(BetterHorseKeys.COOLDOWN, PersistentDataType.LONG);
-            Double cooldownLeft = (cooldownMillis - (now - last)) / 1000.0;
-            if (cooldownLeft > 0) {
-                event.setCancelled(true);
-                return;
-            }
-        }
-
         String gender1 = getGender(father);
         String gender2 = getGender(mother);
-
-        boolean motherNeutered = isNeutered(mother);
-        boolean fatherNeutered = isNeutered(father);
-
-        if (motherNeutered || fatherNeutered) {
-            event.setCancelled(true);
-            return;
-        }
 
         boolean allowSameGender = config.getBoolean("settings.allow-same-gender-breeding", false);
         if (!allowSameGender && gender1.equalsIgnoreCase(gender2)) {
@@ -147,6 +143,20 @@ public class HorseBreedListener implements Listener {
 
         father.setAge(0);
         mother.setAge(0);
+    }
+
+    private boolean isOnBreedingCooldown(AbstractHorse horse, FileConfiguration config) {
+        PersistentDataContainer data = horse.getPersistentDataContainer();
+        Long last = data.get(BetterHorseKeys.COOLDOWN, PersistentDataType.LONG);
+        if (last == null) return false;
+
+        String gender = getGender(horse);
+        if ("male".equalsIgnoreCase(gender) && config.getBoolean("settings.male-ignore-cooldown")) {
+            return false;
+        }
+
+        long cooldownMillis = config.getLong("settings.breeding-cooldown", 0) * 1000L;
+        return cooldownMillis > 0 && (System.currentTimeMillis() - last) < cooldownMillis;
     }
 
     private String getGender(AbstractHorse horse) {
