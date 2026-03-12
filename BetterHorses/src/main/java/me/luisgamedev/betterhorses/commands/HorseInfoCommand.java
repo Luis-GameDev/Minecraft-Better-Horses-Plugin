@@ -6,6 +6,7 @@ import org.bukkit.ChatColor;
 import org.bukkit.NamespacedKey;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
+import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.AbstractHorse;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
@@ -21,6 +22,8 @@ import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+
+import static me.luisgamedev.betterhorses.traits.TraitRegistry.config;
 
 public final class HorseInfoCommand {
 
@@ -199,6 +202,8 @@ public final class HorseInfoCommand {
 
     private static String resolveTimestamp(PersistentDataContainer container, NamespacedKey key) {
         Long timestamp = container.get(key, PersistentDataType.LONG);
+        final FileConfiguration config = BetterHorses.getInstance().getConfig();
+
         if (timestamp == null) {
             return "<missing>";
         }
