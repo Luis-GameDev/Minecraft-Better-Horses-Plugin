@@ -102,6 +102,6 @@ public class HorseFeedListener implements Listener {
         }
 
         TrainingManager.addFeedingUnits(horse, feedingTrainingValue);
-        horse.getWorld().spawnParticle(Particle.COMPOSTER, horse.getLocation().add(0, 1, 0), 5);
+        horse.getWorld().spawnParticle(Particle.COMPOSTER, horse.getEyeLocation(), 5);
     }
 }

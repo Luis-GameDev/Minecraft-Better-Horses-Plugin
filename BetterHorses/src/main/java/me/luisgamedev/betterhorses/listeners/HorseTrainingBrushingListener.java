@@ -41,7 +41,7 @@ public class HorseTrainingBrushingListener implements Listener {
         if (cooldownMillis > 0L && now - lastBrush < cooldownMillis) {
             return;
         }
-        horse.getWorld().spawnParticle(Particle.COMPOSTER, horse.getLocation().add(0, 1, 0), 5);
+        horse.getWorld().spawnParticle(Particle.COMPOSTER, horse.getEyeLocation(), 5);
 
         data.set(BetterHorseKeys.TRAINING_BRUSH_COOLDOWN, PersistentDataType.LONG, now);
         double units = config.getDouble("training.categories.brushing.units-per-use", 1.0);
