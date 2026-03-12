@@ -429,31 +429,45 @@ public class BetterHorsesAPI {
             layout = Arrays.asList("gender", "health", "speed", "jump", "growth", "blank", "training", "trait", "neutered", "blank");
         }
 
+        int pendingBlankLines = 0;
+
         for (String rawPart : layout) {
             String part = rawPart == null ? "" : rawPart.trim().toLowerCase();
+            List<String> sectionLines = new ArrayList<>();
+
             switch (part) {
-                case "gender" -> lore.add(ChatColor.GRAY + lang.getFormattedRaw("messages.lore-gender", "%value%", genderSymbol));
-                case "health" -> lore.add(ChatColor.GRAY + lang.getFormattedRaw("messages.lore-health", "%value%", String.format("%.2f", currentHealth), "%max%", String.format("%.2f", maxHealth)));
-                case "speed" -> lore.add(ChatColor.GRAY + lang.getFormattedRaw("messages.lore-speed", "%value%", String.format("%.4f", speed)));
-                case "jump" -> lore.add(ChatColor.GRAY + lang.getFormattedRaw("messages.lore-jump", "%value%", String.format("%.4f", jump)));
-                case "growth" -> lore.add(ChatColor.GRAY + lang.getFormattedRaw("messages.lore-growth", "%value%", String.format("%d", growth)));
+                case "gender" -> sectionLines.add(ChatColor.GRAY + lang.getFormattedRaw("messages.lore-gender", "%value%", genderSymbol));
+                case "health" -> sectionLines.add(ChatColor.GRAY + lang.getFormattedRaw("messages.lore-health", "%value%", String.format("%.2f", currentHealth), "%max%", String.format("%.2f", maxHealth)));
+                case "speed" -> sectionLines.add(ChatColor.GRAY + lang.getFormattedRaw("messages.lore-speed", "%value%", String.format("%.4f", speed)));
+                case "jump" -> sectionLines.add(ChatColor.GRAY + lang.getFormattedRaw("messages.lore-jump", "%value%", String.format("%.4f", jump)));
+                case "growth" -> sectionLines.add(ChatColor.GRAY + lang.getFormattedRaw("messages.lore-growth", "%value%", String.format("%d", growth)));
                 case "trait" -> {
                     if (trait != null && !trait.isBlank()) {
-                        lore.add(ChatColor.GOLD + lang.getFormattedRaw("messages.trait-line", "%trait%", formatTraitName(trait)));
+                        sectionLines.add(ChatColor.GOLD + lang.getFormattedRaw("messages.trait-line", "%trait%", formatTraitName(trait)));
                     }
                 }
                 case "neutered" -> {
                     if (isNeutered) {
-                        lore.add(ChatColor.DARK_GRAY + lang.getRaw("messages.lore-neutered"));
+                        sectionLines.add(ChatColor.DARK_GRAY + lang.getRaw("messages.lore-neutered"));
                     }
                 }
-                case "training" -> lore.addAll(TrainingManager.getTrainingLoreLines(data));
-                case "blank" -> lore.add("");
+                case "training" -> sectionLines.addAll(TrainingManager.getTrainingLoreLines(data));
+                case "blank" -> pendingBlankLines++;
                 default -> {
                     if (part.startsWith("literal:")) {
-                        lore.add(ChatColor.translateAlternateColorCodes('&', rawPart.substring("literal:".length())));
+                        sectionLines.add(ChatColor.translateAlternateColorCodes('&', rawPart.substring("literal:".length())));
                     }
                 }
+            }
+
+            if (!sectionLines.isEmpty()) {
+                for (int i = 0; i < pendingBlankLines; i++) {
+                    if (!lore.isEmpty()) {
+                        lore.add("");
+                    }
+                }
+                pendingBlankLines = 0;
+                lore.addAll(sectionLines);
             }
         }
 
