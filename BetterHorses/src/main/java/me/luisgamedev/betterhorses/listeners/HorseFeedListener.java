@@ -94,7 +94,7 @@ public class HorseFeedListener implements Listener {
                     config.getLong("training.categories.feeding.cooldown-seconds", 0L) * 1000L);
             final long lastFeedTraining = data.getOrDefault(BetterHorseKeys.TRAINING_FEED_COOLDOWN, PersistentDataType.LONG, 0L);
 
-            if (trainingCooldownMillis > 0L && now - lastFeedTraining < trainingCooldownMillis) {
+            if (trainingCooldownMillis == 0L || lastFeedTraining == 0 || lastFeedTraining + trainingCooldownMillis > now) {
                 return;
             }
 
