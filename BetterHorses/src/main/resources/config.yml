@@ -199,7 +199,7 @@ training:
       enabled: true
       item: BRUSH
       cooldown-seconds: 180
-      units-per-use: 1.0
+      units-per-use: 2.0
       # 1% progress = this many brush uses (units)
       units-per-percent: 1.0
       # 0.2 means +0.2% jump strength per 1% progress
