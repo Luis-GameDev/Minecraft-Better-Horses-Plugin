@@ -186,7 +186,7 @@ traits:
     chance: 0.001 # 0.1%
     particle: GLOW
     strength: 0.4
-    particles: true
+    particles: true # Refers to particles that appear when jumping
 
 # Horse training system
 training:

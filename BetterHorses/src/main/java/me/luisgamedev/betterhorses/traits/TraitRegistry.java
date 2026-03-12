@@ -122,7 +122,7 @@ public class TraitRegistry {
 
         if (config.getBoolean("traits.heavenhooves.particles")) {
             horse.getWorld().spawnParticle(
-                    TraitParticleResolver.getTraitParticle("heavenhooves", Particle.CLOUD),
+                    Particle.CLOUD,
                     horse.getLocation().add(0, 1.5, 0),
                     8,
                     0.3, 0.2, 0.3,
@@ -227,8 +227,7 @@ public class TraitRegistry {
         if (!config.getBoolean("traits.skyburst.enabled")) return;
 
         double radius = config.getDouble("traits.skyburst.radius", 3.0);
-        Particle skyburstParticle = TraitParticleResolver.getTraitParticle("skyburst", Particle.CLOUD);
-        player.getWorld().spawnParticle(skyburstParticle, horse.getLocation(), 20, 0.5, 0.1, 0.5, 0.01);
+        player.getWorld().spawnParticle(Particle.CLOUD, horse.getLocation(), 20, 0.5, 0.1, 0.5, 0.01);
         player.playSound(horse.getLocation(), Sound.ENTITY_GENERIC_EXPLODE, 1.0f, 1.2f);
 
         for (Entity entity : horse.getNearbyEntities(radius, radius, radius)) {
