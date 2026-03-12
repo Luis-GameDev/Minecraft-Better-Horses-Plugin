@@ -553,7 +553,12 @@ public class BetterHorsesAPI {
                     sectionLines.add(ChatColor.DARK_GRAY + lang.getRaw("messages.lore-neutered"));
                 }
             }
-            case "training" -> sectionLines.addAll(TrainingManager.getTrainingLoreLines(data));
+            case "training" -> {
+                String titleLine = TrainingManager.getTrainingTitleLine();
+                if (!titleLine.isEmpty()) {
+                    sectionLines.add(titleLine);
+                }
+            }
             case "riding", "brushing", "feeding" -> {
                 String line = TrainingManager.getTrainingCategoryLine(data, part);
                 if (!line.isEmpty()) {

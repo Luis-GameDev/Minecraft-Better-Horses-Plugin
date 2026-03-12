@@ -126,6 +126,13 @@ public final class TrainingManager {
         return lines;
     }
 
+    public static String getTrainingTitleLine() {
+        FileConfiguration config = BetterHorses.getInstance().getConfig();
+        FileConfiguration language = BetterHorses.getInstance().getLang().getConfig();
+        if (!isTrainingLoreEnabled(config)) return "";
+        return color(language.getString("training-lore.title", "&6Training"));
+    }
+
     public static List<String> getTrainingLoreContentLines(PersistentDataContainer data) {
         FileConfiguration config = BetterHorses.getInstance().getConfig();
         FileConfiguration language = BetterHorses.getInstance().getLang().getConfig();
@@ -181,7 +188,7 @@ public final class TrainingManager {
         List<String> trainingLines = getTrainingLoreLines(data);
         if (trainingLines.isEmpty()) return;
 
-        String titleLine = trainingLines.size() > 1 ? trainingLines.get(1) : trainingLines.get(0);
+        String titleLine = trainingLines.get(0);
         String normalizedTitle = ChatColor.stripColor(titleLine);
         boolean hasTrainingTitle = lore.stream()
                 .map(ChatColor::stripColor)
