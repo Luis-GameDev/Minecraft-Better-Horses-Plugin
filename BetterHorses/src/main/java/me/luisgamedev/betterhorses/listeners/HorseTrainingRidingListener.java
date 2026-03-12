@@ -9,6 +9,7 @@ import org.bukkit.event.player.PlayerMoveEvent;
 
 public class HorseTrainingRidingListener implements Listener {
 
+    @EventHandler
     public void onMove(PlayerMoveEvent event) {
         if(event.isCancelled()) return;
         Player player = event.getPlayer();

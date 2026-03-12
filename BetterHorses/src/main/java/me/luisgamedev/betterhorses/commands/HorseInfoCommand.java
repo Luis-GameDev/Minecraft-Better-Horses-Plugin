@@ -23,7 +23,6 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
-import static me.luisgamedev.betterhorses.traits.TraitRegistry.config;
 
 public final class HorseInfoCommand {
 

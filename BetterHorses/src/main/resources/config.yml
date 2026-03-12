@@ -224,7 +224,7 @@ training:
     riding:
       enabled: true
       # 1% progress = this many blocks ridden
-      units-per-percent: 25.0
+      units-per-percent: 100.0
       # 0.2 means +0.2% speed per 1% progress
       bonus-percent-per-progress-percent: 0.2
 

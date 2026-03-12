@@ -1,6 +1,7 @@
 package me.luisgamedev.betterhorses.api;
 
 import me.luisgamedev.betterhorses.utils.AttributeResolver;
+import org.bukkit.NamespacedKey;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.entity.AbstractHorse;
@@ -75,7 +76,7 @@ public final class BetterHorse {
         handle.getPersistentDataContainer().set(BetterHorseKeys.GROWTH_STAGE, PersistentDataType.INTEGER, stage);
     }
 
-    private void setAttribute(Attribute attribute, org.bukkit.NamespacedKey key, double value) {
+    private void setAttribute(Attribute attribute, NamespacedKey key, double value) {
         AttributeInstance attr = handle.getAttribute(attribute);
         if (attr != null) {
             attr.setBaseValue(value);
