@@ -142,6 +142,23 @@ public final class TrainingManager {
         ensureTrainingData(data);
 
         lines.add(color(language.getString("training-lore.title", "&6Training")));
+
+        boolean hideOnComplete = config.getBoolean("training.lore.progress-bar.hide-on-complete", true);
+        boolean ridingEnabled = isCategoryEnabled(config, "riding");
+        boolean brushingEnabled = isCategoryEnabled(config, "brushing");
+        boolean feedingEnabled = isCategoryEnabled(config, "feeding");
+
+        boolean allEnabledComplete = hideOnComplete
+                && (!ridingEnabled || getProgressPercent(config, data, "riding", BetterHorseKeys.TRAINING_RIDING_UNITS) >= 100.0)
+                && (!brushingEnabled || getProgressPercent(config, data, "brushing", BetterHorseKeys.TRAINING_BRUSHING_UNITS) >= 100.0)
+                && (!feedingEnabled || getProgressPercent(config, data, "feeding", BetterHorseKeys.TRAINING_FEEDING_UNITS) >= 100.0)
+                && (ridingEnabled || brushingEnabled || feedingEnabled);
+
+        if (allEnabledComplete) {
+            lines.add(completeText(language));
+            return lines;
+        }
+
         addCategoryLore(lines, config, language, data, "riding", BetterHorseKeys.TRAINING_RIDING_UNITS, "&7Riding: %bar% &b%percent%%");
         addCategoryLore(lines, config, language, data, "brushing", BetterHorseKeys.TRAINING_BRUSHING_UNITS, "&7Brushing: %bar% &b%percent%%");
         addCategoryLore(lines, config, language, data, "feeding", BetterHorseKeys.TRAINING_FEEDING_UNITS, "&7Feeding: %bar% &b%percent%%");
@@ -169,6 +186,10 @@ public final class TrainingManager {
 
         double percent = getProgressPercent(config, data, category, key);
         int rounded = (int) Math.round(percent);
+        if (shouldReplaceWithComplete(config, percent)) {
+            return completeText(language);
+        }
+
         String bar = progressBar(config, language, percent);
         String defaultFormat = switch (category.toLowerCase()) {
             case "riding" -> "&7Riding: %bar% &b%percent%%";
@@ -223,9 +244,24 @@ public final class TrainingManager {
         if (!isCategoryEnabled(config, category)) return;
         double percent = getProgressPercent(config, data, category, key);
         int rounded = (int) Math.round(percent);
+        if (shouldReplaceWithComplete(config, percent)) {
+            lines.add(completeText(language));
+            return;
+        }
+
         String bar = progressBar(config, language, percent);
         String format = language.getString("training-lore.categories." + category, formatDefault);
         lines.add(color(format.replace("%bar%", bar).replace("%percent%", String.valueOf(rounded))));
+    }
+
+    private static boolean shouldReplaceWithComplete(FileConfiguration config, double percent) {
+        return config.getBoolean("training.lore.progress-bar.hide-on-complete", true) && percent >= 100.0;
+    }
+
+    private static String completeText(FileConfiguration language) {
+        String filledColor = color(language.getString("training-lore.progress-bar.filled-color", "&b"));
+        String complete = color(language.getString("training-lore.complete", "completed"));
+        return filledColor + ChatColor.stripColor(complete);
     }
 
     private static String progressBar(FileConfiguration config, FileConfiguration language, double percent) {
