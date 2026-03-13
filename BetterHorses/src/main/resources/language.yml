@@ -64,12 +64,12 @@ traits:
 
 training-lore:
   title: "&6Training"
+  complete: "completed"
   progress-bar:
     filled-char: "■"
     empty-char: "■"
     filled-color: "&b"
     empty-color: "&8"
-    complete: "completed"
   categories:
     riding: "&7Riding: %bar% &b%percent%%"
     brushing: "&7Brushing: %bar% &b%percent%%"
