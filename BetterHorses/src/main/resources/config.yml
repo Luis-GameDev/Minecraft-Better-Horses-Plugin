@@ -219,6 +219,8 @@ training:
 
     progress-bar:
       length: 15
+      # If true, hides the progressbar when at 100% and replaces it with "Complete"
+      hide-on-complete: true
 
   categories:
     riding:
