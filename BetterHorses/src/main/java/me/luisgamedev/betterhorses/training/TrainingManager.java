@@ -149,7 +149,7 @@ public final class TrainingManager {
         double percent = getProgressPercent(config, data, category, key);
         int rounded = (int) Math.round(percent);
         if (shouldReplaceWithComplete(config, percent)) {
-            return completeText(language);
+            return color(language.getString("training-lore.categories." + category + "-name")) + " " + completeText(language);
         }
 
         String bar = progressBar(config, language, percent);
