@@ -554,7 +554,7 @@ public class BetterHorsesAPI {
                 }
             }
             case "training" -> {
-                String titleLine = TrainingManager.getTrainingTitleLine();
+                String titleLine = TrainingManager.getTrainingTitleLine(data);
                 if (!titleLine.isEmpty()) {
                     sectionLines.add(titleLine);
                 }

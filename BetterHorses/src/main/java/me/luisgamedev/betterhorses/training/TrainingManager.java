@@ -113,11 +113,17 @@ public final class TrainingManager {
         return section.getDouble(material.name(), 0.0);
     }
 
-    public static String getTrainingTitleLine() {
+    public static String getTrainingTitleLine(PersistentDataContainer data) {
         FileConfiguration config = BetterHorses.getInstance().getConfig();
         FileConfiguration language = BetterHorses.getInstance().getLang().getConfig();
         if (!isTrainingLoreEnabled(config)) return "";
-        return color(language.getString("training-lore.title", "&6Training"));
+
+        String title = color(language.getString("training-lore.title", "&6Training"));
+        if (!shouldCollapseToTitleComplete(config, data)) {
+            return title;
+        }
+
+        return title + " " + completeText(language);
     }
 
     public static boolean isTrainingLoreEnabled(FileConfiguration config) {
@@ -128,6 +134,7 @@ public final class TrainingManager {
         FileConfiguration config = BetterHorses.getInstance().getConfig();
         FileConfiguration language = BetterHorses.getInstance().getLang().getConfig();
         if (!isTrainingLoreEnabled(config) || !isCategoryEnabled(config, category)) return "";
+        if (shouldCollapseToTitleComplete(config, data)) return "";
 
         ensureTrainingData(data);
         NamespacedKey key = switch (category.toLowerCase()) {
@@ -179,6 +186,36 @@ public final class TrainingManager {
 
     private static boolean shouldReplaceWithComplete(FileConfiguration config, double percent) {
         return config.getBoolean("training.lore.progress-bar.hide-on-complete", true) && percent >= 100.0;
+    }
+
+    private static boolean shouldCollapseToTitleComplete(FileConfiguration config, PersistentDataContainer data) {
+        if (!config.getBoolean("training.lore.progress-bar.hide-on-complete", true)) {
+            return false;
+        }
+
+        ensureTrainingData(data);
+        String[] categories = {"riding", "brushing", "feeding"};
+        boolean hasEnabledCategory = false;
+
+        for (String category : categories) {
+            if (!isCategoryEnabled(config, category)) {
+                continue;
+            }
+
+            hasEnabledCategory = true;
+            NamespacedKey key = switch (category) {
+                case "riding" -> BetterHorseKeys.TRAINING_RIDING_UNITS;
+                case "brushing" -> BetterHorseKeys.TRAINING_BRUSHING_UNITS;
+                case "feeding" -> BetterHorseKeys.TRAINING_FEEDING_UNITS;
+                default -> null;
+            };
+
+            if (key == null || getProgressPercent(config, data, category, key) < 100.0) {
+                return false;
+            }
+        }
+
+        return hasEnabledCategory;
     }
 
     private static String completeText(FileConfiguration language) {
