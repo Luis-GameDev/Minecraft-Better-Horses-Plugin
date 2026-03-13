@@ -189,9 +189,7 @@ public final class TrainingManager {
     }
 
     private static boolean shouldCollapseToTitleComplete(FileConfiguration config, PersistentDataContainer data) {
-        if (!config.getBoolean("training.lore.progress-bar.hide-on-complete", true)) {
-            return false;
-        }
+        if (!config.getBoolean("training.lore.progress-bar.hide-on-complete", true) || !config.getBoolean("training.lore.progress-bar.combine-all-complete", true)) return false;
 
         ensureTrainingData(data);
         String[] categories = {"riding", "brushing", "feeding"};
