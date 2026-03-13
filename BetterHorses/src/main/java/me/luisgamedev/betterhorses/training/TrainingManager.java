@@ -113,56 +113,11 @@ public final class TrainingManager {
         return section.getDouble(material.name(), 0.0);
     }
 
-    public static List<String> getTrainingLoreLines(AbstractHorse horse) {
-        return getTrainingLoreLines(horse.getPersistentDataContainer());
-    }
-
-    public static List<String> getTrainingLoreLines(PersistentDataContainer data) {
-        FileConfiguration config = BetterHorses.getInstance().getConfig();
-        List<String> lines = new ArrayList<>();
-        if (!isTrainingLoreEnabled(config)) return lines;
-
-        lines.addAll(getTrainingLoreContentLines(data));
-        return lines;
-    }
-
     public static String getTrainingTitleLine() {
         FileConfiguration config = BetterHorses.getInstance().getConfig();
         FileConfiguration language = BetterHorses.getInstance().getLang().getConfig();
         if (!isTrainingLoreEnabled(config)) return "";
         return color(language.getString("training-lore.title", "&6Training"));
-    }
-
-    public static List<String> getTrainingLoreContentLines(PersistentDataContainer data) {
-        FileConfiguration config = BetterHorses.getInstance().getConfig();
-        FileConfiguration language = BetterHorses.getInstance().getLang().getConfig();
-        List<String> lines = new ArrayList<>();
-        if (!isTrainingEnabled(config)) return lines;
-
-        ensureTrainingData(data);
-
-        lines.add(color(language.getString("training-lore.title", "&6Training")));
-
-        boolean hideOnComplete = config.getBoolean("training.lore.progress-bar.hide-on-complete", true);
-        boolean ridingEnabled = isCategoryEnabled(config, "riding");
-        boolean brushingEnabled = isCategoryEnabled(config, "brushing");
-        boolean feedingEnabled = isCategoryEnabled(config, "feeding");
-
-        boolean allEnabledComplete = hideOnComplete
-                && (!ridingEnabled || getProgressPercent(config, data, "riding", BetterHorseKeys.TRAINING_RIDING_UNITS) >= 100.0)
-                && (!brushingEnabled || getProgressPercent(config, data, "brushing", BetterHorseKeys.TRAINING_BRUSHING_UNITS) >= 100.0)
-                && (!feedingEnabled || getProgressPercent(config, data, "feeding", BetterHorseKeys.TRAINING_FEEDING_UNITS) >= 100.0)
-                && (ridingEnabled || brushingEnabled || feedingEnabled);
-
-        if (allEnabledComplete) {
-            lines.add(completeText(language));
-            return lines;
-        }
-
-        addCategoryLore(lines, config, language, data, "riding", BetterHorseKeys.TRAINING_RIDING_UNITS, "&7Riding: %bar% &b%percent%%");
-        addCategoryLore(lines, config, language, data, "brushing", BetterHorseKeys.TRAINING_BRUSHING_UNITS, "&7Brushing: %bar% &b%percent%%");
-        addCategoryLore(lines, config, language, data, "feeding", BetterHorseKeys.TRAINING_FEEDING_UNITS, "&7Feeding: %bar% &b%percent%%");
-        return lines;
     }
 
     public static boolean isTrainingLoreEnabled(FileConfiguration config) {
@@ -202,24 +157,6 @@ public final class TrainingManager {
         return color(format.replace("%bar%", bar).replace("%percent%", String.valueOf(rounded)));
     }
 
-    public static void ensureTrainingLorePresent(List<String> lore, PersistentDataContainer data) {
-        FileConfiguration config = BetterHorses.getInstance().getConfig();
-        if (!isTrainingEnabled(config)) return;
-
-        List<String> trainingLines = getTrainingLoreLines(data);
-        if (trainingLines.isEmpty()) return;
-
-        String titleLine = trainingLines.get(0);
-        String normalizedTitle = ChatColor.stripColor(titleLine);
-        boolean hasTrainingTitle = lore.stream()
-                .map(ChatColor::stripColor)
-                .anyMatch(existing -> existing != null && existing.equalsIgnoreCase(normalizedTitle));
-
-        if (!hasTrainingTitle) {
-            lore.addAll(trainingLines);
-        }
-    }
-
     public static double getProgressPercent(FileConfiguration config, PersistentDataContainer data, String category, NamespacedKey unitsKey) {
         if (!isTrainingEnabled(config) || !isCategoryEnabled(config, category)) return 0.0;
         ensureTrainingData(data);
@@ -238,20 +175,6 @@ public final class TrainingManager {
         if (!data.has(unitsKey, PersistentDataType.DOUBLE)) {
             data.set(unitsKey, PersistentDataType.DOUBLE, 0.0);
         }
-    }
-
-    private static void addCategoryLore(List<String> lines, FileConfiguration config, FileConfiguration language, PersistentDataContainer data, String category, NamespacedKey key, String formatDefault) {
-        if (!isCategoryEnabled(config, category)) return;
-        double percent = getProgressPercent(config, data, category, key);
-        int rounded = (int) Math.round(percent);
-        if (shouldReplaceWithComplete(config, percent)) {
-            lines.add(completeText(language));
-            return;
-        }
-
-        String bar = progressBar(config, language, percent);
-        String format = language.getString("training-lore.categories." + category, formatDefault);
-        lines.add(color(format.replace("%bar%", bar).replace("%percent%", String.valueOf(rounded))));
     }
 
     private static boolean shouldReplaceWithComplete(FileConfiguration config, double percent) {
