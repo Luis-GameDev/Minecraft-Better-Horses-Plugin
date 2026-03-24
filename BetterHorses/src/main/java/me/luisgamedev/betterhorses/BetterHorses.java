@@ -14,10 +14,17 @@ import me.luisgamedev.betterhorses.tasks.TraitParticleTask;
 import org.bukkit.Bukkit;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.command.SimpleCommandMap;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.plugin.PluginManager;
 
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.logging.Level;
 
@@ -43,6 +50,8 @@ public class BetterHorses extends JavaPlugin {
         }
         instance = this;
         saveDefaultConfig();
+        updateYamlWithMissingSections("config.yml", false);
+        updateYamlWithMissingSections("language.yml", true);
         languageManager = new LanguageManager(this);
 
         registerListeners();
@@ -76,10 +85,106 @@ public class BetterHorses extends JavaPlugin {
     }
 
     public void reloadPluginConfiguration() {
+        updateYamlWithMissingSections("config.yml", false);
+        updateYamlWithMissingSections("language.yml", true);
         reloadConfig();
         languageManager.reload();
         applyHorseCommandAliases();
         debugLog("PLUGIN", "RELOAD", true, "Configuration and language files were reloaded.");
+    }
+
+    private void updateYamlWithMissingSections(String fileName, boolean saveDefaultWhenMissing) {
+        File file = new File(getDataFolder(), fileName);
+        if (!file.exists()) {
+            if (!saveDefaultWhenMissing) {
+                return;
+            }
+            saveResource(fileName, false);
+        }
+
+        YamlConfiguration currentConfig = YamlConfiguration.loadConfiguration(file);
+        currentConfig.options().parseComments(true);
+        YamlConfiguration defaultConfig;
+
+        try (InputStream defaultConfigStream = getResource(fileName)) {
+            if (defaultConfigStream == null) {
+                getLogger().warning("Default " + fileName + " resource was not found; skipping file update.");
+                debugLog("CONFIG", "UPDATE", false, "Missing default resource: " + fileName + ".");
+                return;
+            }
+            defaultConfig = YamlConfiguration.loadConfiguration(
+                    new InputStreamReader(defaultConfigStream, StandardCharsets.UTF_8)
+            );
+            defaultConfig.options().parseComments(true);
+        } catch (IOException exception) {
+            getLogger().log(Level.WARNING, "Failed to read default " + fileName + " while updating file.", exception);
+            debugLog("CONFIG", "UPDATE", false, "Unable to read default file " + fileName + ": " + exception.getMessage());
+            return;
+        }
+
+        boolean changed = addMissingConfigValues(currentConfig, defaultConfig, "");
+        if (!changed) {
+            return;
+        }
+
+        try {
+            currentConfig.save(file);
+            reloadConfig();
+            getLogger().info("Updated " + fileName + " with newly added default values.");
+            debugLog("CONFIG", "UPDATE", true, "Added missing entries from default " + fileName + ".");
+        } catch (IOException exception) {
+            getLogger().log(Level.WARNING, "Failed to save updated " + fileName + ".", exception);
+            debugLog("CONFIG", "UPDATE", false, "Failed to save updated " + fileName + ": " + exception.getMessage());
+        }
+    }
+
+    private boolean addMissingConfigValues(ConfigurationSection target, ConfigurationSection defaults, String parentPath) {
+        boolean changed = false;
+
+        for (String key : defaults.getKeys(false)) {
+            String fullPath = parentPath.isEmpty() ? key : parentPath + "." + key;
+            Object defaultValue = defaults.get(key);
+
+            changed |= syncConfigComments(target, defaults, key);
+
+            if (defaultValue instanceof ConfigurationSection defaultSection) {
+                if (!target.isConfigurationSection(key)) {
+                    target.createSection(key);
+                    changed = true;
+                }
+
+                ConfigurationSection targetSection = target.getConfigurationSection(key);
+                if (targetSection != null) {
+                    changed |= addMissingConfigValues(targetSection, defaultSection, fullPath);
+                }
+                continue;
+            }
+
+            if (!target.contains(key)) {
+                target.set(key, defaultValue);
+                changed = true;
+            }
+        }
+
+        return changed;
+    }
+
+    private boolean syncConfigComments(ConfigurationSection target, ConfigurationSection defaults, String key) {
+        boolean changed = false;
+
+        List<String> defaultComments = defaults.getComments(key);
+        if (!defaultComments.equals(target.getComments(key))) {
+            target.setComments(key, defaultComments);
+            changed = true;
+        }
+
+        List<String> defaultInlineComments = defaults.getInlineComments(key);
+        if (!defaultInlineComments.equals(target.getInlineComments(key))) {
+            target.setInlineComments(key, defaultInlineComments);
+            changed = true;
+        }
+
+        return changed;
     }
 
     public boolean isProtocolLibAvailable() {
@@ -139,7 +244,18 @@ public class BetterHorses extends JavaPlugin {
         pluginManager.registerEvents(new HorseFeedListener(), this);
         pluginManager.registerEvents(new HorseItemBlockerListener(), this);
         pluginManager.registerEvents(new HorseMountListener(), this);
+
         debugLog("LISTENER", "REGISTER_BASE", true, "Registered core horse listeners.");
+
+        if (config.getBoolean("training.enabled", true) && config.getBoolean("training.categories.riding.enabled", true)) {
+            pluginManager.registerEvents(new HorseTrainingRidingListener(), this);
+            debugLog("LISTENER", "REGISTER", true, "Registered HorseTrainingRidingListener.");
+        }
+
+        if (config.getBoolean("training.enabled", true) && config.getBoolean("training.categories.brushing.enabled", true)) {
+            pluginManager.registerEvents(new HorseTrainingBrushingListener(), this);
+            debugLog("LISTENER", "REGISTER", true, "Registered HorseTrainingBrushingListener.");
+        }
 
         if (config.getBoolean("settings.allow-rightclick-spawn", true)) {
             pluginManager.registerEvents(new RightClickListener(), this);
@@ -151,7 +267,7 @@ public class BetterHorses extends JavaPlugin {
             debugLog("LISTENER", "REGISTER", true, "Registered RiderInvulnerableListener.");
         }
 
-        if (config.getBoolean("settings.fix-step-height", false)) {
+        if (config.getBoolean("settings.fix-step-height", true)) {
             pluginManager.registerEvents(new HorseStepHeightListener(), this);
             debugLog("LISTENER", "REGISTER", true, "Registered HorseStepHeightListener.");
         }

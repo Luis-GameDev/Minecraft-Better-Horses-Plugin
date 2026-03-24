@@ -13,7 +13,7 @@ messages:
   not-horse-owner: "You are not the owner of this %mount%."
   unknown-subcommand: "Unknown subcommand. Use /horse <spawn|despawn|neuter|reload>"
   only-players: "Only players can use this command."
-  horsecreate-usage: "Usage: /horsecreate <health> <speed> <jump> [gender] [name] [trait] [growth] [mounttype]"
+  horsecreate-usage: "Usage: /horsecreate <health> <speed> <jump> [gender] [name] [trait] [growth] [mounttype] [neutered]"
   traits-disabled: "Traits are disabled in the config."
   traits-error: "This trait is not enabled or doesn't exist in the config."
   invalid-mount-type: "Invalid mount type. Available types: %types%."
@@ -61,3 +61,19 @@ traits:
 
   revenantcurse: "Revenant Curse"
   revenantcurse-message: "The curse has been activated. Attackers will suffer."
+
+training-lore:
+  title: "&6Training"
+  complete: "completed"
+  progress-bar:
+    filled-char: "■"
+    empty-char: "■"
+    filled-color: "&b"
+    empty-color: "&8"
+  categories:
+    riding-name: "&7Riding:"
+    brushing-name: "&7Brushing:"
+    feeding-name: "&7Feeding:"
+    riding: "&7Riding: %bar% &b%percent%%"
+    brushing: "&7Brushing: %bar% &b%percent%%"
+    feeding: "&7Feeding: %bar% &b%percent%%"

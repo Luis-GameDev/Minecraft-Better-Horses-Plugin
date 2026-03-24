@@ -71,6 +71,26 @@ settings:
   # Customizes the original item a horse item is
   horse-item: SADDLE
 
+  # Controls which lore parts are shown for horse items and in what order.
+  # Use nested sections to ensure child lines are only loaded when the parent section resolves to a visible line.
+  # Available values: gender, health, speed, jump, growth, training, riding, brushing, feeding, trait, neutered, blank
+  # You can also add literal custom lines with: literal:&7Your custom text
+  horse-item-lore-layout:
+    - stats:
+        - gender
+        - health
+        - speed
+        - jump
+        - growth
+        - blank
+    - training:
+        - riding
+        - brushing
+        - feeding
+        - blank
+    - trait
+    - neutered
+
   # Allow additional mount types to be treated like BetterHorses horses
   mount-types:
     skeleton-horses: true
@@ -125,6 +145,7 @@ traits:
   hellmare:
     enabled: true
     chance: 0.005 # 0.5%
+    particle: FLAME
     duration: 5
     cooldown: 90
     radius: 2 # Radius of the fire below the horse
@@ -132,25 +153,30 @@ traits:
   fireheart:
     enabled: true
     chance: 0.01 # 1%
+    particle: LAVA
 
   dashboost:
     enabled: true
     chance: 0.01 # 1%
+    particle: SWEEP_ATTACK
     duration: 10
     cooldown: 30
 
   featherhooves:
     enabled: true
     chance: 0.01 # 1%
+    particle: CLOUD
 
   frosthooves:
     enabled: true
     chance: 0.005 # 0.5%
+    particle: SNOWFLAKE
     radius: 3 # Radius of the ice below the horse
 
   kickback:
     enabled: true
     chance: 0.005 # 0.5%
+    particle: CRIT
     radius: 4
     strength: 6
     cooldown: 20
@@ -158,22 +184,77 @@ traits:
   ghosthorse:
     enabled: true
     chance: 0.005 # 0.5%
+    particle: SMOKE
     duration: 5
     cooldown: 30
 
   skyburst:
     enabled: true
     chance: 0.003 # 0.3%
+    particle: CLOUD
     radius: 4
 
   revenantcurse:
     enabled: true
     chance: 0.005 # 0.5%
+    particle: SOUL
     cooldown: 30
     duration: 10
 
   heavenhooves:
     enabled: true
     chance: 0.001 # 0.1%
+    particle: GLOW
     strength: 0.4
-    particles: true
+    particles: true # Refers to particles that appear when jumping
+
+# Horse training system
+training:
+  # Master toggle for all training categories
+  enabled: true
+
+  lore:
+    # Controls whether training information should be displayed on horse-item lore.
+    enabled: true
+
+    progress-bar:
+      length: 15
+      # If true, hides the progressbar when at 100% and replaces it with "Complete"
+      hide-on-complete: true
+      # If true, if all categories are completed, they are combined and displayed as "Training Complete"
+      combine-all-complete: true
+
+  categories:
+    riding:
+      enabled: true
+      # 1% progress = this many blocks ridden
+      units-per-percent: 100.0
+      # 0.2 means +0.2% speed per 1% progress
+      bonus-percent-per-progress-percent: 0.2
+
+    brushing:
+      enabled: true
+      item: BRUSH
+      cooldown-seconds: 180
+      units-per-use: 2.0
+      # 1% progress = this many brush uses (units)
+      units-per-percent: 1.0
+      # 0.2 means +0.2% jump strength per 1% progress
+      bonus-percent-per-progress-percent: 0.2
+
+    feeding:
+      enabled: true
+      cooldown-seconds: 180
+      # 1% progress = this much total food value
+      units-per-percent: 2.0
+      # 0.2 means +0.2% max HP per 1% progress
+      bonus-percent-per-progress-percent: 0.2
+      food-values:
+        WHEAT: 1.0
+        APPLE: 1.0
+        CARROT: 1.0
+        SUGAR: 1.0
+        HAY_BLOCK: 2.0
+        GOLDEN_CARROT: 3.0
+        GOLDEN_APPLE: 5.0
+        ENCHANTED_GOLDEN_APPLE: 8.0

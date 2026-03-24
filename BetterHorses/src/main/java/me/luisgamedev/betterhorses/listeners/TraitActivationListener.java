@@ -23,6 +23,7 @@ public class TraitActivationListener implements Listener {
     public void onTraitKeyPressed(PlayerSwapHandItemsEvent event) {
         Player player = event.getPlayer();
         BetterHorses plugin = BetterHorses.getInstance();
+        plugin.debugLog("TRAIT_ACTIVATION", "EVENT", true, "Trait key pressed.");
         Entity vehicle = player.getVehicle();
 
         if (!(vehicle instanceof AbstractHorse mount)) return;
@@ -42,9 +43,9 @@ public class TraitActivationListener implements Listener {
             return;
         }
 
-        String selectedTrait = abilityEvent.getTraitKey();
+        String selectedTrait = normalizeTraitKey(abilityEvent.getTraitKey());
         plugin.debugLog("TRAIT_ACTIVATION", "TRIGGER", true, "Player " + player.getName() + " activated trait " + selectedTrait + ".");
-        switch (selectedTrait.toLowerCase()) {
+        switch (selectedTrait) {
             case "hellmare":
                 TraitRegistry.activateHellmare(player, mount);
                 break;
@@ -60,8 +61,28 @@ public class TraitActivationListener implements Listener {
             case "revenantcurse":
                 TraitRegistry.activateRevenantCurse(player, mount);
                 break;
+            default:
+                plugin.debugLog(
+                        "TRAIT_ACTIVATION",
+                        "UNKNOWN_TRAIT",
+                        false,
+                        "No active ability mapping exists for trait key '" + abilityEvent.getTraitKey() + "'."
+                );
+                break;
         }
 
         event.setCancelled(true); // Prevent item swap
+    }
+
+    private String normalizeTraitKey(String traitKey) {
+        if (traitKey == null) {
+            return "";
+        }
+        return traitKey
+                .toLowerCase()
+                .replace("_", "")
+                .replace("-", "")
+                .replace(" ", "")
+                .trim();
     }
 }

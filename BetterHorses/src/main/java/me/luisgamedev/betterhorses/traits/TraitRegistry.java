@@ -63,7 +63,8 @@ public class TraitRegistry {
                 }
                 Location center = horse.getLocation().clone().subtract(0, 1, 0);
                 World world = center.getWorld();
-                world.spawnParticle(Particle.FLAME, horse.getLocation(), 10, 0.4, 0.2, 0.4, 0.01);
+                Particle hellmareParticle = TraitParticleResolver.getTraitParticle("hellmare", Particle.FLAME);
+                world.spawnParticle(hellmareParticle, horse.getLocation(), 10, 0.4, 0.2, 0.4, 0.01);
 
                 for (int dx = -radius; dx <= radius; dx++) {
                     for (int dz = -radius; dz <= radius; dz++) {
@@ -260,7 +261,8 @@ public class TraitRegistry {
                 System.currentTimeMillis() + duration * 1000L
         );
 
-        horse.getWorld().spawnParticle(Particle.WITCH, horse.getLocation(), 25, 0.6, 0.6, 0.6, 0.05);
+        Particle revenantParticle = TraitParticleResolver.getTraitParticle("revenantcurse", Particle.WITCH);
+        horse.getWorld().spawnParticle(revenantParticle, horse.getLocation(), 25, 0.6, 0.6, 0.6, 0.05);
         horse.getWorld().playSound(horse.getLocation(), Sound.ENTITY_WITHER_AMBIENT, 1, 0.8f);
 
         setCooldown(horse, key, config.getInt("traits.revenantcurse.cooldown", 30));
