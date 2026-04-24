@@ -34,6 +34,7 @@ public class BetterHorses extends JavaPlugin {
     private LanguageManager languageManager;
     private boolean protocolLibAvailable = false;
     private ProtocolManager protocolManager;
+    private SharedHorseRideListener sharedHorseRideListener;
 
     @Override
     public void onEnable() {
@@ -74,6 +75,13 @@ public class BetterHorses extends JavaPlugin {
                 20L  // repeat every 1s
         );
         debugLog("PLUGIN", "ENABLE_COMPLETE", true, "BetterHorses plugin enabled successfully.");
+    }
+
+    @Override
+    public void onDisable() {
+        if (sharedHorseRideListener != null) {
+            sharedHorseRideListener.shutdown();
+        }
     }
 
     public static BetterHorses getInstance() {
@@ -270,6 +278,12 @@ public class BetterHorses extends JavaPlugin {
         if (config.getBoolean("settings.fix-step-height", true)) {
             pluginManager.registerEvents(new HorseStepHeightListener(), this);
             debugLog("LISTENER", "REGISTER", true, "Registered HorseStepHeightListener.");
+        }
+
+        if (config.getBoolean("settings.shared-riding.enabled", false)) {
+            sharedHorseRideListener = new SharedHorseRideListener(this);
+            pluginManager.registerEvents(sharedHorseRideListener, this);
+            debugLog("LISTENER", "REGISTER", true, "Registered SharedHorseRideListener.");
         }
 
         if (config.getBoolean("settings.mounted-damage-boost.enabled", false)) {
