@@ -1,6 +1,7 @@
 package me.luisgamedev.betterhorses.listeners;
 
 import me.luisgamedev.betterhorses.BetterHorses;
+import me.luisgamedev.betterhorses.tasks.DuomountRotationTask;
 import org.bukkit.NamespacedKey;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.*;
@@ -8,6 +9,8 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.persistence.PersistentDataType;
+import org.bukkit.potion.PotionEffect;
+import org.bukkit.potion.PotionEffectType;
 
 public class HorseMountListener implements Listener {
     private double Amplifier = 0.5;
@@ -18,11 +21,11 @@ public class HorseMountListener implements Listener {
         if (!(event.getRightClicked() instanceof AbstractHorse horse)) return;
         if (!(event.getPlayer() instanceof Player player)) return;
 
-        if (player.hasPermission("betterhorses.bypass")) return;
+        debugLog("MOUNT", "ATTEMPT", true, player.getName() + " attempting to mount horse");
 
         FileConfiguration config = BetterHorses.getInstance().getConfig();
 
-        if (config.getBoolean("settings.restrict-mounting-to-owner", false)) {
+        if (config.getBoolean("settings.restrict-mounting-to-owner", false) && !player.hasPermission("betterhorses.bypass")) {
             NamespacedKey ownerKey = new NamespacedKey(BetterHorses.getInstance(), "owner");
             var data = horse.getPersistentDataContainer();
 
@@ -40,13 +43,36 @@ public class HorseMountListener implements Listener {
             }
         }
 
-        if (!(horse.getPassengers().size() == 1)) {
-            ArmorStand armorStand = (ArmorStand)player.getWorld().spawnEntity(horse.getLocation().add(getOffSetX(horse), GetArmorstandHeight(event.getRightClicked()), getOffSetZ(horse)), EntityType.ARMOR_STAND);
-            armorStand.setGravity(false);
-            armorStand.setSmall(true);
-            //armorStand.setVisible(false);
-            horse.addPassenger(armorStand);
-            armorStand.addPassenger(player);
+        if ((horse.getPassengers().size() == 1) && config.getBoolean("settings.allow-duo-horses", true)) {
+            debugLog("DUOMOUNT", "ATTEMPT", true, "Attempting to place 2nd player");
+            Boat boat = (Boat) horse.getWorld().spawnEntity(horse.getLocation(), EntityType.BOAT);
+
+            boat.setGravity(false);
+            boat.setInvulnerable(true);
+            boat.setSilent(true);
+            boat.setPersistent(false);
+            boat.setInvisible(true);
+            boat.setNoPhysics(true);
+            boat.setVisibleByDefault(false);
+
+            ArmorStand blocker = (ArmorStand) horse.getWorld().spawnEntity(horse.getLocation(), EntityType.ARMOR_STAND);
+
+            blocker.setVisible(false);
+            blocker.setMarker(true);
+            blocker.setGravity(false);
+            blocker.setInvulnerable(true);
+            blocker.setSilent(true);
+            blocker.setPersistent(false);
+
+            horse.addPassenger(boat);
+
+            boat.addPassenger(blocker);
+            boat.addPassenger(player);
+
+            if (BetterHorses.getInstance().getDuomountRotationTask() != null) {
+                BetterHorses.getInstance().getDuomountRotationTask().registerBoat(boat);
+            }
+            debugLog("DUOMOUNT", "FINISH", true, "Placed 2nd player on horse");
         }
     }
 
@@ -70,5 +96,19 @@ public class HorseMountListener implements Listener {
         } else {
             return entity instanceof Donkey ? 0.1 : 0.45;
         }
+    }
+
+    public void debugLog(String action, String checkpoint, boolean success, String details) {
+        if (!BetterHorses.getInstance().isDebugModeEnabled()) {
+            return;
+        }
+
+        String status = success ? "PASS" : "FAIL";
+        String message = String.format("[DEBUG][%s][%s][%s] %s", action, checkpoint, status, details);
+        if (success) {
+            BetterHorses.getInstance().getLogger().info(message);
+            return;
+        }
+        BetterHorses.getInstance().getLogger().warning(message);
     }
 }

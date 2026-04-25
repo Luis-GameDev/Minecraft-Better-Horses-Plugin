@@ -10,6 +10,7 @@ import me.luisgamedev.betterhorses.growing.HorseGrowthManager;
 import me.luisgamedev.betterhorses.language.LanguageManager;
 import me.luisgamedev.betterhorses.listeners.HorseMountListener;
 import me.luisgamedev.betterhorses.listeners.*;
+import me.luisgamedev.betterhorses.tasks.DuomountRotationTask;
 import me.luisgamedev.betterhorses.tasks.TraitParticleTask;
 import org.bukkit.Bukkit;
 import org.bukkit.command.PluginCommand;
@@ -34,6 +35,7 @@ public class BetterHorses extends JavaPlugin {
     private LanguageManager languageManager;
     private boolean protocolLibAvailable = false;
     private ProtocolManager protocolManager;
+    private DuomountRotationTask duomountRotationTask;
 
     @Override
     public void onEnable() {
@@ -66,13 +68,25 @@ public class BetterHorses extends JavaPlugin {
         getCommand("horsecreate").setTabCompleter(new HorseCreateTabCompleter());
 
         new HorseGrowthManager(this).start();
+        
+        if (getConfig().getBoolean("settings.allow-duo-horses", true)) {
+            duomountRotationTask = new DuomountRotationTask();
+            Bukkit.getScheduler().runTaskTimer(
+                    this,
+                    duomountRotationTask,
+                    0L, 2L
+            );
+        }
 
-        Bukkit.getScheduler().runTaskTimer(
-                this,
-                new TraitParticleTask(),
-                20L, // delay 1s
-                20L  // repeat every 1s
-        );
+        if (isAnyTraitEnabled()) {
+            Bukkit.getScheduler().runTaskTimer(
+                    this,
+                    new TraitParticleTask(),
+                    20L, // delay 1s
+                    20L  // repeat every 1s
+            );
+        }
+
         debugLog("PLUGIN", "ENABLE_COMPLETE", true, "BetterHorses plugin enabled successfully.");
     }
 
@@ -82,6 +96,10 @@ public class BetterHorses extends JavaPlugin {
 
     public LanguageManager getLang() {
         return languageManager;
+    }
+
+    public DuomountRotationTask getDuomountRotationTask() {
+        return duomountRotationTask;
     }
 
     public void reloadPluginConfiguration() {
