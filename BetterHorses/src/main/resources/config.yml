@@ -131,6 +131,14 @@ settings:
   horse-trample:
     damage: 2.0
     cooldown-seconds: 1.0
+    # Minimum horizontal speed a mount must have before trampling can trigger.
+    minimum-speed: 0.17
+    # Controls the trample trigger range around the mount. Increase these if trampling feels hard to trigger.
+    hitbox:
+      horizontal-radius: 1.15
+      vertical-radius: 1.25
+      # -1.0 hits all directions, 0.0 hits the front half, higher values require targets to be more directly in front.
+      front-dot-threshold: 0.0
     mount-types:
       horse:
         enabled: false
