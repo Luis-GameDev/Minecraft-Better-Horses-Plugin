@@ -61,6 +61,10 @@ public class LanguageManager {
         return lang.getString(key, "&cMissing lang key: " + key);
     }
 
+    public String getRaw(OfflinePlayer player, String key) {
+        return parseToString(player, getRaw(key));
+    }
+
     public String get(String key) {
         return get(null, key);
     }

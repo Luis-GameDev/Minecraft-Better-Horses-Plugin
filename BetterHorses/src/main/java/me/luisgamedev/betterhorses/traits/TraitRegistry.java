@@ -52,7 +52,7 @@ public class TraitRegistry {
 
         int duration = config.getInt("traits.hellmare.duration", 10);
         int radius = config.getInt("traits.hellmare.radius", 1);
-        player.sendMessage(lang.get("traits.hellmare-message"));
+        player.sendMessage(lang.get(player, "traits.hellmare-message"));
 
         PotionEffect fireResist = new PotionEffect(PotionEffectType.FIRE_RESISTANCE, duration * 20, 1, false, false, false);
         player.addPotionEffect(fireResist);
@@ -160,7 +160,7 @@ public class TraitRegistry {
         double boostedSpeed = originalSpeed * 1.5;
 
         speedAttr.setBaseValue(boostedSpeed);
-        player.sendMessage(lang.get("traits.dashboost-message"));
+        player.sendMessage(lang.get(player, "traits.dashboost-message"));
 
         setCooldown(horse, key, config.getInt("traits.dashboost.cooldown", 30));
 
@@ -209,7 +209,7 @@ public class TraitRegistry {
         }
 
         int duration = config.getInt("traits.ghosthorse.duration", 5);
-        player.sendMessage(lang.get("traits.ghosthorse-message"));
+        player.sendMessage(lang.get(player, "traits.ghosthorse-message"));
 
         horse.setInvisible(true);
         player.setInvisible(true);
@@ -279,7 +279,7 @@ public class TraitRegistry {
         }
 
         int duration = config.getInt("traits.revenantcurse.duration", 5);
-        player.sendMessage(lang.get("traits.revenantcurse-message"));
+        player.sendMessage(lang.get(player, "traits.revenantcurse-message"));
 
         horse.getPersistentDataContainer().set(
                 new NamespacedKey(BetterHorses.getInstance(), "revenantcurse_active"),
@@ -318,7 +318,7 @@ public class TraitRegistry {
             }
         }
 
-        player.sendMessage(lang.get("traits.kickback-message"));
+        player.sendMessage(lang.get(player, "traits.kickback-message"));
         setCooldown(horse, key, config.getInt("traits.kickback.cooldown", 10));
     }
 
@@ -354,7 +354,7 @@ public class TraitRegistry {
         long now = System.currentTimeMillis();
         long until = cooldowns.get(horse.getUniqueId()).getOrDefault(key, 0L);
         double secondsLeft = (until - now) / 1000.0;
-        String name = lang.getRaw("traits." + key);
+        String name = lang.getRaw(player, "traits." + key);
 
         if (secondsLeft > 0) {
             CooldownDisplay.showCooldown(secondsLeft, fullCooldown, player, name);

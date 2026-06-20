@@ -3,6 +3,7 @@ package me.luisgamedev.betterhorses.utils;
 import me.luisgamedev.betterhorses.BetterHorses;
 import me.luisgamedev.betterhorses.language.LanguageManager;
 import org.bukkit.Location;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.AbstractHorse;
 import org.bukkit.entity.Camel;
@@ -50,7 +51,11 @@ public enum SupportedMountType {
     }
 
     public String getDisplayName(LanguageManager lang) {
-        return lang.getRaw("messages." + nameKey);
+        return getDisplayName(lang, null);
+    }
+
+    public String getDisplayName(LanguageManager lang, OfflinePlayer player) {
+        return lang.getRaw(player, "messages." + nameKey);
     }
 
     public AbstractHorse spawn(Location location) throws IllegalArgumentException {
