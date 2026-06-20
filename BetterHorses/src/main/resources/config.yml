@@ -126,7 +126,8 @@ settings:
   sand-slowness:
     enabled: false
     
-  # Lets mounted horses trample entities the mount is facing and runs into from the front.
+  # Lets mounted horses trample entities inside a front cone based on the rider's looking direction.
+  # Trample damage fires a damage event first, so protection plugins can cancel both damage and knockback.
   # Each mount tracks cooldowns per hit entity, so different horses can trample the same entity independently.
   horse-trample:
     damage: 2.0
@@ -137,7 +138,7 @@ settings:
     hitbox:
       horizontal-radius: 1.15
       vertical-radius: 1.25
-      # -1.0 hits all directions, 0.0 hits the front half, higher values require targets to be more directly in front.
+      # -1.0 hits all directions, 0.0 hits the front half, higher values require targets to be more directly in front of the rider.
       front-dot-threshold: 0.0
     mount-types:
       horse:
