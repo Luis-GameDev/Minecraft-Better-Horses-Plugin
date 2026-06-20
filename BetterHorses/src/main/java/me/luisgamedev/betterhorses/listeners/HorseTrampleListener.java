@@ -8,6 +8,7 @@ import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.AbstractHorse;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
+import org.bukkit.entity.Player;
 import org.bukkit.event.Listener;
 import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.util.Vector;
@@ -68,6 +69,14 @@ public class HorseTrampleListener implements Listener {
 
     private void trample(AbstractHorse mount, FileConfiguration config, long now, long cooldownMillis) {
         Vector velocity = mount.getVelocity();
+        Player rider = mount.getPassengers().stream()
+                .filter(Player.class::isInstance)
+                .map(Player.class::cast)
+                .findFirst()
+                .orElse(null);
+        if (rider == null) {
+            return;
+        }
         double minimumSpeed = Math.max(
                 0.0,
                 config.getDouble("settings.horse-trample.minimum-speed", DEFAULT_MINIMUM_TRAMPLE_SPEED)
@@ -97,15 +106,15 @@ public class HorseTrampleListener implements Listener {
             if (!(nearby instanceof LivingEntity target) || target.equals(mount) || mount.getPassengers().contains(target)) {
                 continue;
             }
-            if (!isInTrampleHitbox(mount, target, velocity, horizontalRadius, verticalRadius, config)) {
+            if (!isInTrampleHitbox(mount, target, horizontalRadius, verticalRadius, config)) {
                 continue;
             }
             if (isOnCooldown(mount.getUniqueId(), target.getUniqueId(), now, cooldownMillis)) {
                 continue;
             }
 
-            target.damage(damage, mount);
-            applyKnockback(config, target, velocity);
+            target.damage(damage, rider);
+            applyKnockback(config, target, mount);
             setCooldown(mount.getUniqueId(), target.getUniqueId(), now);
         }
     }
@@ -113,7 +122,6 @@ public class HorseTrampleListener implements Listener {
     private boolean isInTrampleHitbox(
             AbstractHorse mount,
             LivingEntity target,
-            Vector velocity,
             double horizontalRadius,
             double verticalRadius,
             FileConfiguration config
@@ -132,10 +140,7 @@ public class HorseTrampleListener implements Listener {
             return true;
         }
 
-        Vector direction = velocity.clone().setY(0);
-        if (direction.lengthSquared() == 0) {
-            direction = mountLocation.getDirection().setY(0);
-        }
+        Vector direction = mountLocation.getDirection().setY(0);
         if (direction.lengthSquared() == 0) {
             return false;
         }
@@ -163,12 +168,12 @@ public class HorseTrampleListener implements Listener {
         trampleCooldowns.computeIfAbsent(mountId, ignored -> new HashMap<>()).put(targetId, now);
     }
 
-    private void applyKnockback(FileConfiguration config, LivingEntity target, Vector mountVelocity) {
+    private void applyKnockback(FileConfiguration config, LivingEntity target, AbstractHorse mount) {
         if (!config.getBoolean("settings.horse-trample.knockback.enabled", false)) {
             return;
         }
 
-        Vector direction = mountVelocity.clone().setY(0);
+        Vector direction = mount.getLocation().getDirection().setY(0);
         if (direction.lengthSquared() == 0) {
             return;
         }
