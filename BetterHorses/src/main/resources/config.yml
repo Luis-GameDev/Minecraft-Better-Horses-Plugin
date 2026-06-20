@@ -127,8 +127,6 @@ settings:
     enabled: false
     
   # Lets mounted horses trample entities inside a front cone based on the rider's looking direction.
-  # Trample damage fires a damage event first, so protection plugins can cancel both damage and knockback.
-  # Each mount tracks cooldowns per hit entity, so different horses can trample the same entity independently.
   horse-trample:
     damage: 2.0
     cooldown-seconds: 1.0
