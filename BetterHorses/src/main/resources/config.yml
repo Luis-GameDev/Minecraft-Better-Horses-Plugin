@@ -126,7 +126,7 @@ settings:
   sand-slowness:
     enabled: false
     
-  # Lets mounted horses trample entities they run into from the front.
+  # Lets mounted horses trample entities the mount is facing and runs into from the front.
   # Each mount tracks cooldowns per hit entity, so different horses can trample the same entity independently.
   horse-trample:
     damage: 2.0
