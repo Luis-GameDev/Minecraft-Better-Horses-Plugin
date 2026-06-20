@@ -121,6 +121,11 @@ settings:
     enabled: false
     percentage: 25.0 # 25% more damage while mounted
 
+  # Applies Slowness I to mounted horses while they walk on sand blocks.
+  # This affects horses, skeleton horses, and zombie horses, but not camels.
+  sand-slowness:
+    enabled: false
+
   # Traited horses will have particles around them, disabling this will result in slightly better performance
   trait-particle-indicator: true
 
