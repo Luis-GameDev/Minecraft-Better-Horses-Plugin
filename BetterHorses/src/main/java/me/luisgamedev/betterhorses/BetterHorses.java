@@ -37,6 +37,8 @@ public class BetterHorses extends JavaPlugin {
 
     @Override
     public void onEnable() {
+        instance = this;
+        initializeConfigurationFiles();
         debugLog("PLUGIN", "ENABLE_START", true, "Starting BetterHorses plugin bootstrap.");
         if (getServer().getPluginManager().getPlugin("ProtocolLib") != null) {
             protocolLibAvailable = true;
@@ -48,10 +50,6 @@ public class BetterHorses extends JavaPlugin {
                     "Running BetterHorses without ProtocolLib is no problem, but will result in some features being disabled."
             );
         }
-        instance = this;
-        saveDefaultConfig();
-        updateYamlWithMissingSections("config.yml", false);
-        updateYamlWithMissingSections("language.yml", true);
         languageManager = new LanguageManager(this);
 
         registerListeners();
@@ -82,6 +80,14 @@ public class BetterHorses extends JavaPlugin {
 
     public LanguageManager getLang() {
         return languageManager;
+    }
+
+    private void initializeConfigurationFiles() {
+        saveDefaultConfig();
+        reloadConfig();
+        updateYamlWithMissingSections("config.yml", false);
+        updateYamlWithMissingSections("language.yml", true);
+        reloadConfig();
     }
 
     public void reloadPluginConfiguration() {
