@@ -2,7 +2,6 @@ package me.luisgamedev.betterhorses.commands;
 
 import me.luisgamedev.betterhorses.BetterHorses;
 import me.luisgamedev.betterhorses.api.BetterHorseKeys;
-import org.bukkit.ChatColor;
 import org.bukkit.NamespacedKey;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
@@ -21,7 +20,9 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 
 public final class HorseInfoCommand {
@@ -39,57 +40,36 @@ public final class HorseInfoCommand {
             ItemMeta meta = item.getItemMeta();
             PersistentDataContainer container = meta.getPersistentDataContainer();
 
-            player.sendMessage(ChatColor.GOLD + "------ BetterHorses Item Debug ------");
-            player.sendMessage(ChatColor.YELLOW + "Type: " + ChatColor.WHITE + item.getType());
-            player.sendMessage(ChatColor.YELLOW + "Amount: " + ChatColor.WHITE + item.getAmount());
-            player.sendMessage(ChatColor.YELLOW + "Display Name: " + ChatColor.WHITE
-                    + (meta.hasDisplayName() ? meta.getDisplayName() : "<none>"));
-            player.sendMessage(ChatColor.YELLOW + "Unbreakable: " + ChatColor.WHITE + meta.isUnbreakable());
-
+            Map<String, String> placeholders = createCommonPlaceholders(container);
+            placeholders.put("%item_type%", String.valueOf(item.getType()));
+            placeholders.put("%item_amount%", String.valueOf(item.getAmount()));
+            placeholders.put("%item_display_name%", meta.hasDisplayName() ? meta.getDisplayName() : "<none>");
+            placeholders.put("%item_unbreakable%", String.valueOf(meta.isUnbreakable()));
             if (meta instanceof Damageable damageable) {
-                player.sendMessage(ChatColor.YELLOW + "Damage: " + ChatColor.WHITE + damageable.getDamage());
-            }
-
-            player.sendMessage(ChatColor.YELLOW + "CustomModelData: " + ChatColor.WHITE
-                    + (meta.hasCustomModelData() ? meta.getCustomModelData() : "<none>"));
-
-            if (meta.hasLore()) {
-                player.sendMessage(ChatColor.YELLOW + "Lore:");
-                for (String line : meta.getLore()) {
-                    player.sendMessage(ChatColor.GRAY + "  - " + line);
-                }
+                placeholders.put("%item_damage%", String.valueOf(damageable.getDamage()));
+                placeholders.put("%item_damage_line%", "&eDamage: &f" + damageable.getDamage());
             } else {
-                player.sendMessage(ChatColor.YELLOW + "Lore: " + ChatColor.WHITE + "<none>");
+                placeholders.put("%item_damage%", "<none>");
+                placeholders.put("%item_damage_line%", "");
             }
-
-            if (!meta.getItemFlags().isEmpty()) {
-                player.sendMessage(ChatColor.YELLOW + "ItemFlags:");
-                for (ItemFlag itemFlag : meta.getItemFlags()) {
-                    player.sendMessage(ChatColor.GRAY + "  - " + itemFlag.name());
-                }
-            } else {
-                player.sendMessage(ChatColor.YELLOW + "ItemFlags: " + ChatColor.WHITE + "<none>");
-            }
+            placeholders.put("%item_custom_model_data%", meta.hasCustomModelData() ? String.valueOf(meta.getCustomModelData()) : "<none>");
+            placeholders.put("%item_lore%", renderItemLore(meta));
+            placeholders.put("%item_flags%", renderItemFlags(meta));
+            placeholders.put("%persistent_data%", renderPersistentData(container));
+            placeholders.put("%known_values_title%", "Known BetterHorses Values (item)");
+            placeholders.put("%known_values%", renderKnownHorseDataValues(container));
+            sendTemplate(player, "messages.horse-info.item", placeholders);
 
             if (container.getKeys().isEmpty()) {
-                player.sendMessage(ChatColor.YELLOW + "PersistentData: " + ChatColor.WHITE + "<none>");
                 plugin.debugLog("HORSE_INFO", "PDC_SCAN", true,
                         "Player " + player.getName() + " inspected item without custom PDC keys.");
-            } else {
-                player.sendMessage(ChatColor.YELLOW + "PersistentData:");
-                for (NamespacedKey key : container.getKeys()) {
-                    String renderedValue = resolveValue(container, key);
-                    player.sendMessage(ChatColor.GRAY + "  - " + key + ChatColor.WHITE + " = " + renderedValue);
-                }
             }
-
-            sendKnownHorseDataValues(player, container, "Known BetterHorses Values (item)");
         }
 
         boolean inspectedMount = inspectMountedHorse(player, plugin);
 
         if (!inspectedItem && !inspectedMount) {
-            player.sendMessage(ChatColor.RED + "Hold a horse item in your main hand or ride a horse first.");
+            sendTemplate(player, "messages.horse-info.no-target", Map.of());
             plugin.debugLog("HORSE_INFO", "VALIDATION", false,
                     "Player " + player.getName() + " has no inspectable item and is not riding a supported mount.");
             return true;
@@ -107,47 +87,124 @@ public final class HorseInfoCommand {
         }
 
         PersistentDataContainer data = horse.getPersistentDataContainer();
-        player.sendMessage(ChatColor.GOLD + "------ BetterHorses Mounted Horse Debug ------");
-        player.sendMessage(ChatColor.YELLOW + "Entity: " + ChatColor.WHITE + horse.getType());
-        player.sendMessage(ChatColor.YELLOW + "UUID: " + ChatColor.WHITE + horse.getUniqueId());
-        player.sendMessage(ChatColor.YELLOW + "Tamed: " + ChatColor.WHITE + horse.isTamed());
-        player.sendMessage(ChatColor.YELLOW + "Owner: " + ChatColor.WHITE
-                + (horse.getOwner() == null ? "<none>" : horse.getOwner().getUniqueId()));
-
         AttributeInstance maxHealth = horse.getAttribute(Attribute.GENERIC_MAX_HEALTH);
         AttributeInstance speed = horse.getAttribute(Attribute.GENERIC_MOVEMENT_SPEED);
         AttributeInstance jump = horse.getAttribute(Attribute.valueOf("HORSE_JUMP_STRENGTH"));
 
-        player.sendMessage(ChatColor.YELLOW + "Health: " + ChatColor.WHITE + String.format("%.2f / %.2f",
-                horse.getHealth(), maxHealth == null ? 0.0 : maxHealth.getBaseValue()));
-        player.sendMessage(ChatColor.YELLOW + "Speed: " + ChatColor.WHITE
-                + (speed == null ? "<none>" : String.format("%.4f", speed.getBaseValue())));
-        player.sendMessage(ChatColor.YELLOW + "Jump: " + ChatColor.WHITE
-                + (jump == null ? "<none>" : String.format("%.4f", jump.getBaseValue())));
-        player.sendMessage(ChatColor.YELLOW + "Trait: " + ChatColor.WHITE
-                + data.getOrDefault(BetterHorseKeys.TRAIT, PersistentDataType.STRING, "<none>"));
-        player.sendMessage(ChatColor.YELLOW + "Gender: " + ChatColor.WHITE
-                + data.getOrDefault(BetterHorseKeys.GENDER, PersistentDataType.STRING, "<none>"));
-        player.sendMessage(ChatColor.YELLOW + "Growth Stage: " + ChatColor.WHITE
-                + data.getOrDefault(BetterHorseKeys.GROWTH_STAGE, PersistentDataType.INTEGER, -1));
-        player.sendMessage(ChatColor.YELLOW + "Neutered: " + ChatColor.WHITE + resolveBooleanFlag(data, BetterHorseKeys.NEUTERED));
-
-        sendKnownHorseDataValues(player, data, "Known BetterHorses Values (mounted horse)");
+        Map<String, String> placeholders = createCommonPlaceholders(data);
+        placeholders.put("%entity_type%", String.valueOf(horse.getType()));
+        placeholders.put("%entity_uuid%", String.valueOf(horse.getUniqueId()));
+        placeholders.put("%tamed%", String.valueOf(horse.isTamed()));
+        placeholders.put("%owner%", horse.getOwner() == null ? "<none>" : horse.getOwner().getUniqueId().toString());
+        placeholders.put("%current_health%", String.format("%.2f", horse.getHealth()));
+        placeholders.put("%max_health%", String.format("%.2f", maxHealth == null ? 0.0 : maxHealth.getBaseValue()));
+        placeholders.put("%health%", String.format("%.2f / %.2f", horse.getHealth(), maxHealth == null ? 0.0 : maxHealth.getBaseValue()));
+        placeholders.put("%speed%", speed == null ? "<none>" : String.format("%.4f", speed.getBaseValue()));
+        placeholders.put("%jump%", jump == null ? "<none>" : String.format("%.4f", jump.getBaseValue()));
+        placeholders.put("%trait%", data.getOrDefault(BetterHorseKeys.TRAIT, PersistentDataType.STRING, "<none>"));
+        placeholders.put("%gender%", data.getOrDefault(BetterHorseKeys.GENDER, PersistentDataType.STRING, "<none>"));
+        placeholders.put("%growth_stage%", String.valueOf(data.getOrDefault(BetterHorseKeys.GROWTH_STAGE, PersistentDataType.INTEGER, -1)));
+        placeholders.put("%neutered%", resolveBooleanFlag(data, BetterHorseKeys.NEUTERED));
+        placeholders.put("%persistent_data%", renderPersistentData(data));
+        placeholders.put("%known_values_title%", "Known BetterHorses Values (mounted horse)");
+        placeholders.put("%known_values%", renderKnownHorseDataValues(data));
+        sendTemplate(player, "messages.horse-info.mounted-horse", placeholders);
 
         plugin.debugLog("HORSE_INFO", "MOUNT_SCAN", true,
                 "Player " + player.getName() + " inspected mounted horse " + horse.getUniqueId() + ".");
         return true;
     }
 
-    private static void sendKnownHorseDataValues(Player player, PersistentDataContainer container, String title) {
-        player.sendMessage(ChatColor.YELLOW + title + ":");
+    private static String renderKnownHorseDataValues(PersistentDataContainer container) {
+        List<String> lines = new ArrayList<>();
         for (NamespacedKey key : getKnownHorseKeys()) {
             boolean present = container.getKeys().contains(key);
             String renderedValue = resolveKnownValue(container, key);
-            String state = present ? ChatColor.GREEN + "present" : ChatColor.RED + "missing";
-            player.sendMessage(ChatColor.GRAY + "  - " + key + ChatColor.WHITE + " = " + renderedValue
-                    + ChatColor.DARK_GRAY + " [" + state + ChatColor.DARK_GRAY + "]");
+            String state = present ? "&a" + "present" : "&c" + "missing";
+            lines.add("&7  - " + key + "&f = " + renderedValue
+                    + "&8 [" + state + "&8]");
         }
+        return String.join("\n", lines);
+    }
+
+    private static String renderPersistentData(PersistentDataContainer container) {
+        if (container.getKeys().isEmpty()) {
+            return "&ePersistentData: &f<none>";
+        }
+
+        List<String> lines = new ArrayList<>();
+        lines.add("&ePersistentData:");
+        for (NamespacedKey key : container.getKeys()) {
+            lines.add("&7  - " + key + "&f = " + resolveValue(container, key));
+        }
+        return String.join("\n", lines);
+    }
+
+    private static String renderItemLore(ItemMeta meta) {
+        if (!meta.hasLore()) {
+            return "&eLore: &f<none>";
+        }
+
+        List<String> lines = new ArrayList<>();
+        lines.add("&eLore:");
+        for (String line : meta.getLore()) {
+            lines.add("&7  - " + line);
+        }
+        return String.join("\n", lines);
+    }
+
+    private static String renderItemFlags(ItemMeta meta) {
+        if (meta.getItemFlags().isEmpty()) {
+            return "&eItemFlags: &f<none>";
+        }
+
+        List<String> lines = new ArrayList<>();
+        lines.add("&eItemFlags:");
+        for (ItemFlag itemFlag : meta.getItemFlags()) {
+            lines.add("&7  - " + itemFlag.name());
+        }
+        return String.join("\n", lines);
+    }
+
+    private static Map<String, String> createCommonPlaceholders(PersistentDataContainer container) {
+        Map<String, String> placeholders = new LinkedHashMap<>();
+        for (NamespacedKey key : getKnownHorseKeys()) {
+            String value = resolveKnownValue(container, key);
+            placeholders.put("%" + key.getKey() + "%", value);
+            placeholders.put("%pdc_" + key.getKey() + "%", value);
+            placeholders.put("%pdc_" + key + "%", value);
+        }
+        return placeholders;
+    }
+
+    private static void sendTemplate(Player player, String path, Map<String, String> placeholders) {
+        BetterHorses plugin = BetterHorses.getInstance();
+        List<String> lines = plugin.getLang().getConfig().getStringList(path);
+        if (lines.isEmpty()) {
+            lines = List.of(plugin.getLang().getRaw(path));
+        }
+
+        for (String line : lines) {
+            String replaced = replacePlaceholders(line, placeholders);
+            if (replaced.isEmpty()) {
+                continue;
+            }
+            String parsed = plugin.getLang().parseToString(player, replaced);
+            for (String splitLine : parsed.split("\n", -1)) {
+                player.sendMessage(splitLine);
+            }
+        }
+    }
+
+    private static String replacePlaceholders(String message, Map<String, String> placeholders) {
+        for (Map.Entry<String, String> entry : placeholders.entrySet()) {
+            message = message.replace(entry.getKey(), escapeMiniMessageTags(entry.getValue()));
+        }
+        return message;
+    }
+
+    private static String escapeMiniMessageTags(String value) {
+        return value.replace("<", "\\<");
     }
 
     private static List<NamespacedKey> getKnownHorseKeys() {
