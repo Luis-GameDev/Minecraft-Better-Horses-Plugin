@@ -151,8 +151,6 @@ public class BetterHorses extends JavaPlugin {
             String fullPath = parentPath.isEmpty() ? key : parentPath + "." + key;
             Object defaultValue = defaults.get(key);
 
-            changed |= syncConfigComments(target, defaults, key);
-
             if (defaultValue instanceof ConfigurationSection defaultSection) {
                 if (!target.isConfigurationSection(key)) {
                     target.createSection(key);
@@ -170,24 +168,6 @@ public class BetterHorses extends JavaPlugin {
                 target.set(key, defaultValue);
                 changed = true;
             }
-        }
-
-        return changed;
-    }
-
-    private boolean syncConfigComments(ConfigurationSection target, ConfigurationSection defaults, String key) {
-        boolean changed = false;
-
-        List<String> defaultComments = defaults.getComments(key);
-        if (!defaultComments.equals(target.getComments(key))) {
-            target.setComments(key, defaultComments);
-            changed = true;
-        }
-
-        List<String> defaultInlineComments = defaults.getInlineComments(key);
-        if (!defaultInlineComments.equals(target.getInlineComments(key))) {
-            target.setInlineComments(key, defaultInlineComments);
-            changed = true;
         }
 
         return changed;
