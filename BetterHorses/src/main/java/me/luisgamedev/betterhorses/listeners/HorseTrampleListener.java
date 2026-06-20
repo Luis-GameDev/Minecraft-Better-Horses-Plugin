@@ -22,10 +22,10 @@ public class HorseTrampleListener implements Listener {
     private static final double DEFAULT_DAMAGE = 2.0;
     private static final double DEFAULT_COOLDOWN_SECONDS = 1.0;
     private static final double DEFAULT_KNOCKBACK_STRENGTH = 0.35;
-    private static final double MINIMUM_TRAMPLE_SPEED_SQUARED = 0.03;
-    private static final double TRAMPLE_RADIUS_XZ = 0.9;
-    private static final double TRAMPLE_RADIUS_Y = 0.8;
-    private static final double FRONT_DOT_THRESHOLD = 0.25;
+    private static final double DEFAULT_MINIMUM_TRAMPLE_SPEED = 0.17;
+    private static final double DEFAULT_TRAMPLE_RADIUS_XZ = 1.15;
+    private static final double DEFAULT_TRAMPLE_RADIUS_Y = 1.25;
+    private static final double DEFAULT_FRONT_DOT_THRESHOLD = 0.0;
 
     private final BetterHorses plugin;
     private final Map<UUID, Map<UUID, Long>> trampleCooldowns = new HashMap<>();
@@ -45,7 +45,9 @@ public class HorseTrampleListener implements Listener {
     private void tick() {
         FileConfiguration config = plugin.getConfig();
         long now = System.currentTimeMillis();
-        long cooldownMillis = Math.max(0L, Math.round(config.getDouble("settings.horse-trample.cooldown-seconds", DEFAULT_COOLDOWN_SECONDS) * 1000.0));
+        long cooldownMillis = Math.max(0L, Math.round(
+                config.getDouble("settings.horse-trample.cooldown-seconds", DEFAULT_COOLDOWN_SECONDS) * 1000.0
+        ));
 
         for (org.bukkit.World world : Bukkit.getWorlds()) {
             for (AbstractHorse mount : world.getEntitiesByClass(AbstractHorse.class)) {
@@ -66,7 +68,11 @@ public class HorseTrampleListener implements Listener {
 
     private void trample(AbstractHorse mount, FileConfiguration config, long now, long cooldownMillis) {
         Vector velocity = mount.getVelocity();
-        if (velocity.lengthSquared() < MINIMUM_TRAMPLE_SPEED_SQUARED) {
+        double minimumSpeed = Math.max(
+                0.0,
+                config.getDouble("settings.horse-trample.minimum-speed", DEFAULT_MINIMUM_TRAMPLE_SPEED)
+        );
+        if (velocity.clone().setY(0).lengthSquared() < minimumSpeed * minimumSpeed) {
             return;
         }
 
@@ -75,11 +81,23 @@ public class HorseTrampleListener implements Listener {
             return;
         }
 
-        for (Entity nearby : mount.getNearbyEntities(TRAMPLE_RADIUS_XZ, TRAMPLE_RADIUS_Y, TRAMPLE_RADIUS_XZ)) {
+        double horizontalRadius = Math.max(
+                0.0,
+                config.getDouble("settings.horse-trample.hitbox.horizontal-radius", DEFAULT_TRAMPLE_RADIUS_XZ)
+        );
+        double verticalRadius = Math.max(
+                0.0,
+                config.getDouble("settings.horse-trample.hitbox.vertical-radius", DEFAULT_TRAMPLE_RADIUS_Y)
+        );
+        if (horizontalRadius <= 0.0 || verticalRadius <= 0.0) {
+            return;
+        }
+
+        for (Entity nearby : mount.getNearbyEntities(horizontalRadius, verticalRadius, horizontalRadius)) {
             if (!(nearby instanceof LivingEntity target) || target.equals(mount) || mount.getPassengers().contains(target)) {
                 continue;
             }
-            if (!isInFrontOfMount(mount, target, velocity)) {
+            if (!isInTrampleHitbox(mount, target, velocity, horizontalRadius, verticalRadius, config)) {
                 continue;
             }
             if (isOnCooldown(mount.getUniqueId(), target.getUniqueId(), now, cooldownMillis)) {
@@ -92,8 +110,28 @@ public class HorseTrampleListener implements Listener {
         }
     }
 
-    private boolean isInFrontOfMount(AbstractHorse mount, LivingEntity target, Vector velocity) {
+    private boolean isInTrampleHitbox(
+            AbstractHorse mount,
+            LivingEntity target,
+            Vector velocity,
+            double horizontalRadius,
+            double verticalRadius,
+            FileConfiguration config
+    ) {
         Location mountLocation = mount.getLocation();
+        Location targetLocation = target.getLocation();
+        if (Math.abs(targetLocation.getY() - mountLocation.getY()) > verticalRadius) {
+            return false;
+        }
+
+        Vector toTarget = targetLocation.toVector().subtract(mountLocation.toVector()).setY(0);
+        if (toTarget.lengthSquared() > horizontalRadius * horizontalRadius) {
+            return false;
+        }
+        if (toTarget.lengthSquared() == 0) {
+            return true;
+        }
+
         Vector direction = velocity.clone().setY(0);
         if (direction.lengthSquared() == 0) {
             direction = mountLocation.getDirection().setY(0);
@@ -102,12 +140,14 @@ public class HorseTrampleListener implements Listener {
             return false;
         }
 
-        Vector toTarget = target.getLocation().toVector().subtract(mountLocation.toVector()).setY(0);
-        if (toTarget.lengthSquared() == 0) {
-            return true;
-        }
-
-        return direction.normalize().dot(toTarget.normalize()) >= FRONT_DOT_THRESHOLD;
+        double frontDotThreshold = Math.max(
+                -1.0,
+                Math.min(
+                        1.0,
+                        config.getDouble("settings.horse-trample.hitbox.front-dot-threshold", DEFAULT_FRONT_DOT_THRESHOLD)
+                )
+        );
+        return direction.normalize().dot(toTarget.normalize()) >= frontDotThreshold;
     }
 
     private boolean isOnCooldown(UUID mountId, UUID targetId, long now, long cooldownMillis) {
@@ -133,7 +173,10 @@ public class HorseTrampleListener implements Listener {
             return;
         }
 
-        double strength = Math.max(0.0, config.getDouble("settings.horse-trample.knockback.strength", DEFAULT_KNOCKBACK_STRENGTH));
+        double strength = Math.max(
+                0.0,
+                config.getDouble("settings.horse-trample.knockback.strength", DEFAULT_KNOCKBACK_STRENGTH)
+        );
         if (strength <= 0.0) {
             return;
         }
