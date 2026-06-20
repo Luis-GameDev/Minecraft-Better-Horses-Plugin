@@ -269,9 +269,7 @@ public class BetterHorses extends JavaPlugin {
         }
       
         if (isHorseTrampleEnabled(config)) {
-            HorseTrampleListener horseTrampleListener = new HorseTrampleListener(this);
-            pluginManager.registerEvents(horseTrampleListener, this);
-            horseTrampleListener.start();
+            pluginManager.registerEvents(new HorseTrampleListener(this), this);
             debugLog("LISTENER", "REGISTER", true, "Registered HorseTrampleListener.");
         }
 
