@@ -24,10 +24,10 @@ public class SandSlownessListener implements Listener {
     private static final PotionEffect SAND_SLOWNESS = new PotionEffect(
             PotionEffectType.SLOWNESS,
             40,
-            0,
+            1,
             false,
-            false,
-            false
+            true,
+            true
     );
 
     @EventHandler
