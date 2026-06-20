@@ -140,7 +140,7 @@ public class LanguageManager {
         StringBuilder converted = new StringBuilder(message.length());
         for (int i = 0; i < message.length(); i++) {
             char current = message.charAt(i);
-            if (current == '&' && i + 1 < message.length()) {
+            if ((current == '&' || current == '§') && i + 1 < message.length()) {
                 char code = Character.toLowerCase(message.charAt(i + 1));
                 if (code == 'r') {
                     converted.append("<reset>");

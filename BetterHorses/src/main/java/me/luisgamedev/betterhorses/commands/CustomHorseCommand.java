@@ -47,7 +47,7 @@ public class CustomHorseCommand implements CommandExecutor {
             double speed = Double.parseDouble(args[1]);
             double jump = Double.parseDouble(args[2]);
             String gender = args.length >= 4 ? args[3].toLowerCase() : (Math.random() < 0.5 ? "male" : "female");
-            String name = args.length >= 5 ? "§6" + args[4] : "§6Horse";
+            String name = args.length >= 5 ? args[4] : lang.getRaw("messages.horse");
             String trait = args.length >= 6 ? args[5].toLowerCase() : null;
             int growthStage = args.length >= 7 ? Integer.parseInt(args[6]) : 10;
             String mountTypeArg = args.length >= 8 ? args[7] : null;
