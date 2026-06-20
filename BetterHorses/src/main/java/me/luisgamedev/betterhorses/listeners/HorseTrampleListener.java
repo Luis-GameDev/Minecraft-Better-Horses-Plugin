@@ -10,6 +10,8 @@ import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Listener;
+import org.bukkit.event.entity.EntityDamageByEntityEvent;
+import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.util.Vector;
 
@@ -113,8 +115,13 @@ public class HorseTrampleListener implements Listener {
                 continue;
             }
 
-            target.damage(damage, rider);
-            applyKnockback(config, target, mount);
+            EntityDamageByEntityEvent damageEvent = callTrampleDamageEvent(rider, target, damage);
+            if (damageEvent.isCancelled()) {
+                continue;
+            }
+
+            applyTrampleDamage(target, damageEvent);
+            applyKnockback(config, target, rider);
             setCooldown(mount.getUniqueId(), target.getUniqueId(), now);
         }
     }
@@ -140,7 +147,16 @@ public class HorseTrampleListener implements Listener {
             return true;
         }
 
-        Vector direction = mountLocation.getDirection().setY(0);
+        Player rider = mount.getPassengers().stream()
+                .filter(Player.class::isInstance)
+                .map(Player.class::cast)
+                .findFirst()
+                .orElse(null);
+        if (rider == null) {
+            return false;
+        }
+
+        Vector direction = rider.getLocation().getDirection().setY(0);
         if (direction.lengthSquared() == 0) {
             return false;
         }
@@ -168,12 +184,33 @@ public class HorseTrampleListener implements Listener {
         trampleCooldowns.computeIfAbsent(mountId, ignored -> new HashMap<>()).put(targetId, now);
     }
 
-    private void applyKnockback(FileConfiguration config, LivingEntity target, AbstractHorse mount) {
+    private EntityDamageByEntityEvent callTrampleDamageEvent(Player rider, LivingEntity target, double damage) {
+        EntityDamageByEntityEvent damageEvent = new EntityDamageByEntityEvent(
+                rider,
+                target,
+                EntityDamageEvent.DamageCause.ENTITY_ATTACK,
+                damage
+        );
+        Bukkit.getPluginManager().callEvent(damageEvent);
+        return damageEvent;
+    }
+
+    private void applyTrampleDamage(LivingEntity target, EntityDamageByEntityEvent damageEvent) {
+        double finalDamage = Math.max(0.0, damageEvent.getFinalDamage());
+        if (finalDamage <= 0.0) {
+            return;
+        }
+
+        target.setLastDamageCause(damageEvent);
+        target.setHealth(Math.max(0.0, target.getHealth() - finalDamage));
+    }
+
+    private void applyKnockback(FileConfiguration config, LivingEntity target, Player rider) {
         if (!config.getBoolean("settings.horse-trample.knockback.enabled", false)) {
             return;
         }
 
-        Vector direction = mount.getLocation().getDirection().setY(0);
+        Vector direction = rider.getLocation().getDirection().setY(0);
         if (direction.lengthSquared() == 0) {
             return;
         }
