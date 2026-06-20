@@ -58,7 +58,7 @@ public class CooldownDisplay {
         double maxDisplayDuration = 5.0;
         double displayTime = Math.min(maxDisplayDuration, remaining);
 
-        String title = lang.getFormattedRaw("messages.cooldown-message-bossbar", "%value%", abilityName);
+        String title = lang.getFormattedRaw(player, "messages.cooldown-message-bossbar", "%value%", abilityName);
 
         BossBar bar = Bukkit.createBossBar(
                 title,
@@ -115,6 +115,7 @@ public class CooldownDisplay {
                 }
 
                 String message = lang.getFormattedRaw(
+                        player,
                         "messages.cooldown-message-hotbar",
                         "%value%", abilityName,
                         "%remaining%", String.format(Locale.US, "%.1f", secondsLeft - secondsShown)
