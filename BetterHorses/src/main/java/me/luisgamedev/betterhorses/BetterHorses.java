@@ -281,6 +281,13 @@ public class BetterHorses extends JavaPlugin {
             pluginManager.registerEvents(new SandSlownessListener(), this);
             debugLog("LISTENER", "REGISTER", true, "Registered SandSlownessListener.");
         }
+      
+        if (isHorseTrampleEnabled(config)) {
+            HorseTrampleListener horseTrampleListener = new HorseTrampleListener(this);
+            pluginManager.registerEvents(horseTrampleListener, this);
+            horseTrampleListener.start();
+            debugLog("LISTENER", "REGISTER", true, "Registered HorseTrampleListener.");
+        }
 
         boolean traitsEnabled = config.getBoolean("traits.enabled", true);
         if (!traitsEnabled) {
@@ -308,6 +315,15 @@ public class BetterHorses extends JavaPlugin {
             pluginManager.registerEvents(new HorseJumpListener(), this);
             debugLog("LISTENER", "REGISTER", true, "Registered HorseJumpListener.");
         }
+    }
+
+    private boolean isHorseTrampleEnabled(FileConfiguration config) {
+        for (me.luisgamedev.betterhorses.utils.SupportedMountType mountType : me.luisgamedev.betterhorses.utils.SupportedMountType.values()) {
+            if (config.getBoolean("settings.horse-trample.mount-types." + mountType.getConfigKey() + ".enabled", false)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private boolean isAnyTraitEnabled(String... traits) {
