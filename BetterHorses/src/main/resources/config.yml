@@ -121,6 +121,24 @@ settings:
     enabled: false
     percentage: 25.0 # 25% more damage while mounted
 
+  # Lets mounted horses trample entities they run into from the front.
+  # Each mount tracks cooldowns per hit entity, so different horses can trample the same entity independently.
+  horse-trample:
+    damage: 2.0
+    cooldown-seconds: 1.0
+    mount-types:
+      horse:
+        enabled: false
+      skeleton-horses:
+        enabled: false
+      zombie-horses:
+        enabled: false
+      camels:
+        enabled: false
+    knockback:
+      enabled: false
+      strength: 0.35
+
   # Traited horses will have particles around them, disabling this will result in slightly better performance
   trait-particle-indicator: true
 
