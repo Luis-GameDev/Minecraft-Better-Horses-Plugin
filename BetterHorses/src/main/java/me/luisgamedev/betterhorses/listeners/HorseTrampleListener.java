@@ -9,10 +9,11 @@ import org.bukkit.entity.AbstractHorse;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
+import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
-import org.bukkit.scheduler.BukkitTask;
+import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.util.Vector;
 
 import java.util.HashMap;
@@ -32,36 +33,37 @@ public class HorseTrampleListener implements Listener {
 
     private final BetterHorses plugin;
     private final Map<UUID, Map<UUID, Long>> trampleCooldowns = new HashMap<>();
-    private BukkitTask task;
 
     public HorseTrampleListener(BetterHorses plugin) {
         this.plugin = plugin;
     }
 
-    public void start() {
-        if (task != null) {
-            task.cancel();
+    @EventHandler(ignoreCancelled = true)
+    public void onPlayerMove(PlayerMoveEvent event) {
+        Player rider = event.getPlayer();
+        if (!(rider.getVehicle() instanceof AbstractHorse mount)) {
+            return;
         }
-        task = Bukkit.getScheduler().runTaskTimer(plugin, this::tick, 1L, 1L);
-    }
 
-    private void tick() {
         FileConfiguration config = plugin.getConfig();
+        SupportedMountType mountType = SupportedMountType.fromEntity(mount).orElse(null);
+        if (mountType == null || !mountType.isEnabled(config) || !isTrampleEnabled(config, mountType)) {
+            return;
+        }
+
+        double minimumSpeed = Math.max(
+                0.0,
+                config.getDouble("settings.horse-trample.minimum-speed", DEFAULT_MINIMUM_TRAMPLE_SPEED)
+        );
+        if (mount.getVelocity().clone().setY(0).lengthSquared() < minimumSpeed * minimumSpeed) {
+            return;
+        }
+
         long now = System.currentTimeMillis();
         long cooldownMillis = Math.max(0L, Math.round(
                 config.getDouble("settings.horse-trample.cooldown-seconds", DEFAULT_COOLDOWN_SECONDS) * 1000.0
         ));
-
-        for (org.bukkit.World world : Bukkit.getWorlds()) {
-            for (AbstractHorse mount : world.getEntitiesByClass(AbstractHorse.class)) {
-                SupportedMountType mountType = SupportedMountType.fromEntity(mount).orElse(null);
-                if (mountType == null || !mountType.isEnabled(config) || !isTrampleEnabled(config, mountType)) {
-                    continue;
-                }
-                trample(mount, config, now, cooldownMillis);
-            }
-        }
-
+        trample(mount, rider, config, now, cooldownMillis);
         cleanupCooldowns(now, cooldownMillis);
     }
 
@@ -69,24 +71,7 @@ public class HorseTrampleListener implements Listener {
         return config.getBoolean("settings.horse-trample.mount-types." + mountType.getConfigKey() + ".enabled", false);
     }
 
-    private void trample(AbstractHorse mount, FileConfiguration config, long now, long cooldownMillis) {
-        Vector velocity = mount.getVelocity();
-        Player rider = mount.getPassengers().stream()
-                .filter(Player.class::isInstance)
-                .map(Player.class::cast)
-                .findFirst()
-                .orElse(null);
-        if (rider == null) {
-            return;
-        }
-        double minimumSpeed = Math.max(
-                0.0,
-                config.getDouble("settings.horse-trample.minimum-speed", DEFAULT_MINIMUM_TRAMPLE_SPEED)
-        );
-        if (velocity.clone().setY(0).lengthSquared() < minimumSpeed * minimumSpeed) {
-            return;
-        }
-
+    private void trample(AbstractHorse mount, Player rider, FileConfiguration config, long now, long cooldownMillis) {
         double damage = Math.max(0.0, config.getDouble("settings.horse-trample.damage", DEFAULT_DAMAGE));
         if (damage <= 0.0) {
             return;
@@ -108,7 +93,7 @@ public class HorseTrampleListener implements Listener {
             if (!(nearby instanceof LivingEntity target) || target.equals(mount) || mount.getPassengers().contains(target)) {
                 continue;
             }
-            if (!isInTrampleHitbox(mount, target, horizontalRadius, verticalRadius, config)) {
+            if (!isInTrampleHitbox(mount, rider, target, horizontalRadius, verticalRadius, config)) {
                 continue;
             }
             if (isOnCooldown(mount.getUniqueId(), target.getUniqueId(), now, cooldownMillis)) {
@@ -128,6 +113,7 @@ public class HorseTrampleListener implements Listener {
 
     private boolean isInTrampleHitbox(
             AbstractHorse mount,
+            Player rider,
             LivingEntity target,
             double horizontalRadius,
             double verticalRadius,
@@ -145,15 +131,6 @@ public class HorseTrampleListener implements Listener {
         }
         if (toTarget.lengthSquared() == 0) {
             return true;
-        }
-
-        Player rider = mount.getPassengers().stream()
-                .filter(Player.class::isInstance)
-                .map(Player.class::cast)
-                .findFirst()
-                .orElse(null);
-        if (rider == null) {
-            return false;
         }
 
         Vector direction = rider.getLocation().getDirection().setY(0);
