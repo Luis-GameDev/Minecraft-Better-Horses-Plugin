@@ -124,7 +124,7 @@ public class BetterHorsesAPI {
         );
 
         meta.setLore(lore);
-        meta.setDisplayName(name);
+        meta.setDisplayName(formatHorseItemName(lang, name, genderSymbol));
         item.setItemMeta(meta);
 
         if(targetInventory != null) {
@@ -338,7 +338,7 @@ public class BetterHorsesAPI {
 
         itemData.set(genderKey, PersistentDataType.STRING, gender);
         String name = horse.getCustomName() != null ? horse.getCustomName() : mountType.getDisplayName(lang);
-        meta.setDisplayName(ChatColor.GOLD + name + " " + genderSymbol);
+        meta.setDisplayName(formatHorseItemName(lang, name, genderSymbol));
 
         List<String> lore = buildHorseLore(
                 plugin.getConfig(),
@@ -393,6 +393,11 @@ public class BetterHorsesAPI {
 
         item.setItemMeta(meta);
         return item;
+    }
+
+    private static String formatHorseItemName(LanguageManager lang, @Nullable String name, String genderSymbol) {
+        String displayName = name == null || name.isBlank() ? lang.getRaw("messages.horse") : name;
+        return lang.getFormattedRaw("messages.horse-item-name", "%name%", displayName, "%gender%", genderSymbol);
     }
 
     private static @Nullable ItemStack restoreArmorItem(String armorMaterial, @Nullable String serializedArmor) {
