@@ -21,10 +21,13 @@ import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitRunnable;
+import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.util.Vector;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 public class TraitRegistry {
@@ -33,6 +36,10 @@ public class TraitRegistry {
     static LanguageManager lang = BetterHorses.getInstance().getLang();
     static FileConfiguration config = BetterHorses.getInstance().getConfig();
     private static final Map<UUID, Double> dashBoostOriginalSpeeds = new HashMap<>();
+    private static final Map<UUID, BukkitTask> dashBoostTasks = new HashMap<>();
+    private static final Set<UUID> activeGhostHorsePlayers = new HashSet<>();
+    private static final Set<UUID> activeGhostHorseMounts = new HashSet<>();
+    private static final Map<UUID, BukkitTask> ghostHorseTasks = new HashMap<>();
 
     public static void activateHellmare(Player player, AbstractHorse horse) {
         if (!config.getBoolean("traits.hellmare.enabled")) return;
@@ -157,26 +164,25 @@ public class TraitRegistry {
 
         setCooldown(horse, key, config.getInt("traits.dashboost.cooldown", 30));
 
-        new BukkitRunnable() {
+        BukkitTask task = new BukkitRunnable() {
             @Override
             public void run() {
-                Double storedOriginal = dashBoostOriginalSpeeds.remove(horse.getUniqueId());
-                double revertSpeed = storedOriginal != null ? storedOriginal : originalSpeed;
-
-                if (horse.isValid()) {
-                    AttributeInstance speedAttr = horse.getAttribute(AttributeResolver.generic("MOVEMENT_SPEED"));
-                    if (speedAttr != null) {
-                        speedAttr.setBaseValue(revertSpeed);
-                    }
-                }
+                revertDashBoostIfActive(horse);
             }
         }.runTaskLater(BetterHorses.getInstance(), duration * 20L);
+        dashBoostTasks.put(horse.getUniqueId(), task);
     }
 
     public static void revertDashBoostIfActive(AbstractHorse horse) {
         if (horse == null) return;
 
-        Double storedOriginal = dashBoostOriginalSpeeds.remove(horse.getUniqueId());
+        UUID horseId = horse.getUniqueId();
+        BukkitTask task = dashBoostTasks.remove(horseId);
+        if (task != null) {
+            task.cancel();
+        }
+
+        Double storedOriginal = dashBoostOriginalSpeeds.remove(horseId);
         if (storedOriginal == null) return;
 
         if (!horse.isValid()) return;
@@ -208,19 +214,39 @@ public class TraitRegistry {
         horse.setInvisible(true);
         player.setInvisible(true);
         ArmorHider.hide(player, horse);
+        activeGhostHorsePlayers.add(player.getUniqueId());
+        activeGhostHorseMounts.add(horse.getUniqueId());
 
-        new BukkitRunnable() {
+        BukkitTask task = new BukkitRunnable() {
             @Override
             public void run() {
-                if (horse.isValid()) {
-                    player.setInvisible(false);
-                    horse.setInvisible(false);
-                    ArmorHider.show(player, horse);
-                }
+                endGhostHorseIfActive(player, horse);
             }
         }.runTaskLater(BetterHorses.getInstance(), duration * 20L);
+        ghostHorseTasks.put(horse.getUniqueId(), task);
 
         setCooldown(horse, key, config.getInt("traits.ghosthorse.cooldown", 30));
+    }
+
+    public static void endGhostHorseIfActive(Player player, AbstractHorse horse) {
+        if (player == null || horse == null) return;
+
+        UUID horseId = horse.getUniqueId();
+        UUID playerId = player.getUniqueId();
+        boolean horseWasActive = activeGhostHorseMounts.remove(horseId);
+        boolean playerWasActive = activeGhostHorsePlayers.remove(playerId);
+        if (!horseWasActive && !playerWasActive) return;
+
+        BukkitTask task = ghostHorseTasks.remove(horseId);
+        if (task != null) {
+            task.cancel();
+        }
+
+        player.setInvisible(false);
+        if (horse.isValid()) {
+            horse.setInvisible(false);
+            ArmorHider.show(player, horse);
+        }
     }
 
     public static void activateSkyburst(Player player, AbstractHorse horse) {

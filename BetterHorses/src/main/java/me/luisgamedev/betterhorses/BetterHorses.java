@@ -300,6 +300,11 @@ public class BetterHorses extends JavaPlugin {
             debugLog("LISTENER", "REGISTER", true, "Registered TraitActivationListener.");
         }
 
+        if (isAnyTraitEnabled("dashboost", "ghosthorse")) {
+            pluginManager.registerEvents(new TraitCleanupListener(), this);
+            debugLog("LISTENER", "REGISTER", true, "Registered TraitCleanupListener.");
+        }
+
         if (isAnyTraitEnabled("frosthooves", "featherhooves", "fireheart")) {
             pluginManager.registerEvents(new PassiveTraitListener(), this);
             debugLog("LISTENER", "REGISTER", true, "Registered PassiveTraitListener.");
