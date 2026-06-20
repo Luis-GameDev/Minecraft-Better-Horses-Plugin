@@ -117,6 +117,9 @@ settings:
   # Allows two horses of the same gender to breed
   allow-same-gender-breeding: false
 
+  # Makes every skeleton horse mountable like a vanilla horse, including skeleton horses spawned from spawn eggs
+  mountable-skeleton-horses: true
+
   # Allows spawning the horse by rightclicking with the horse item
   allow-rightclick-spawn: true
 

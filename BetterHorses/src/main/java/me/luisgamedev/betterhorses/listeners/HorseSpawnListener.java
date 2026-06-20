@@ -10,6 +10,7 @@ import org.bukkit.NamespacedKey;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.entity.AbstractHorse;
+import org.bukkit.entity.SkeletonHorse;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.CreatureSpawnEvent;
@@ -31,7 +32,9 @@ public class HorseSpawnListener implements Listener {
         BetterHorses plugin = BetterHorses.getInstance();
         if (!(event.getEntity() instanceof AbstractHorse horse)) return;
         SupportedMountType mountType = SupportedMountType.fromEntity(horse).orElse(null);
-        if (mountType == null || !mountType.isEnabled(plugin.getConfig())) return;
+        if (mountType == null) return;
+        makeSkeletonHorseMountableIfEnabled(plugin, horse);
+        if (!mountType.isEnabled(plugin.getConfig())) return;
         if (event.getSpawnReason() != CreatureSpawnEvent.SpawnReason.NATURAL) return;
         plugin.debugLog("HORSE_SPAWN", "NATURAL", true, "Natural mount spawn detected for " + horse.getUniqueId() + ".");
 
@@ -80,5 +83,14 @@ public class HorseSpawnListener implements Listener {
         TrainingManager.recalculateAndApplyBonuses(horse);
         BetterHorsesAPI.callSpawnEvent(horse, null, BetterHorseSpawnEvent.SpawnCause.NATURAL);
         plugin.debugLog("HORSE_SPAWN", "COMPLETE", true, "Initialized natural mount " + horse.getUniqueId() + " stage=" + stage + ".");
+    }
+
+    private void makeSkeletonHorseMountableIfEnabled(BetterHorses plugin, AbstractHorse horse) {
+        if (!(horse instanceof SkeletonHorse)) return;
+        if (!plugin.getConfig().getBoolean("settings.mountable-skeleton-horses", true)) return;
+
+        horse.setTamed(true);
+        plugin.debugLog("HORSE_SPAWN", "SKELETON_MOUNTABLE", true,
+                "Marked skeleton horse " + horse.getUniqueId() + " as tamed for vanilla mounting.");
     }
 }
