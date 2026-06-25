@@ -125,31 +125,6 @@ settings:
   # This affects all supported mount types except camels.
   sand-slowness:
     enabled: false
-    
-  # Lets mounted horses trample entities inside a front cone based on the rider's looking direction.
-  horse-trample:
-    damage: 2.0
-    cooldown-seconds: 1.0
-    # Minimum horizontal speed a mount must have before trampling can trigger.
-    minimum-speed: 0.17
-    # Controls the trample trigger range around the mount. Increase these if trampling feels hard to trigger.
-    hitbox:
-      horizontal-radius: 1.15
-      vertical-radius: 1.25
-      # -1.0 hits all directions, 0.0 hits the front half, higher values require targets to be more directly in front of the rider.
-      front-dot-threshold: 0.0
-    mount-types:
-      horse:
-        enabled: false
-      skeleton-horses:
-        enabled: false
-      zombie-horses:
-        enabled: false
-      camels:
-        enabled: false
-    knockback:
-      enabled: false
-      strength: 0.35
 
   # Traited horses will have particles around them, disabling this will result in slightly better performance
   trait-particle-indicator: true

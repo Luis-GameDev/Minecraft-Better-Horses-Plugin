@@ -267,14 +267,8 @@ public class BetterHorses extends JavaPlugin {
             pluginManager.registerEvents(new SandSlownessListener(), this);
             debugLog("LISTENER", "REGISTER", true, "Registered SandSlownessListener.");
         }
-      
-        if (isHorseTrampleEnabled(config)) {
-            pluginManager.registerEvents(new HorseTrampleListener(this), this);
-            debugLog("LISTENER", "REGISTER", true, "Registered HorseTrampleListener.");
-        }
 
-        boolean traitsEnabled = config.getBoolean("traits.enabled", true);
-        if (!traitsEnabled) {
+        if (!config.getBoolean("traits.enabled", true)) {
             debugLog("LISTENER", "REGISTER_TRAITS", false, "Trait listeners were skipped because traits are disabled.");
             return;
         }
