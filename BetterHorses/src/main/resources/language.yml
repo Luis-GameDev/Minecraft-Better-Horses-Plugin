@@ -3,6 +3,7 @@ prefix: "&7[&6BetterHorses&7] "
 messages:
   horse: "Horse"
   camel: "Camel"
+  horse-item-name: "<gold>%name% %gender%</gold>"
   lore-gender: "Gender: %value%"
   insufficient-permission: "You don't have permission to use %command%."
   horse-usage: "Usage: /horse <spawn|despawn|neuter|reload|info*>"
@@ -35,6 +36,44 @@ messages:
   lore-growth: "Growth: %value%0%"
   cooldown-message-bossbar: "&e%value% &7Cooldown"
   cooldown-message-hotbar: "&e%value% &7Cooldown: &f%remaining%s"
+
+  # /horse info debug output. Available placeholders:
+  # Shared horse/item PDC placeholders: %gender%, %current_health%, %health%, %speed%, %jump%, %owner%, %name%, %style%, %color%, %growth_stage%, %mount_type%, %trait%, %neutered%, %cooldown%, %saddle%, %armor%, %armor_data%, %base_health%, %base_speed%, %base_jump%, %training_riding_units%, %training_brushing_units%, %training_feeding_units%, %training_brush_cooldown%, %training_feed_cooldown%
+  # The same saved values are also available as %pdc_<key>%, for example %pdc_health% or %pdc_training_riding_units%.
+  # Item-only placeholders: %item_type%, %item_amount%, %item_display_name%, %item_unbreakable%, %item_damage%, %item_custom_model_data%, %item_damage_line%, %item_lore%, %item_flags%
+  # Mounted-horse placeholders: %entity_type%, %entity_uuid%, %tamed%, %owner%, %current_health%, %max_health%, %health%, %speed%, %jump%, %trait%, %gender%, %growth_stage%, %neutered%
+  # Multiline debug placeholders: %persistent_data%, %known_values_title%, %known_values%
+  horse-info:
+    item:
+      - "&6------ BetterHorses Item Debug ------"
+      - "&eType: &f%item_type%"
+      - "&eAmount: &f%item_amount%"
+      - "&eDisplay Name: &f%item_display_name%"
+      - "&eUnbreakable: &f%item_unbreakable%"
+      - "%item_damage_line%"
+      - "&eCustomModelData: &f%item_custom_model_data%"
+      - "%item_lore%"
+      - "%item_flags%"
+      - "%persistent_data%"
+      - "&e%known_values_title%:"
+      - "%known_values%"
+    mounted-horse:
+      - "&6------ BetterHorses Mounted Horse Debug ------"
+      - "&eEntity: &f%entity_type%"
+      - "&eUUID: &f%entity_uuid%"
+      - "&eTamed: &f%tamed%"
+      - "&eOwner: &f%owner%"
+      - "&eHealth: &f%health%"
+      - "&eSpeed: &f%speed%"
+      - "&eJump: &f%jump%"
+      - "&eTrait: &f%trait%"
+      - "&eGender: &f%gender%"
+      - "&eGrowth Stage: &f%growth_stage%"
+      - "&eNeutered: &f%neutered%"
+      - "&e%known_values_title%:"
+      - "%known_values%"
+    no-target:
+      - "&cHold a horse item in your main hand or ride a horse first."
 
 traits:
   hellmare: "Hellmare"

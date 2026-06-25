@@ -103,6 +103,9 @@ settings:
   # Restricts mounting a tamed horse to its respective owner
   restrict-mounting-to-owner: false
 
+  # Makes every skeleton horse mountable like a vanilla horse, including skeleton horses spawned from spawn eggs
+  mountable-skeleton-horses: true
+
   # Allows spawning the horse by rightclicking with the horse item
   allow-rightclick-spawn: true
 
@@ -117,6 +120,11 @@ settings:
   mounted-damage-boost:
     enabled: false
     percentage: 25.0 # 25% more damage while mounted
+
+  # Applies Slowness II to mounted horses while they walk on sand blocks.
+  # This affects all supported mount types except camels.
+  sand-slowness:
+    enabled: false
 
   # Traited horses will have particles around them, disabling this will result in slightly better performance
   trait-particle-indicator: true

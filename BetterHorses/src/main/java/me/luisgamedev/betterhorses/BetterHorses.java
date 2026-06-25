@@ -37,6 +37,8 @@ public class BetterHorses extends JavaPlugin {
 
     @Override
     public void onEnable() {
+        instance = this;
+        initializeConfigurationFiles();
         debugLog("PLUGIN", "ENABLE_START", true, "Starting BetterHorses plugin bootstrap.");
         if (getServer().getPluginManager().getPlugin("ProtocolLib") != null) {
             protocolLibAvailable = true;
@@ -48,10 +50,6 @@ public class BetterHorses extends JavaPlugin {
                     "Running BetterHorses without ProtocolLib is no problem, but will result in some features being disabled."
             );
         }
-        instance = this;
-        saveDefaultConfig();
-        updateYamlWithMissingSections("config.yml", false);
-        updateYamlWithMissingSections("language.yml", true);
         languageManager = new LanguageManager(this);
 
         registerListeners();
@@ -82,6 +80,14 @@ public class BetterHorses extends JavaPlugin {
 
     public LanguageManager getLang() {
         return languageManager;
+    }
+
+    private void initializeConfigurationFiles() {
+        saveDefaultConfig();
+        reloadConfig();
+        updateYamlWithMissingSections("config.yml", false);
+        updateYamlWithMissingSections("language.yml", true);
+        reloadConfig();
     }
 
     public void reloadPluginConfiguration() {
@@ -145,8 +151,6 @@ public class BetterHorses extends JavaPlugin {
             String fullPath = parentPath.isEmpty() ? key : parentPath + "." + key;
             Object defaultValue = defaults.get(key);
 
-            changed |= syncConfigComments(target, defaults, key);
-
             if (defaultValue instanceof ConfigurationSection defaultSection) {
                 if (!target.isConfigurationSection(key)) {
                     target.createSection(key);
@@ -164,24 +168,6 @@ public class BetterHorses extends JavaPlugin {
                 target.set(key, defaultValue);
                 changed = true;
             }
-        }
-
-        return changed;
-    }
-
-    private boolean syncConfigComments(ConfigurationSection target, ConfigurationSection defaults, String key) {
-        boolean changed = false;
-
-        List<String> defaultComments = defaults.getComments(key);
-        if (!defaultComments.equals(target.getComments(key))) {
-            target.setComments(key, defaultComments);
-            changed = true;
-        }
-
-        List<String> defaultInlineComments = defaults.getInlineComments(key);
-        if (!defaultInlineComments.equals(target.getInlineComments(key))) {
-            target.setInlineComments(key, defaultInlineComments);
-            changed = true;
         }
 
         return changed;
@@ -277,8 +263,12 @@ public class BetterHorses extends JavaPlugin {
             debugLog("LISTENER", "REGISTER", true, "Registered MountedDamageBoostListener.");
         }
 
-        boolean traitsEnabled = config.getBoolean("traits.enabled", true);
-        if (!traitsEnabled) {
+        if (config.getBoolean("settings.sand-slowness.enabled", false)) {
+            pluginManager.registerEvents(new SandSlownessListener(), this);
+            debugLog("LISTENER", "REGISTER", true, "Registered SandSlownessListener.");
+        }
+
+        if (!config.getBoolean("traits.enabled", true)) {
             debugLog("LISTENER", "REGISTER_TRAITS", false, "Trait listeners were skipped because traits are disabled.");
             return;
         }
@@ -286,6 +276,11 @@ public class BetterHorses extends JavaPlugin {
         if (isAnyTraitEnabled("hellmare", "dashboost", "kickback", "ghosthorse", "revenantcurse")) {
             pluginManager.registerEvents(new TraitActivationListener(), this);
             debugLog("LISTENER", "REGISTER", true, "Registered TraitActivationListener.");
+        }
+
+        if (isAnyTraitEnabled("dashboost", "ghosthorse")) {
+            pluginManager.registerEvents(new TraitCleanupListener(), this);
+            debugLog("LISTENER", "REGISTER", true, "Registered TraitCleanupListener.");
         }
 
         if (isAnyTraitEnabled("frosthooves", "featherhooves", "fireheart")) {
@@ -303,6 +298,15 @@ public class BetterHorses extends JavaPlugin {
             pluginManager.registerEvents(new HorseJumpListener(), this);
             debugLog("LISTENER", "REGISTER", true, "Registered HorseJumpListener.");
         }
+    }
+
+    private boolean isHorseTrampleEnabled(FileConfiguration config) {
+        for (me.luisgamedev.betterhorses.utils.SupportedMountType mountType : me.luisgamedev.betterhorses.utils.SupportedMountType.values()) {
+            if (config.getBoolean("settings.horse-trample.mount-types." + mountType.getConfigKey() + ".enabled", false)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private boolean isAnyTraitEnabled(String... traits) {

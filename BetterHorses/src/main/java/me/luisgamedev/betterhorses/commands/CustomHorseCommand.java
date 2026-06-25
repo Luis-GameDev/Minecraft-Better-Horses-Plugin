@@ -31,13 +31,13 @@ public class CustomHorseCommand implements CommandExecutor {
         }
 
         if (!player.hasPermission("betterhorses.create")) {
-            player.sendMessage(lang.getFormatted("messages.insufficient-permission", "%command%", "/horsecreate"));
+            player.sendMessage(lang.getFormatted(player, "messages.insufficient-permission", "%command%", "/horsecreate"));
             plugin.debugLog("HORSE_CREATE", "PERMISSION", false, "Player " + player.getName() + " lacks betterhorses.create.");
             return true;
         }
 
         if (args.length < 3) {
-            player.sendMessage(lang.get("messages.horsecreate-usage"));
+            player.sendMessage(lang.get(player, "messages.horsecreate-usage"));
             plugin.debugLog("HORSE_CREATE", "USAGE", false, "Player " + player.getName() + " provided too few arguments.");
             return true;
         }
@@ -47,7 +47,7 @@ public class CustomHorseCommand implements CommandExecutor {
             double speed = Double.parseDouble(args[1]);
             double jump = Double.parseDouble(args[2]);
             String gender = args.length >= 4 ? args[3].toLowerCase() : (Math.random() < 0.5 ? "male" : "female");
-            String name = args.length >= 5 ? "§6" + args[4] : "§6Horse";
+            String name = args.length >= 5 ? args[4] : lang.getRaw(player, "messages.horse");
             String trait = args.length >= 6 ? args[5].toLowerCase() : null;
             int growthStage = args.length >= 7 ? Integer.parseInt(args[6]) : 10;
             String mountTypeArg = args.length >= 8 ? args[7] : null;
@@ -57,13 +57,13 @@ public class CustomHorseCommand implements CommandExecutor {
 
             SupportedMountType mountType = mountTypeArg == null ? SupportedMountType.HORSE : SupportedMountType.fromUserInput(mountTypeArg).orElse(null);
             if (mountType == null) {
-                player.sendMessage(lang.getFormatted("messages.invalid-mount-type", "%types%", getEnabledMountTypes(config)));
+                player.sendMessage(lang.getFormatted(player, "messages.invalid-mount-type", "%types%", getEnabledMountTypes(config)));
                 plugin.debugLog("HORSE_CREATE", "MOUNT_TYPE", false, "Invalid mount type input: " + mountTypeArg);
                 return true;
             }
 
             if (!mountType.isEnabled(config)) {
-                player.sendMessage(lang.get("messages.mount-type-disabled"));
+                player.sendMessage(lang.get(player, "messages.mount-type-disabled"));
                 plugin.debugLog("HORSE_CREATE", "MOUNT_TYPE", false, "Disabled mount type requested: " + mountType.getEntityType());
                 return true;
             }
@@ -72,14 +72,14 @@ public class CustomHorseCommand implements CommandExecutor {
 
             if (trait != null && !trait.equalsIgnoreCase("none")) {
                 if (!config.getBoolean("traits.enabled", false)) {
-                    player.sendMessage(lang.get("messages.traits-disabled"));
+                    player.sendMessage(lang.get(player, "messages.traits-disabled"));
                     plugin.debugLog("HORSE_CREATE", "TRAIT", false, "Trait requested while traits are disabled.");
                     return true;
                 }
 
                 ConfigurationSection traitSection = config.getConfigurationSection("traits." + trait);
                 if (traitSection == null || !traitSection.getBoolean("enabled", false)) {
-                    player.sendMessage(lang.get("messages.traits-error"));
+                    player.sendMessage(lang.get(player, "messages.traits-error"));
                     plugin.debugLog("HORSE_CREATE", "TRAIT", false, "Invalid or disabled trait requested: " + trait);
                     return true;
                 }
@@ -93,7 +93,7 @@ public class CustomHorseCommand implements CommandExecutor {
             return true;
 
         } catch (NumberFormatException e) {
-            player.sendMessage(lang.get("messages.invalid-number-format"));
+            player.sendMessage(lang.get(player, "messages.invalid-number-format"));
             plugin.debugLog("HORSE_CREATE", "PARSE", false, "Invalid numeric argument from " + player.getName() + ": " + e.getMessage());
             return true;
         }

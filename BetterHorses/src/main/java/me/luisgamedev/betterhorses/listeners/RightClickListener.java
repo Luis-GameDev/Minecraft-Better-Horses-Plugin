@@ -55,16 +55,16 @@ public class RightClickListener implements Listener {
         String gender = meta.getPersistentDataContainer().get(BetterHorseKeys.GENDER, PersistentDataType.STRING);
         String mountTypeName = meta.getPersistentDataContainer().get(BetterHorseKeys.MOUNT_TYPE, PersistentDataType.STRING);
         SupportedMountType mountType = SupportedMountType.fromNameOrDefault(mountTypeName);
-        String mountName = mountType.getDisplayName(lang);
+        String mountName = mountType.getDisplayName(lang, player);
 
         if (health == null || speed == null || jump == null || gender == null || !mountType.isEnabled(config)) {
-            player.sendMessage(lang.getFormatted("messages.invalid-horse-data", "%mount%", mountName));
+            player.sendMessage(lang.getFormatted(player, "messages.invalid-horse-data", "%mount%", mountName));
             return;
         }
 
         AbstractHorse horse = BetterHorsesAPI.toHorse(item, player);
         if (horse == null) {
-            player.sendMessage(lang.get("messages.cant-spawn"));
+            player.sendMessage(lang.get(player, "messages.cant-spawn"));
             return;
         }
 
@@ -72,6 +72,6 @@ public class RightClickListener implements Listener {
         TrainingManager.recalculateAndApplyBonuses(horse);
 
         item.setAmount(item.getAmount() - 1);
-        player.sendMessage(lang.getFormatted("messages.horse-respawned", "%mount%", mountName));
+        player.sendMessage(lang.getFormatted(player, "messages.horse-respawned", "%mount%", mountName));
     }
 }
