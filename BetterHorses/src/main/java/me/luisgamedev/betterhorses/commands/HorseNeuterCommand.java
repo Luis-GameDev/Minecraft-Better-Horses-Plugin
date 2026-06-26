@@ -22,7 +22,7 @@ public class HorseNeuterCommand {
         LanguageManager lang = BetterHorses.getInstance().getLang();
 
         if (!player.hasPermission("betterhorses.neuter")) {
-            player.sendMessage(lang.getFormatted(player, "messages.insufficient-permission", "%command%", "/horse neuter"));
+            lang.sendFormatted(player, "messages.insufficient-permission", "%command%", "/horse neuter");
             BetterHorses.getInstance().debugLog("HORSE_NEUTER", "PERMISSION", false,
                     "Player " + player.getName() + " lacks betterhorses.neuter");
             return true;
@@ -33,7 +33,7 @@ public class HorseNeuterCommand {
         Material expected = Material.getMaterial(config.getString("settings.horse-item", "SADDLE").toUpperCase());
 
         if (expected == null || item == null || item.getType() != expected || !item.hasItemMeta()) {
-            player.sendMessage(lang.get(player, "messages.invalid-item"));
+            lang.send(player, "messages.invalid-item");
             BetterHorses.getInstance().debugLog("HORSE_NEUTER", "VALIDATION", false,
                     "Player " + player.getName() + " did not hold a valid horse item.");
             return true;
@@ -44,7 +44,7 @@ public class HorseNeuterCommand {
                 "Valid item detected for player " + player.getName());
 
         if (meta.getPersistentDataContainer().has(BetterHorseKeys.NEUTERED, PersistentDataType.BYTE)) {
-            player.sendMessage(lang.get(player, "messages.already-castrated"));
+            lang.send(player, "messages.already-castrated");
             BetterHorses.getInstance().debugLog("HORSE_NEUTER", "ALREADY_NEUTERED", false,
                     "Horse item is already neutered for player " + player.getName());
             return true;
@@ -69,7 +69,7 @@ public class HorseNeuterCommand {
 
         item.setItemMeta(meta);
         player.getInventory().setItemInMainHand(item);
-        player.sendMessage(lang.get(player, "messages.successfully-castrated"));
+        lang.send(player, "messages.successfully-castrated");
         BetterHorses.getInstance().debugLog("HORSE_NEUTER", "COMPLETE", true,
                 "Horse item neutered and written back to main hand for player " + player.getName());
         return true;

@@ -17,7 +17,7 @@ public class HorseCommand implements CommandExecutor {
         OfflinePlayer audience = sender instanceof Player senderPlayer ? senderPlayer : null;
 
         if (args.length == 0) {
-            sender.sendMessage(lang.get(audience, "messages.horse-usage"));
+            lang.send(sender, audience, "messages.horse-usage");
             return true;
         }
 
@@ -27,21 +27,21 @@ public class HorseCommand implements CommandExecutor {
 
         if (subcommand.equals("reload")) {
             if (!sender.hasPermission("betterhorses.reload")) {
-                sender.sendMessage(lang.getFormatted(audience, "messages.insufficient-permission", "%command%", "/horse reload"));
+                lang.sendFormatted(sender, audience, "messages.insufficient-permission", "%command%", "/horse reload");
                 plugin.debugLog("HORSE_COMMAND", "RELOAD_PERMISSION", false,
                         "Sender " + sender.getName() + " lacks betterhorses.reload");
                 return true;
             }
 
             plugin.reloadPluginConfiguration();
-            sender.sendMessage(lang.get(audience, "messages.config-reloaded"));
+            lang.send(sender, audience, "messages.config-reloaded");
             plugin.debugLog("HORSE_COMMAND", "RELOAD", true,
                     "Configuration reloaded by " + sender.getName());
             return true;
         }
 
         if (!(sender instanceof Player player)) {
-            sender.sendMessage(lang.get(audience, "messages.only-players"));
+            lang.send(sender, audience, "messages.only-players");
             plugin.debugLog("HORSE_COMMAND", "PLAYER_REQUIRED", false,
                     "Non-player sender tried subcommand " + subcommand);
             return true;
@@ -50,7 +50,7 @@ public class HorseCommand implements CommandExecutor {
         switch (subcommand) {
             case "spawn":
                 if (!player.hasPermission("betterhorses.base")) {
-                    player.sendMessage(lang.getFormatted(player, "messages.insufficient-permission", "%command%", "/horse spawn"));
+                    lang.sendFormatted(player, "messages.insufficient-permission", "%command%", "/horse spawn");
                     plugin.debugLog("HORSE_COMMAND", "SPAWN_PERMISSION", false,
                             "Player " + player.getName() + " lacks betterhorses.base");
                     return true;
@@ -59,7 +59,7 @@ public class HorseCommand implements CommandExecutor {
 
             case "despawn":
                 if (!player.hasPermission("betterhorses.base")) {
-                    player.sendMessage(lang.getFormatted(player, "messages.insufficient-permission", "%command%", "/horse despawn"));
+                    lang.sendFormatted(player, "messages.insufficient-permission", "%command%", "/horse despawn");
                     plugin.debugLog("HORSE_COMMAND", "DESPAWN_PERMISSION", false,
                             "Player " + player.getName() + " lacks betterhorses.base");
                     return true;
@@ -68,7 +68,7 @@ public class HorseCommand implements CommandExecutor {
 
             case "neuter":
                 if (!player.hasPermission("betterhorses.neuter")) {
-                    player.sendMessage(lang.getFormatted(player, "messages.insufficient-permission", "%command%", "/horse neuter"));
+                    lang.sendFormatted(player, "messages.insufficient-permission", "%command%", "/horse neuter");
                     plugin.debugLog("HORSE_COMMAND", "NEUTER_PERMISSION", false,
                             "Player " + player.getName() + " lacks betterhorses.neuter");
                     return true;
@@ -77,7 +77,7 @@ public class HorseCommand implements CommandExecutor {
 
             case "info":
                 if (!plugin.isDebugModeEnabled()) {
-                    player.sendMessage(lang.get(player, "messages.unknown-subcommand"));
+                    lang.send(player, "messages.unknown-subcommand");
                     plugin.debugLog("HORSE_COMMAND", "INFO_DEBUG_DISABLED", false,
                             "Player " + player.getName() + " used /horse info while debug mode is disabled.");
                     return true;
@@ -85,7 +85,7 @@ public class HorseCommand implements CommandExecutor {
                 return HorseInfoCommand.handle(player);
 
             default:
-                player.sendMessage(lang.get(player, "messages.unknown-subcommand"));
+                lang.send(player, "messages.unknown-subcommand");
                 plugin.debugLog("HORSE_COMMAND", "UNKNOWN_SUBCOMMAND", false,
                         "Player " + player.getName() + " used unknown subcommand: " + subcommand);
                 return true;

@@ -50,22 +50,48 @@ public final class AttributeResolver {
     }
 
     private static boolean isAtLeast(int major, int minor, int patch) {
-        String version = Bukkit.getMinecraftVersion();
-        String[] parts = version.split("[-+]")[0].split("\\.");
+        int[] server = getServerVersionParts();
 
-        int serverMajor = parsePart(parts, 0);
-        int serverMinor = parsePart(parts, 1);
-        int serverPatch = parsePart(parts, 2);
+        if (server[0] != major) return server[0] > major;
+        if (server[1] != minor) return server[1] > minor;
+        return server[2] >= patch;
+    }
 
-        if (serverMajor != major) return serverMajor > major;
-        if (serverMinor != minor) return serverMinor > minor;
-        return serverPatch >= patch;
+    private static int[] getServerVersionParts() {
+        String version = getServerVersionString();
+        String cleanVersion = version.split("[-+]")[0];
+        String[] parts = cleanVersion.split("\\.");
+
+        return new int[] {
+                parsePart(parts, 0),
+                parsePart(parts, 1),
+                parsePart(parts, 2)
+        };
+    }
+
+    private static String getServerVersionString() {
+        try {
+            java.lang.reflect.Method method = Bukkit.class.getMethod("getMinecraftVersion");
+            Object result = method.invoke(null);
+
+            if (result instanceof String version && !version.isBlank()) {
+                return version;
+            }
+        } catch (Exception ignored) {
+        }
+
+        return Bukkit.getBukkitVersion();
     }
 
     private static int parsePart(String[] parts, int index) {
-        if (index >= parts.length) return 0;
+        if (parts.length <= index) return 0;
+
+        String clean = parts[index].replaceAll("[^0-9]", "");
+
+        if (clean.isEmpty()) return 0;
+
         try {
-            return Integer.parseInt(parts[index].replaceAll("[^0-9]", ""));
+            return Integer.parseInt(clean);
         } catch (NumberFormatException ignored) {
             return 0;
         }

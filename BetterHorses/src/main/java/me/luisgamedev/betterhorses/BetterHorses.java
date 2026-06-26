@@ -11,6 +11,7 @@ import me.luisgamedev.betterhorses.language.LanguageManager;
 import me.luisgamedev.betterhorses.listeners.HorseMountListener;
 import me.luisgamedev.betterhorses.listeners.*;
 import me.luisgamedev.betterhorses.tasks.TraitParticleTask;
+import net.kyori.adventure.platform.bukkit.BukkitAudiences;
 import org.bukkit.Bukkit;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.command.SimpleCommandMap;
@@ -34,11 +35,19 @@ public class BetterHorses extends JavaPlugin {
     private LanguageManager languageManager;
     private boolean protocolLibAvailable = false;
     private ProtocolManager protocolManager;
+    private BukkitAudiences audiences;
+
+
+    @Override
+    public void onDisable() {
+        if(audiences != null) audiences.close();
+    }
 
     @Override
     public void onEnable() {
         instance = this;
         initializeConfigurationFiles();
+        audiences = BukkitAudiences.create(this);
         debugLog("PLUGIN", "ENABLE_START", true, "Starting BetterHorses plugin bootstrap.");
         if (getServer().getPluginManager().getPlugin("ProtocolLib") != null) {
             protocolLibAvailable = true;
@@ -50,7 +59,7 @@ public class BetterHorses extends JavaPlugin {
                     "Running BetterHorses without ProtocolLib is no problem, but will result in some features being disabled."
             );
         }
-        languageManager = new LanguageManager(this);
+        languageManager = new LanguageManager(this, audiences);
 
         registerListeners();
 
@@ -80,6 +89,10 @@ public class BetterHorses extends JavaPlugin {
 
     public LanguageManager getLang() {
         return languageManager;
+    }
+
+    public BukkitAudiences getAudiences() {
+        return audiences;
     }
 
     private void initializeConfigurationFiles() {

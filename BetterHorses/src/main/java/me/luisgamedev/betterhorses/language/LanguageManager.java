@@ -2,13 +2,16 @@ package me.luisgamedev.betterhorses.language;
 
 import me.clip.placeholderapi.PlaceholderAPI;
 import me.luisgamedev.betterhorses.BetterHorses;
+import net.kyori.adventure.platform.bukkit.BukkitAudiences;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
+import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.entity.Player;
 
 import java.io.File;
 import java.util.Map;
@@ -40,12 +43,14 @@ public class LanguageManager {
     );
 
     private final BetterHorses plugin;
+    private final BukkitAudiences audiences;
     private final MiniMessage miniMessage = MiniMessage.miniMessage();
     private final LegacyComponentSerializer legacySerializer = LegacyComponentSerializer.legacySection();
     private FileConfiguration lang;
 
-    public LanguageManager(BetterHorses plugin) {
+    public LanguageManager(BetterHorses plugin, BukkitAudiences audiences) {
         this.plugin = plugin;
+        this.audiences = audiences;
         loadLanguageFile();
     }
 
@@ -113,6 +118,34 @@ public class LanguageManager {
 
     public Component getFormattedRawComponent(OfflinePlayer player, String key, Object... replacements) {
         return parse(player, replace(getRaw(key), replacements));
+    }
+
+    public void send(CommandSender sender, String key) {
+        send(sender, sender instanceof Player player ? player : null, key);
+    }
+
+    public void send(CommandSender sender, OfflinePlayer placeholderPlayer, String key) {
+        audiences.sender(sender).sendMessage(getComponent(placeholderPlayer, key));
+    }
+
+    public void send(Player player, String key) {
+        audiences.player(player).sendMessage(getComponent(player, key));
+    }
+
+    public void sendFormatted(CommandSender sender, String key, Object... replacements) {
+        sendFormatted(sender, sender instanceof Player player ? player : null, key, replacements);
+    }
+
+    public void sendFormatted(CommandSender sender, OfflinePlayer placeholderPlayer, String key, Object... replacements) {
+        audiences.sender(sender).sendMessage(getFormattedComponent(placeholderPlayer, key, replacements));
+    }
+
+    public void sendFormatted(Player player, String key, Object... replacements) {
+        audiences.player(player).sendMessage(getFormattedComponent(player, key, replacements));
+    }
+
+    public void sendRaw(Player player, String message) {
+        audiences.player(player).sendMessage(parse(player, message));
     }
 
     public Component parse(OfflinePlayer player, String message) {

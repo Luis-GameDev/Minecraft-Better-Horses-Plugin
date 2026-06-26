@@ -26,7 +26,7 @@ public class RespawnCommand {
         if (expectedMaterial == null || !expectedMaterial.isItem()) expectedMaterial = Material.SADDLE;
 
         if (item == null || item.getType() != expectedMaterial || !item.hasItemMeta()) {
-            player.sendMessage(lang.get(player, "messages.invalid-item"));
+            lang.send(player, "messages.invalid-item");
             plugin.debugLog("HORSE_RESPAWN", "VALIDATION", false, "Invalid item used by " + player.getName() + ".");
             return true;
         }
@@ -40,21 +40,21 @@ public class RespawnCommand {
         String mountName = mountType.getDisplayName(lang, player);
 
         if (health == null || speed == null || jump == null || gender == null || !mountType.isEnabled(BetterHorses.getInstance().getConfig())) {
-            player.sendMessage(lang.getFormatted(player, "messages.invalid-horse-data", "%mount%", mountName));
+            lang.sendFormatted(player, "messages.invalid-horse-data", "%mount%", mountName);
             plugin.debugLog("HORSE_RESPAWN", "DATA", false, "Invalid horse data for " + player.getName() + ".");
             return true;
         }
 
         AbstractHorse horse = BetterHorsesAPI.toHorse(item, player);
         if (horse == null) {
-            player.sendMessage(lang.get(player, "messages.cant-spawn"));
+            lang.send(player, "messages.cant-spawn");
             plugin.debugLog("HORSE_RESPAWN", "SPAWN", false, "Mount spawn failed for " + player.getName() + ".");
             return true;
         }
 
         item.setAmount(item.getAmount() - 1);
         BetterHorsesAPI.callSpawnEvent(horse, item, BetterHorseSpawnEvent.SpawnCause.ITEM);
-        player.sendMessage(lang.getFormatted(player, "messages.horse-respawned", "%mount%", mountName));
+        lang.sendFormatted(player, "messages.horse-respawned", "%mount%", mountName);
         plugin.debugLog("HORSE_RESPAWN", "COMPLETE", true, "Player " + player.getName() + " spawned " + mountName + ".");
         return true;
     }
