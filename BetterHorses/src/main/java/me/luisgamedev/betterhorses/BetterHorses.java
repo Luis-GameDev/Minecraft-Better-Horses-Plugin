@@ -91,6 +91,10 @@ public class BetterHorses extends JavaPlugin {
         return languageManager;
     }
 
+    public BukkitAudiences getAudiences() {
+        return audiences;
+    }
+
     private void initializeConfigurationFiles() {
         saveDefaultConfig();
         reloadConfig();

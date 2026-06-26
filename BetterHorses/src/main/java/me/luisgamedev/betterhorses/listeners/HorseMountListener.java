@@ -36,10 +36,7 @@ public class HorseMountListener implements Listener {
 
         if (!player.getUniqueId().toString().equals(ownerUUID)) {
             event.setCancelled(true);
-            player.sendMessage(
-                    BetterHorses.getInstance().getLang()
-                            .getFormatted("messages.not-horse-owner")
-            );
+            BetterHorses.getInstance().getLang().sendFormatted(player, "messages.not-horse-owner");
         }
     }
 }
