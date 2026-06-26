@@ -189,9 +189,8 @@ public final class HorseInfoCommand {
             if (replaced.isEmpty()) {
                 continue;
             }
-            String parsed = plugin.getLang().parseToString(player, replaced);
-            for (String splitLine : parsed.split("\n", -1)) {
-                player.sendMessage(splitLine);
+            for (String splitLine : replaced.split("\n", -1)) {
+                plugin.getLang().sendRaw(player, splitLine);
             }
         }
     }
