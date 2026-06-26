@@ -2,6 +2,7 @@ package me.luisgamedev.betterhorses.language;
 
 import me.clip.placeholderapi.PlaceholderAPI;
 import me.luisgamedev.betterhorses.BetterHorses;
+import net.kyori.adventure.platform.bukkit.BukkitAudiences;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
@@ -9,6 +10,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.plugin.Plugin;
 
 import java.io.File;
 import java.util.Map;
@@ -40,12 +42,14 @@ public class LanguageManager {
     );
 
     private final BetterHorses plugin;
+    private final BukkitAudiences audiences;
     private final MiniMessage miniMessage = MiniMessage.miniMessage();
     private final LegacyComponentSerializer legacySerializer = LegacyComponentSerializer.legacySection();
     private FileConfiguration lang;
 
-    public LanguageManager(BetterHorses plugin) {
+    public LanguageManager(BetterHorses plugin, BukkitAudiences audiences) {
         this.plugin = plugin;
+        this.audiences = audiences;
         loadLanguageFile();
     }
 
