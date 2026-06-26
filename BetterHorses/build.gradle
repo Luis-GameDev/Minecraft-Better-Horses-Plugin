@@ -1,5 +1,10 @@
 plugins {
     id 'java'
+    id 'com.gradleup.shadow' version '8.3.5'
+}
+
+shadowJar {
+    relocate 'net.kyori', 'me.luisgamedev.betterhorses.libs.kyori'
 }
 
 group = 'dev.luisgamedev'
