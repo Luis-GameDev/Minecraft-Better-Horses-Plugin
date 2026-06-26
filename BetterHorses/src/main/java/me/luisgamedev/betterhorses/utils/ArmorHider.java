@@ -9,7 +9,6 @@ import me.luisgamedev.betterhorses.BetterHorses;
 import org.bukkit.entity.AbstractHorse;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.AbstractHorseInventory;
-import org.bukkit.inventory.ArmoredHorseInventory;
 import org.bukkit.inventory.ItemStack;
 
 import java.util.ArrayList;
@@ -75,7 +74,7 @@ public class ArmorHider {
             // show horse armor
             AbstractHorseInventory inv = horse.getInventory();
             List<Pair<ItemSlot, ItemStack>> visibleHorse = new ArrayList<>();
-            ItemStack armor = inv instanceof ArmoredHorseInventory armored ? armored.getArmor() : null;
+            ItemStack armor = HorseArmorUtils.getArmor(inv);
             visibleHorse.add(new Pair<>(ItemSlot.CHEST, armor));
 
             PacketContainer horsePacket = new PacketContainer(PacketType.Play.Server.ENTITY_EQUIPMENT);

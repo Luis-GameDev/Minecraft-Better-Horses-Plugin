@@ -2,7 +2,6 @@ package me.luisgamedev.betterhorses.utils;
 
 import org.bukkit.Material;
 import org.bukkit.inventory.AbstractHorseInventory;
-import org.bukkit.inventory.ArmoredHorseInventory;
 import org.bukkit.inventory.ItemStack;
 
 import java.lang.reflect.Method;
@@ -15,12 +14,7 @@ public final class HorseArmorUtils {
     public static ItemStack getArmor(AbstractHorseInventory inventory) {
         if (inventory == null) return null;
 
-        ItemStack armor = null;
-        if (inventory instanceof ArmoredHorseInventory armoredInventory) {
-            armor = armoredInventory.getArmor();
-        } else {
-            armor = invokeGetter(inventory);
-        }
+        ItemStack armor = invokeGetter(inventory);
 
         if (armor == null || armor.getType() == Material.AIR) return null;
         return armor;
@@ -28,11 +22,6 @@ public final class HorseArmorUtils {
 
     public static void setArmor(AbstractHorseInventory inventory, ItemStack armor) {
         if (inventory == null || armor == null || armor.getType() == Material.AIR) return;
-
-        if (inventory instanceof ArmoredHorseInventory armoredInventory) {
-            armoredInventory.setArmor(armor);
-            return;
-        }
 
         invokeSetter(inventory, armor);
     }
