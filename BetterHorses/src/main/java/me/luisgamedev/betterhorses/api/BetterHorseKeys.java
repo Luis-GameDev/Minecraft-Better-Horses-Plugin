@@ -27,6 +27,8 @@ public final class BetterHorseKeys {
     public static final NamespacedKey SADDLE = key("saddle");
     public static final NamespacedKey ARMOR = key("armor");
     public static final NamespacedKey ARMOR_DATA = key("armor_data");
+    public static final NamespacedKey CHESTED = key("chested");
+    public static final NamespacedKey CHEST_CONTENTS = key("chest_contents");
     public static final NamespacedKey BASE_HEALTH = key("base_health");
     public static final NamespacedKey BASE_SPEED = key("base_speed");
     public static final NamespacedKey BASE_JUMP = key("base_jump");
