@@ -103,24 +103,88 @@ Inside your `config.yml`:
 ```yaml
 # BetterHorses config
 
+# Controls how horse stats are displayed on horse item lore.
+# Supported values:
+#   RAW - Shows the internal movement speed and jump strength values.
+#   BLOCKS - Converts speed to blocks per second and jump to block height.
+stats:
+  display-mode: RAW
+
+# Configure custom aliases for the /horse command
+command-aliases:
+  # - bh
+  # - horses
+
+# Extensive debugging for command flow and horse item metadata inspection
+debug:
+  # When enabled, detailed BetterHorses debug logs are written to console
+  # and the /horse info command becomes available.
+  enabled: false
+
 # Customizes how big the maximum positive or negative mutation effect is (e.g. 0.05 = ±0.05)
 # e.g. health-factor 3 means the health of the child can be up to 3 HP higher or lower than the average HP of both parents
 mutation-factor:
   health: 3.0
   speed: 0.05
   jump: 0.05
+  skeleton-horses:
+    health: 3.0
+    speed: 0.05
+    jump: 0.05
+  zombie-horses:
+    health: 3.0
+    speed: 0.05
+    jump: 0.05
+  camels:
+    health: 3.0
+    speed: 0.05
+    jump: 0.05
+  mules:
+    health: 3.0
+    speed: 0.05
+    jump: 0.05
+  donkeys:
+    health: 3.0
+    speed: 0.05
+    jump: 0.05
 
 # Max stats a horse can reach
 max-stats:
   health: 300.0
   speed: 0.4
   jump: 1.2
+  skeleton-horses:
+    health: 300.0
+    speed: 0.4
+    jump: 1.2
+  zombie-horses:
+    health: 300.0
+    speed: 0.4
+    jump: 1.2
+  camels:
+    health: 300.0
+    speed: 0.4
+    jump: 1.2
+  mules:
+    health: 300.0
+    speed: 0.4
+    jump: 1.2
+  donkeys:
+    health: 300.0
+    speed: 0.4
+    jump: 1.2
 
 # Settings that determine horse growth
 horse-growth-settings:
 
   # If false, horses will remain their Vanilla size, this feature only works for Paper 1.20.6 & Java 21 or above
   enabled: true
+  mount-types:
+    skeleton-horses: true
+    zombie-horses: true
+    camels: false
+    mules: true
+    donkeys: true
 
   # The time in minutes that needs to pass until a horse is fully grown
   time-until-adult: 3
@@ -135,8 +199,54 @@ settings:
   # Customizes the original item a horse item is
   horse-item: SADDLE
 
+  # Optional texture/model references applied to all created horse items.
+  # Leave values empty or 0 to keep the default item appearance.
+  texture:
+    # When enabled, the configured values below always override texture data stored on horse items or supplied through the API.
+    override-texture-data: false
+    custom-model-data: 0
+    item-model: ""
+    cit-string: ""
+    model-string: ""
+
+  # Controls which lore parts are shown for horse items and in what order.
+  # Use nested sections to ensure child lines are only loaded when the parent section resolves to a visible line.
+  # Available values: gender, health, speed, jump, growth, training, riding, brushing, feeding, trait, neutered, blank
+  # You can also add literal custom lines with: literal:&7Your custom text
+  horse-item-lore-layout:
+    - stats:
+        - gender
+        - health
+        - speed
+        - jump
+        - growth
+        - blank
+    - training:
+        - riding
+        - brushing
+        - feeding
+        - blank
+    - trait
+    - neutered
+
+  # Allow additional mount types to be treated like BetterHorses horses
+  mount-types:
+    skeleton-horses: true
+    zombie-horses: true
+    camels: false
+    mules: true
+    donkeys: true
+
+  # Controls whether supported chest-capable mounts (for example donkeys, mules, and any future supported
+  # chest mount) can be converted into horse items while carrying a chest. When enabled, the chest and
+  # its storage contents are moved into the horse item and restored on spawn.
+  allow-chested-mount-despawn: false
+
   # Allows two horses of the same gender to breed
   allow-same-gender-breeding: false
+
+  # Restricts mounting a tamed horse to its respective owner
+  restrict-mounting-to-owner: false
 
   # Makes every skeleton horse mountable like a vanilla horse, including skeleton horses spawned from spawn eggs
   mountable-skeleton-horses: true
@@ -150,6 +260,16 @@ settings:
   # Fixes a vanilla bug where horses cant automatically climb from a path block onto a full block
   # because it exceeds their 1-block step height, only applies to mounted horses
   fix-step-height: true
+
+  # Increases player melee damage by the given percentage while riding a horse
+  mounted-damage-boost:
+    enabled: false
+    percentage: 25.0 # 25% more damage while mounted
+
+  # Applies Slowness II to mounted horses while they walk on sand blocks.
+  # This affects all supported mount types except camels.
+  sand-slowness:
+    enabled: false
 
   # Traited horses will have particles around them, disabling this will result in slightly better performance
   trait-particle-indicator: true
@@ -170,6 +290,28 @@ settings:
     # If true, the trait cooldown is shown above the hotbar when using an ability that is currently on cooldown
     show-hotbar-indicator: true
 
+
+# Damages and knocks back nearby entities when a player rides a horse through them.
+trample:
+  enabled: false
+  # Toggle trample separately for each supported mount type.
+  # Horses remain available here even though they are always an enabled mount type.
+  mount-types:
+    horse: true
+    skeleton-horses: true
+    zombie-horses: true
+    camels: false
+    mules: false
+    donkeys: false
+  damage: 4.0
+  knockback: 1.5
+  radius: 1.2
+  cooldown-ticks: 20
+  affect-players: true
+  affect-mobs: true
+  hit-angle-degrees: 90.0
+  min-speed: 0.15
+
 # Horse Abilities
 traits:
   # Set this to false to disable the whole trait feature
@@ -178,6 +320,7 @@ traits:
   hellmare:
     enabled: true
     chance: 0.005 # 0.5%
+    particle: FLAME
     duration: 5
     cooldown: 90
     radius: 2 # Radius of the fire below the horse
@@ -185,25 +328,30 @@ traits:
   fireheart:
     enabled: true
     chance: 0.01 # 1%
+    particle: LAVA
 
   dashboost:
     enabled: true
     chance: 0.01 # 1%
+    particle: SWEEP_ATTACK
     duration: 10
     cooldown: 30
 
   featherhooves:
     enabled: true
     chance: 0.01 # 1%
+    particle: CLOUD
 
   frosthooves:
     enabled: true
     chance: 0.005 # 0.5%
+    particle: SNOWFLAKE
     radius: 3 # Radius of the ice below the horse
 
   kickback:
     enabled: true
     chance: 0.005 # 0.5%
+    particle: CRIT
     radius: 4
     strength: 6
     cooldown: 20
@@ -211,25 +359,89 @@ traits:
   ghosthorse:
     enabled: true
     chance: 0.005 # 0.5%
+    particle: SMOKE
     duration: 5
     cooldown: 30
 
   skyburst:
     enabled: true
     chance: 0.003 # 0.3%
+    particle: CLOUD
     radius: 4
 
   revenantcurse:
     enabled: true
     chance: 0.005 # 0.5%
+    particle: SOUL
     cooldown: 30
     duration: 10
+
+
+  undead:
+    enabled: true
+    chance: 0.01
+    particle: SOUL
+    transform-back-item: ENCHANTED_GOLDEN_APPLE
+    transform-back-animation: true
 
   heavenhooves:
     enabled: true
     chance: 0.001 # 0.1%
+    particle: GLOW
     strength: 0.4
-    particles: true
+    particles: true # Refers to particles that appear when jumping
+
+# Horse training system
+training:
+  # Master toggle for all training categories
+  enabled: true
+
+  lore:
+    # Controls whether training information should be displayed on horse-item lore.
+    enabled: true
+
+    progress-bar:
+      length: 15
+      # If true, hides the progressbar when at 100% and replaces it with "Complete"
+      hide-on-complete: true
+      # If true, if all categories are completed, they are combined and displayed as "Training Complete"
+      combine-all-complete: true
+
+  categories:
+    riding:
+      enabled: true
+      # 1% progress = this many blocks ridden
+      units-per-percent: 100.0
+      # 0.2 means +0.2% speed per 1% progress
+      bonus-percent-per-progress-percent: 0.2
+
+    brushing:
+      enabled: true
+      item: BRUSH
+      cooldown-seconds: 180
+      units-per-use: 2.0
+      # 1% progress = this many brush uses (units)
+      units-per-percent: 1.0
+      # 0.2 means +0.2% jump strength per 1% progress
+      bonus-percent-per-progress-percent: 0.2
+
+    feeding:
+      enabled: true
+      cooldown-seconds: 180
+      # 1% progress = this much total food value
+      units-per-percent: 2.0
+      # 0.2 means +0.2% max HP per 1% progress
+      bonus-percent-per-progress-percent: 0.2
+      food-values:
+        WHEAT: 1.0
+        APPLE: 1.0
+        CARROT: 1.0
+        SUGAR: 1.0
+        HAY_BLOCK: 2.0
+        GOLDEN_CARROT: 3.0
+        GOLDEN_APPLE: 5.0
+        ENCHANTED_GOLDEN_APPLE: 8.0
+
 ```
 
 ---
