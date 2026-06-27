@@ -191,6 +191,15 @@ settings:
 # Damages and knocks back nearby entities when a player rides a horse through them.
 trample:
   enabled: false
+  # Toggle trample separately for each supported mount type.
+  # Horses remain available here even though they are always an enabled mount type.
+  mount-types:
+    horse: true
+    skeleton-horses: true
+    zombie-horses: true
+    camels: true
+    mules: true
+    donkeys: true
   damage: 4.0
   knockback: 1.5
   radius: 1.2

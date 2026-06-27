@@ -59,7 +59,8 @@ public class TrampleListener implements Listener {
             if (!(rider.getVehicle() instanceof AbstractHorse horse)) {
                 continue;
             }
-            if (!SupportedMountType.isSupported(horse)) {
+            SupportedMountType mountType = SupportedMountType.fromEntity(horse).orElse(null);
+            if (mountType == null || !mountType.isEnabled(config) || !isTrampleEnabled(config, mountType)) {
                 continue;
             }
 
@@ -81,6 +82,10 @@ public class TrampleListener implements Listener {
 
             trampleNearbyTargets(rider, horse, currentLocation, config, currentTick);
         }
+    }
+
+    private boolean isTrampleEnabled(FileConfiguration config, SupportedMountType mountType) {
+        return config.getBoolean("trample.mount-types." + mountType.getConfigKey(), true);
     }
 
     private void trampleNearbyTargets(Player rider, AbstractHorse horse, Location horseLocation, FileConfiguration config, long currentTick) {

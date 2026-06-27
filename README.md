@@ -149,6 +149,26 @@ settings:
     # If true, the trait cooldown is shown above the hotbar when using an ability that is currently on cooldown
     show-hotbar-indicator: true
 
+# Damages and knocks back nearby entities when a player rides a horse through them.
+trample:
+  enabled: false
+  # Toggle trample separately for each supported mount type.
+  mount-types:
+    horse: true
+    skeleton-horses: true
+    zombie-horses: true
+    camels: true
+    mules: true
+    donkeys: true
+  damage: 4.0
+  knockback: 1.5
+  radius: 1.2
+  cooldown-ticks: 20
+  affect-players: true
+  affect-mobs: true
+  hit-angle-degrees: 90.0
+  min-speed: 0.15
+
 # Horse Abilities
 traits:
   # Set this to false to disable the whole trait feature
