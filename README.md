@@ -2,6 +2,9 @@
 
 # 🐴 BetterHorses – Advanced Horse Plugin
 
+<img width="1395" height="179" alt="Bild_2026-04-24_232658578-removebg-preview" src="https://github.com/user-attachments/assets/bdf05309-d45b-4d4a-ba5d-adac9f9764c1" />
+
+
 **BetterHorses** is a Minecraft plugin that completely reworks the vanilla horse system by introducing **realistic genetics, mutations, breeding mechanics, and item-based horse storage**. Designed with realism and flexibility in mind, every single feature and value is customizable and toggleable, it’s perfect for survival servers, RPGs, or just better vanilla gameplay.
 
 ![1fbf8a99-e548-4b89-934b-9b5479828b7d](https://github.com/user-attachments/assets/45bc889b-419c-4bce-8957-99d857c79a00)
@@ -10,7 +13,8 @@ If you have any questions or need help feel free to join my discord server: http
 
 ---
 
-### ✨ Features
+<img width="1492" height="167" alt="3941f700-3ae2-40a3-87cb-4c6eb68ea2f5-removebg-preview" src="https://github.com/user-attachments/assets/979d9748-83c1-4538-896d-feef47ad3772" />
+
 
 - 🧬 **Genetics & Mutation**  
   Horses pass down **Health, Speed, and Jump Strength** to their offspring.  
