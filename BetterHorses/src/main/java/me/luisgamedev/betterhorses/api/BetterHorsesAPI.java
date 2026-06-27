@@ -606,7 +606,7 @@ public class BetterHorsesAPI {
             return lang.getFormattedRaw(player, newKey, "%speed%", formattedValue, "%jump%", formattedValue, "%value%", formattedValue);
         }
 
-        String fallback = speedStat ? "<gray>Speed: <white>%speed% b/s" : "<gray>Jump: <white>%jump% blocks";
+        String fallback = speedStat ? "Speed: %speed% b/s" : "Jump: %jump% blocks";
         return lang.parseToString(player, fallback.replace(speedStat ? "%speed%" : "%jump%", formattedValue));
     }
 
