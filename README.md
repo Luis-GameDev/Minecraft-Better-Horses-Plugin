@@ -11,6 +11,14 @@
   <img width="494" height="351" alt="image" src="https://github.com/user-attachments/assets/054650d4-524b-4711-88f7-6f4443ce73c2" />
 </p>
 <br><br>
+<p align="center">
+  <a href="https://youtu.be/7rTkeEhS2r0">
+    <img src="https://img.youtube.com/vi/7rTkeEhS2r0/maxresdefault.jpg" width="700">
+  </a>
+  <br>
+  ▶ Click to watch showcase video
+</p>
+<br><br>
 If you have any questions or need help feel free to join my discord server: https://discord.gg/gBEKWGanM7
 
 ---
