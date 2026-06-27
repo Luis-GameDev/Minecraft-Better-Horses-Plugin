@@ -25,6 +25,7 @@ import org.bukkit.entity.Entity;
 import org.bukkit.entity.Horse;
 import org.bukkit.entity.ChestedHorse;
 import org.bukkit.entity.Player;
+import org.bukkit.entity.SkeletonHorse;
 import org.bukkit.inventory.AbstractHorseInventory;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
@@ -195,13 +196,14 @@ public class BetterHorsesAPI {
                 : null;
 
         int growthStage = storedStage != null ? storedStage : 10;
-        SupportedMountType mountType = SupportedMountType.fromNameOrDefault(mountTypeName);
+        boolean undeadSkeleton = data.has(BetterHorseKeys.UNDEAD_SKELETON, PersistentDataType.BYTE);
+        SupportedMountType mountType = undeadSkeleton ? SupportedMountType.SKELETON_HORSE : SupportedMountType.fromNameOrDefault(mountTypeName);
 
         if (health == null || speed == null || jump == null || gender == null) {
             return null;
         }
 
-        if (!mountType.isEnabled(BetterHorses.getInstance().getConfig())) {
+        if (!undeadSkeleton && !mountType.isEnabled(BetterHorses.getInstance().getConfig())) {
             return null;
         }
 
@@ -261,6 +263,7 @@ public class BetterHorsesAPI {
         horseData.set(BetterHorseKeys.GENDER, PersistentDataType.STRING, gender);
         horseData.set(BetterHorseKeys.MOUNT_TYPE, PersistentDataType.STRING, mountType.getEntityType().name());
         copyTextureData(data, horseData);
+        copyUndeadData(data, horseData);
 
         if (trait != null && !trait.isBlank()) {
             horseData.set(BetterHorseKeys.TRAIT, PersistentDataType.STRING, trait);
@@ -277,7 +280,7 @@ public class BetterHorsesAPI {
             horse.setCustomNameVisible(true);
         }
 
-        if (horse instanceof Horse h) {
+        if (!undeadSkeleton && horse instanceof Horse h) {
             try {
                 h.setStyle(Horse.Style.valueOf(styleStr));
                 h.setColor(Horse.Color.valueOf(colorStr));
@@ -288,7 +291,7 @@ public class BetterHorsesAPI {
             horse.getInventory().setSaddle(new ItemStack(Material.valueOf(saddleStr)));
         }
         restoreChestContents(horse, chested != null && chested == (byte) 1, chestContents);
-        if (armorStr != null) {
+        if (!undeadSkeleton && armorStr != null) {
             ItemStack armorItem = restoreArmorItem(armorStr, armorData);
             if (armorItem != null) {
                 HorseArmorUtils.setArmor(horse.getInventory(), armorItem);
@@ -303,7 +306,10 @@ public class BetterHorsesAPI {
         LanguageManager lang = plugin.getLang();
         PersistentDataContainer data = horse.getPersistentDataContainer();
 
-        SupportedMountType mountType = SupportedMountType.fromEntity(horse)
+        boolean undeadSkeleton = horse instanceof SkeletonHorse && data.has(BetterHorseKeys.UNDEAD_SKELETON, PersistentDataType.BYTE);
+        SupportedMountType mountType = undeadSkeleton
+                ? SupportedMountType.SKELETON_HORSE
+                : SupportedMountType.fromEntity(horse)
                 .filter(type -> type.isEnabled(plugin.getConfig()))
                 .orElse(null);
         if (mountType == null) return null;
@@ -407,6 +413,7 @@ public class BetterHorsesAPI {
         itemData.set(BetterHorseKeys.COLOR, PersistentDataType.STRING, color.name());
         itemData.set(BetterHorseKeys.GROWTH_STAGE, PersistentDataType.INTEGER, growthStage);
         itemData.set(BetterHorseKeys.MOUNT_TYPE, PersistentDataType.STRING, mountType.getEntityType().name());
+        copyUndeadData(data, itemData);
         if (trait != null) itemData.set(traitKey, PersistentDataType.STRING, trait.toLowerCase());
         if (isNeutered) itemData.set(neuterKey, PersistentDataType.BYTE, (byte) 1);
         if (cooldown != null) itemData.set(BetterHorseKeys.COOLDOWN, PersistentDataType.LONG, cooldown);
@@ -528,6 +535,23 @@ public class BetterHorsesAPI {
                 data.get(BetterHorseKeys.TEXTURE_CIT_STRING, PersistentDataType.STRING),
                 data.get(BetterHorseKeys.TEXTURE_MODEL_STRING, PersistentDataType.STRING)
         );
+    }
+
+    private static void copyUndeadData(PersistentDataContainer source, PersistentDataContainer target) {
+        copyPdcKey(source, target, BetterHorseKeys.UNDEAD_SKELETON, PersistentDataType.BYTE);
+        copyPdcKey(source, target, BetterHorseKeys.UNDEAD_ORIGINAL_TYPE, PersistentDataType.STRING);
+        copyPdcKey(source, target, BetterHorseKeys.UNDEAD_ORIGINAL_HEALTH, PersistentDataType.DOUBLE);
+        copyPdcKey(source, target, BetterHorseKeys.UNDEAD_ORIGINAL_SPEED, PersistentDataType.DOUBLE);
+        copyPdcKey(source, target, BetterHorseKeys.UNDEAD_ORIGINAL_JUMP, PersistentDataType.DOUBLE);
+        copyPdcKey(source, target, BetterHorseKeys.UNDEAD_ORIGINAL_COLOR, PersistentDataType.STRING);
+        copyPdcKey(source, target, BetterHorseKeys.UNDEAD_ORIGINAL_STYLE, PersistentDataType.STRING);
+        copyPdcKey(source, target, BetterHorseKeys.UNDEAD_ARMOR_DATA, PersistentDataType.BYTE_ARRAY);
+    }
+
+    private static <T, Z> void copyPdcKey(PersistentDataContainer source, PersistentDataContainer target, NamespacedKey key, PersistentDataType<T, Z> type) {
+        if (source.has(key, type)) {
+            target.set(key, type, source.get(key, type));
+        }
     }
 
     private static void copyTextureData(PersistentDataContainer source, PersistentDataContainer target) {

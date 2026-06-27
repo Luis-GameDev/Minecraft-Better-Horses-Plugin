@@ -74,7 +74,9 @@ public class RightClickListener implements Listener {
         }
 
         BetterHorsesAPI.callSpawnEvent(horse, item.clone(), BetterHorseSpawnEvent.SpawnCause.ITEM);
-        TrainingManager.recalculateAndApplyBonuses(horse);
+        if (!horse.getPersistentDataContainer().has(BetterHorseKeys.UNDEAD_SKELETON, PersistentDataType.BYTE)) {
+            TrainingManager.recalculateAndApplyBonuses(horse);
+        }
 
         item.setAmount(hasStoredChest && item.getAmount() > 1 ? 0 : item.getAmount() - 1);
         lang.sendFormatted(player, "messages.horse-respawned", "%mount%", mountName);
