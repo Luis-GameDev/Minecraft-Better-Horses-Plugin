@@ -78,6 +78,14 @@ settings:
   # Customizes the original item a horse item is
   horse-item: SADDLE
 
+  # Optional texture/model references applied to all created horse items.
+  # Leave values empty or 0 to keep the default item appearance.
+  texture:
+    custom-model-data: 0
+    item-model: ""
+    cit-string: ""
+    model-string: ""
+
   # Controls which lore parts are shown for horse items and in what order.
   # Use nested sections to ensure child lines are only loaded when the parent section resolves to a visible line.
   # Available values: gender, health, speed, jump, growth, training, riding, brushing, feeding, trait, neutered, blank

@@ -35,6 +35,10 @@ public final class BetterHorseKeys {
     public static final NamespacedKey TRAINING_FEEDING_UNITS = key("training_feeding_units");
     public static final NamespacedKey TRAINING_BRUSH_COOLDOWN = key("training_brush_cooldown");
     public static final NamespacedKey TRAINING_FEED_COOLDOWN = key("training_feed_cooldown");
+    public static final NamespacedKey TEXTURE_CUSTOM_MODEL_DATA = key("texture_custom_model_data");
+    public static final NamespacedKey TEXTURE_ITEM_MODEL = key("texture_item_model");
+    public static final NamespacedKey TEXTURE_CIT_STRING = key("texture_cit_string");
+    public static final NamespacedKey TEXTURE_MODEL_STRING = key("texture_model_string");
 
     private static NamespacedKey key(String key) {
         return new NamespacedKey(BetterHorses.getInstance(), key);

@@ -40,6 +40,14 @@ public final class BetterHorseItem {
         return Optional.ofNullable(data.get(BetterHorseKeys.MOUNT_TYPE, PersistentDataType.STRING));
     }
 
+    public HorseItemTextureData getTextureData() {
+        return BetterHorsesAPI.getTextureData(itemStack);
+    }
+
+    public void setTextureData(HorseItemTextureData textureData) {
+        BetterHorsesAPI.applyTextureData(itemStack, textureData);
+    }
+
     private Optional<Double> getDouble(org.bukkit.NamespacedKey key) {
         ItemMeta meta = itemStack.getItemMeta();
         PersistentDataContainer data = meta.getPersistentDataContainer();

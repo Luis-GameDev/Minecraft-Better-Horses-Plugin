@@ -33,6 +33,7 @@ import org.bukkit.persistence.PersistentDataType;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -45,6 +46,11 @@ public class BetterHorsesAPI {
 
     @Description("Creates a horseitem and either returns the ItemStack or directly puts it into the provided Inventory")
     public static ItemStack createHorseItem(@Nonnull double health, @Nonnull double speed, @Nonnull double jump, @Nonnull String gender, @Nullable String name, @Nullable Player owner, @Nullable Inventory targetInventory, @Nullable boolean dropIfFull, @Nullable String traitOverride, @Nonnull boolean isNeutered, @Nonnull Integer growthStage, @Nullable SupportedMountType mountType) {
+        return createHorseItem(health, speed, jump, gender, name, owner, targetInventory, dropIfFull, traitOverride, isNeutered, growthStage, mountType, getConfiguredTextureData());
+    }
+
+    @Description("Creates a horseitem with explicit texture/model references and either returns the ItemStack or directly puts it into the provided Inventory")
+    public static ItemStack createHorseItem(@Nonnull double health, @Nonnull double speed, @Nonnull double jump, @Nonnull String gender, @Nullable String name, @Nullable Player owner, @Nullable Inventory targetInventory, @Nullable boolean dropIfFull, @Nullable String traitOverride, @Nonnull boolean isNeutered, @Nonnull Integer growthStage, @Nullable SupportedMountType mountType, @Nullable HorseItemTextureData textureData) {
 
         BetterHorses plugin = BetterHorses.getInstance();
         LanguageManager lang = plugin.getLang();
@@ -71,7 +77,7 @@ public class BetterHorsesAPI {
         if(owner != null) {
             data.set(BetterHorseKeys.OWNER, PersistentDataType.STRING, owner.getUniqueId().toString());
         }
-        data.set(BetterHorseKeys.NAME, PersistentDataType.STRING, name.replace(ChatColor.GOLD.toString(), ""));
+        data.set(BetterHorseKeys.NAME, PersistentDataType.STRING, (name == null ? "" : name).replace(ChatColor.GOLD.toString(), ""));
         data.set(BetterHorseKeys.STYLE, PersistentDataType.STRING, Horse.Style.WHITE.name());
         data.set(BetterHorseKeys.COLOR, PersistentDataType.STRING, Horse.Color.CREAMY.name());
         data.set(BetterHorseKeys.GROWTH_STAGE, PersistentDataType.INTEGER, growth);
@@ -80,6 +86,7 @@ public class BetterHorsesAPI {
             data.set(BetterHorseKeys.NEUTERED, PersistentDataType.BYTE, (byte) 1);
         }
         TrainingManager.ensureTrainingData(data);
+        applyTextureData(meta, textureData);
 
         FileConfiguration config = plugin.getConfig();
         String traitForLore = null;
@@ -245,6 +252,7 @@ public class BetterHorsesAPI {
         horseData.set(BetterHorseKeys.OWNER, PersistentDataType.STRING, ownerUUID);
         horseData.set(BetterHorseKeys.GENDER, PersistentDataType.STRING, gender);
         horseData.set(BetterHorseKeys.MOUNT_TYPE, PersistentDataType.STRING, mountType.getEntityType().name());
+        copyTextureData(data, horseData);
 
         if (trait != null && !trait.isBlank()) {
             horseData.set(BetterHorseKeys.TRAIT, PersistentDataType.STRING, trait);
@@ -393,9 +401,91 @@ public class BetterHorsesAPI {
             itemData.set(BetterHorseKeys.ARMOR, PersistentDataType.STRING, armor.getType().name());
             itemData.set(BetterHorseKeys.ARMOR_DATA, PersistentDataType.STRING, Base64.getEncoder().encodeToString(armor.serializeAsBytes()));
         }
+        HorseItemTextureData textureData = readTextureData(data);
+        if (textureData.isEmpty()) {
+            textureData = getConfiguredTextureData();
+        }
+        applyTextureData(meta, textureData);
 
         item.setItemMeta(meta);
         return item;
+    }
+
+
+    public static HorseItemTextureData getConfiguredTextureData() {
+        FileConfiguration config = BetterHorses.getInstance().getConfig();
+        return new HorseItemTextureData(
+                config.getInt("settings.texture.custom-model-data", 0),
+                config.getString("settings.texture.item-model", ""),
+                config.getString("settings.texture.cit-string", ""),
+                config.getString("settings.texture.model-string", "")
+        );
+    }
+
+    public static HorseItemTextureData getTextureData(@Nonnull ItemStack item) {
+        ItemMeta meta = item.getItemMeta();
+        if (meta == null) return HorseItemTextureData.empty();
+        HorseItemTextureData pdcData = readTextureData(meta.getPersistentDataContainer());
+        Integer cmd = meta.hasCustomModelData() ? meta.getCustomModelData() : pdcData.getCustomModelData();
+        return new HorseItemTextureData(cmd, pdcData.getItemModel(), pdcData.getCitString(), pdcData.getModelString());
+    }
+
+    public static void applyTextureData(@Nonnull ItemStack item, @Nullable HorseItemTextureData textureData) {
+        ItemMeta meta = item.getItemMeta();
+        if (meta == null) return;
+        applyTextureData(meta, textureData);
+        item.setItemMeta(meta);
+    }
+
+    private static HorseItemTextureData readTextureData(PersistentDataContainer data) {
+        return new HorseItemTextureData(
+                data.get(BetterHorseKeys.TEXTURE_CUSTOM_MODEL_DATA, PersistentDataType.INTEGER),
+                data.get(BetterHorseKeys.TEXTURE_ITEM_MODEL, PersistentDataType.STRING),
+                data.get(BetterHorseKeys.TEXTURE_CIT_STRING, PersistentDataType.STRING),
+                data.get(BetterHorseKeys.TEXTURE_MODEL_STRING, PersistentDataType.STRING)
+        );
+    }
+
+    private static void copyTextureData(PersistentDataContainer source, PersistentDataContainer target) {
+        applyTextureData(target, readTextureData(source));
+    }
+
+    private static void applyTextureData(ItemMeta meta, @Nullable HorseItemTextureData textureData) {
+        PersistentDataContainer data = meta.getPersistentDataContainer();
+        applyTextureData(data, textureData);
+        HorseItemTextureData normalized = textureData == null ? HorseItemTextureData.empty() : textureData;
+        if (normalized.getCustomModelData() != null) {
+            meta.setCustomModelData(normalized.getCustomModelData());
+        }
+        applyItemModel(meta, normalized.getItemModel());
+    }
+
+    private static void applyTextureData(PersistentDataContainer data, @Nullable HorseItemTextureData textureData) {
+        HorseItemTextureData normalized = textureData == null ? HorseItemTextureData.empty() : textureData;
+        setOrRemove(data, BetterHorseKeys.TEXTURE_CUSTOM_MODEL_DATA, PersistentDataType.INTEGER, normalized.getCustomModelData());
+        setOrRemove(data, BetterHorseKeys.TEXTURE_ITEM_MODEL, PersistentDataType.STRING, normalized.getItemModel());
+        setOrRemove(data, BetterHorseKeys.TEXTURE_CIT_STRING, PersistentDataType.STRING, normalized.getCitString());
+        setOrRemove(data, BetterHorseKeys.TEXTURE_MODEL_STRING, PersistentDataType.STRING, normalized.getModelString());
+    }
+
+    private static <T> void setOrRemove(PersistentDataContainer data, NamespacedKey key, PersistentDataType<?, T> type, @Nullable T value) {
+        if (value == null) {
+            data.remove(key);
+        } else {
+            data.set(key, type, value);
+        }
+    }
+
+    private static void applyItemModel(ItemMeta meta, @Nullable String itemModel) {
+        if (itemModel == null) return;
+        try {
+            Method method = meta.getClass().getMethod("setItemModel", NamespacedKey.class);
+            NamespacedKey key = NamespacedKey.fromString(itemModel);
+            if (key != null) {
+                method.invoke(meta, key);
+            }
+        } catch (ReflectiveOperationException | LinkageError ignored) {
+        }
     }
 
     private static String formatHorseItemName(LanguageManager lang, @Nullable Player player, @Nullable String name, String genderSymbol) {
