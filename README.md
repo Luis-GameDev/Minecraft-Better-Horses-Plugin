@@ -462,31 +462,18 @@ Up to Version 4.1:
 - Java `17+`
 
 Version 5.0 and above:
-- Minecraft (Spigot) `1.20` - `latest`
+- Minecraft (Spigot) `1.20.4` - `latest`
 - Java `21+`
 
 ---
 
 ### 🚀 Installation
 
-1. Download the `BetterHorses-5.4.jar` from this repo or from the `Releases` section.
+1. Download the `BetterHorses-6.2.jar` from this my discord or via [SpigotMC](https://www.spigotmc.org/resources/better-horses.124223/).
 
 2. Place it into your server’s `plugins/` folder and restart the server to generate the config file.
 
-3. Adjust the values in the `config.yml` and `language.yml` file.
-
----
-
-### 📚 Commands
-
-| Command                                  | Description                                 | Permission                          |
-|------------------------------------------|---------------------------------------------|-------------------------------------|
-| `/horse spawn`                           | Spawn a horse using the item                | `betterhorses.base`                |
-| `/horse despawn`                         | Turn the horse you're riding into an item   | `betterhorses.base`              |
-| `/horse neuter`                          | Castrate the horse item in your hand        | `betterhorses.neuter`               |
-| `/horsecreate`                           | Spawn a custom horse item                   | `betterhorses.create`               |
-| `/horsecreate 100 1.0 2.0 male Zeus`     | Create superhorse with custom name "Zeus"   | `betterhorses.create`               |
-| `/horsecreate 80 0.3 1.1 female Flare hellmare` | Create horse with fixed trait `hellmare` | `betterhorses.create`               |
+3. Adjust the values in the `config.yml` and `language.yml` file and use `/horse reload` to apply the changes.
 
 ---
 
@@ -510,9 +497,3 @@ ItemStack horse = BetterHorsesAPI.createHorseItem(
 );
 ```
 
----
-
-### 📌 Roadmap Ideas
-
-- [ ] Breeding cooldowns
-- [ ] Genetic features
