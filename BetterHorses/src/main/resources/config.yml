@@ -1,5 +1,12 @@
 # BetterHorses config
 
+# Controls how horse stats are displayed on horse item lore.
+# Supported values:
+#   RAW - Shows the internal movement speed and jump strength values.
+#   BLOCKS - Converts speed to blocks per second and jump to block height.
+stats:
+  display-mode: RAW
+
 # Configure custom aliases for the /horse command
 command-aliases:
   # - bh
