@@ -1,3 +1,5 @@
+<img width="2754" height="472" alt="banner" src="https://github.com/user-attachments/assets/4908a6f1-a71b-4aaa-b1cb-37fc303bfad8" />
+
 # 🐴 BetterHorses – Advanced Horse Plugin
 
 **BetterHorses** is a Minecraft plugin that completely reworks the vanilla horse system by introducing **realistic genetics, mutations, breeding mechanics, and item-based horse storage**. Designed with realism and flexibility in mind, every single feature and value is customizable and toggleable, it’s perfect for survival servers, RPGs, or just better vanilla gameplay.
