@@ -152,6 +152,19 @@ settings:
     # If true, the trait cooldown is shown above the hotbar when using an ability that is currently on cooldown
     show-hotbar-indicator: true
 
+
+# Damages and knocks back nearby entities when a player rides a moving horse through them.
+trample:
+  enabled: true
+  damage: 4.0
+  knockback: 1.2
+  radius: 1.2
+  cooldown-ticks: 20
+  affect-players: false
+  affect-mobs: true
+  hit-angle-degrees: 90.0
+  min-speed: 0.15
+
 # Horse Abilities
 traits:
   # Set this to false to disable the whole trait feature
