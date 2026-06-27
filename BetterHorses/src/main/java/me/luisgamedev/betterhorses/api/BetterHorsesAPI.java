@@ -37,6 +37,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Base64;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 
@@ -440,6 +441,7 @@ public class BetterHorsesAPI {
         appendLoreLayoutNodes(
                 layout,
                 lore,
+                config,
                 lang,
                 player,
                 data,
@@ -483,6 +485,7 @@ public class BetterHorsesAPI {
     private static void appendLoreLayoutNodes(
             Object node,
             List<String> lore,
+            FileConfiguration config,
             LanguageManager lang,
             @Nullable Player player,
             PersistentDataContainer data,
@@ -497,7 +500,7 @@ public class BetterHorsesAPI {
     ) {
         if (node instanceof List<?> list) {
             for (Object child : list) {
-                appendLoreLayoutNodes(child, lore, lang, player, data, genderSymbol, currentHealth, maxHealth, speed, jump, growth, trait, isNeutered);
+                appendLoreLayoutNodes(child, lore, config, lang, player, data, genderSymbol, currentHealth, maxHealth, speed, jump, growth, trait, isNeutered);
             }
             return;
         }
@@ -505,21 +508,21 @@ public class BetterHorsesAPI {
         if (node instanceof Map<?, ?> map) {
             for (Map.Entry<?, ?> entry : map.entrySet()) {
                 String rawPart = String.valueOf(entry.getKey());
-                List<String> sectionLines = resolveHorseLoreLines(rawPart, lang, player, data, genderSymbol, currentHealth, maxHealth, speed, jump, growth, trait, isNeutered);
+                List<String> sectionLines = resolveHorseLoreLines(rawPart, config, lang, player, data, genderSymbol, currentHealth, maxHealth, speed, jump, growth, trait, isNeutered);
                 boolean parentIsGroup = sectionLines.isEmpty() && !isDirectLoreLineToken(rawPart);
                 if (!sectionLines.isEmpty()) {
                     lore.addAll(sectionLines);
                 }
 
                 if (!sectionLines.isEmpty() || parentIsGroup) {
-                    appendLoreLayoutNodes(entry.getValue(), lore, lang, player, data, genderSymbol, currentHealth, maxHealth, speed, jump, growth, trait, isNeutered);
+                    appendLoreLayoutNodes(entry.getValue(), lore, config, lang, player, data, genderSymbol, currentHealth, maxHealth, speed, jump, growth, trait, isNeutered);
                 }
             }
             return;
         }
 
         if (node instanceof String rawPart) {
-            lore.addAll(resolveHorseLoreLines(rawPart, lang, player, data, genderSymbol, currentHealth, maxHealth, speed, jump, growth, trait, isNeutered));
+            lore.addAll(resolveHorseLoreLines(rawPart, config, lang, player, data, genderSymbol, currentHealth, maxHealth, speed, jump, growth, trait, isNeutered));
         }
     }
 
@@ -533,6 +536,7 @@ public class BetterHorsesAPI {
 
     private static List<String> resolveHorseLoreLines(
             String rawPart,
+            FileConfiguration config,
             LanguageManager lang,
             @Nullable Player player,
             PersistentDataContainer data,
@@ -551,8 +555,8 @@ public class BetterHorsesAPI {
         switch (part) {
             case "gender" -> sectionLines.add(ChatColor.GRAY + lang.getFormattedRaw(player, "messages.lore-gender", "%value%", genderSymbol));
             case "health" -> sectionLines.add(ChatColor.GRAY + lang.getFormattedRaw(player, "messages.lore-health", "%value%", String.format("%.2f", currentHealth), "%max%", String.format("%.2f", maxHealth)));
-            case "speed" -> sectionLines.add(ChatColor.GRAY + lang.getFormattedRaw(player, "messages.lore-speed", "%value%", String.format("%.4f", speed)));
-            case "jump" -> sectionLines.add(ChatColor.GRAY + lang.getFormattedRaw(player, "messages.lore-jump", "%value%", String.format("%.4f", jump)));
+            case "speed" -> sectionLines.add(formatStatLoreLine(config, lang, player, true, speed));
+            case "jump" -> sectionLines.add(formatStatLoreLine(config, lang, player, false, jump));
             case "growth" -> sectionLines.add(ChatColor.GRAY + lang.getFormattedRaw(player, "messages.lore-growth", "%value%", String.format("%d", growth)));
             case "trait" -> {
                 if (trait != null && !trait.isBlank()) {
@@ -585,6 +589,32 @@ public class BetterHorsesAPI {
         }
 
         return sectionLines;
+    }
+
+    private static String formatStatLoreLine(FileConfiguration config, LanguageManager lang, @Nullable Player player, boolean speedStat, double value) {
+        boolean blocksMode = "BLOCKS".equalsIgnoreCase(config.getString("stats.display-mode", "RAW"));
+        if (!blocksMode) {
+            String formattedValue = String.format("%.4f", value);
+            String legacyKey = speedStat ? "messages.lore-speed" : "messages.lore-jump";
+            return ChatColor.GRAY + lang.getFormattedRaw(player, legacyKey, "%value%", formattedValue);
+        }
+
+        double convertedValue = speedStat ? value * 42.16 : calculateJumpHeight(value);
+        String formattedValue = String.format(Locale.US, "%.2f", convertedValue);
+        String newKey = speedStat ? "messages.lore-speed-blocks" : "messages.lore-jump-blocks";
+        if (lang.getConfig().contains(newKey)) {
+            return lang.getFormattedRaw(player, newKey, "%speed%", formattedValue, "%jump%", formattedValue, "%value%", formattedValue);
+        }
+
+        String fallback = speedStat ? "<gray>Speed: <white>%speed% b/s" : "<gray>Jump: <white>%jump% blocks";
+        return lang.parseToString(player, fallback.replace(speedStat ? "%speed%" : "%jump%", formattedValue));
+    }
+
+    private static double calculateJumpHeight(double jumpStrength) {
+        return -0.1817584952 * Math.pow(jumpStrength, 3)
+                + 3.689713992 * Math.pow(jumpStrength, 2)
+                + 2.128599134 * jumpStrength
+                - 0.343930367;
     }
 
     public static boolean isBetterHorse(Entity entity) {
