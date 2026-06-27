@@ -81,6 +81,8 @@ settings:
   # Optional texture/model references applied to all created horse items.
   # Leave values empty or 0 to keep the default item appearance.
   texture:
+    # When enabled, the configured values below always override texture data stored on horse items or supplied through the API.
+    override-texture-data: false
     custom-model-data: 0
     item-model: ""
     cit-string: ""

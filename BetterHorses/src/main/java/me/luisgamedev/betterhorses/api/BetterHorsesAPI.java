@@ -86,7 +86,7 @@ public class BetterHorsesAPI {
             data.set(BetterHorseKeys.NEUTERED, PersistentDataType.BYTE, (byte) 1);
         }
         TrainingManager.ensureTrainingData(data);
-        applyTextureData(meta, textureData);
+        applyResolvedTextureData(meta, textureData);
 
         FileConfiguration config = plugin.getConfig();
         String traitForLore = null;
@@ -401,11 +401,7 @@ public class BetterHorsesAPI {
             itemData.set(BetterHorseKeys.ARMOR, PersistentDataType.STRING, armor.getType().name());
             itemData.set(BetterHorseKeys.ARMOR_DATA, PersistentDataType.STRING, Base64.getEncoder().encodeToString(armor.serializeAsBytes()));
         }
-        HorseItemTextureData textureData = readTextureData(data);
-        if (textureData.isEmpty()) {
-            textureData = getConfiguredTextureData();
-        }
-        applyTextureData(meta, textureData);
+        applyResolvedTextureData(meta, readTextureData(data));
 
         item.setItemMeta(meta);
         return item;
@@ -420,6 +416,28 @@ public class BetterHorsesAPI {
                 config.getString("settings.texture.cit-string", ""),
                 config.getString("settings.texture.model-string", "")
         );
+    }
+
+    private static boolean shouldOverrideTextureData() {
+        return BetterHorses.getInstance().getConfig().getBoolean("settings.texture.override-texture-data", false);
+    }
+
+    private static HorseItemTextureData resolveTextureData(@Nullable HorseItemTextureData textureData) {
+        HorseItemTextureData configured = getConfiguredTextureData();
+        HorseItemTextureData stored = textureData == null ? HorseItemTextureData.empty() : textureData;
+        if (shouldOverrideTextureData()) {
+            return configured;
+        }
+        return new HorseItemTextureData(
+                stored.getCustomModelData() != null ? stored.getCustomModelData() : configured.getCustomModelData(),
+                stored.getItemModel() != null ? stored.getItemModel() : configured.getItemModel(),
+                stored.getCitString() != null ? stored.getCitString() : configured.getCitString(),
+                stored.getModelString() != null ? stored.getModelString() : configured.getModelString()
+        );
+    }
+
+    private static void applyResolvedTextureData(ItemMeta meta, @Nullable HorseItemTextureData textureData) {
+        applyTextureData(meta, resolveTextureData(textureData));
     }
 
     public static HorseItemTextureData getTextureData(@Nonnull ItemStack item) {
@@ -454,9 +472,7 @@ public class BetterHorsesAPI {
         PersistentDataContainer data = meta.getPersistentDataContainer();
         applyTextureData(data, textureData);
         HorseItemTextureData normalized = textureData == null ? HorseItemTextureData.empty() : textureData;
-        if (normalized.getCustomModelData() != null) {
-            meta.setCustomModelData(normalized.getCustomModelData());
-        }
+        meta.setCustomModelData(normalized.getCustomModelData());
         applyItemModel(meta, normalized.getItemModel());
     }
 
@@ -477,11 +493,10 @@ public class BetterHorsesAPI {
     }
 
     private static void applyItemModel(ItemMeta meta, @Nullable String itemModel) {
-        if (itemModel == null) return;
         try {
             Method method = meta.getClass().getMethod("setItemModel", NamespacedKey.class);
-            NamespacedKey key = NamespacedKey.fromString(itemModel);
-            if (key != null) {
+            NamespacedKey key = itemModel == null ? null : NamespacedKey.fromString(itemModel);
+            if (itemModel == null || key != null) {
                 method.invoke(meta, key);
             }
         } catch (ReflectiveOperationException | LinkageError ignored) {
