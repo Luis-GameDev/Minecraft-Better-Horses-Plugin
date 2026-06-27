@@ -36,6 +36,14 @@ mutation-factor:
     health: 3.0
     speed: 0.05
     jump: 0.05
+  mules:
+    health: 3.0
+    speed: 0.05
+    jump: 0.05
+  donkeys:
+    health: 3.0
+    speed: 0.05
+    jump: 0.05
 
 # Max stats a horse can reach
 max-stats:
@@ -54,6 +62,14 @@ max-stats:
     health: 300.0
     speed: 0.4
     jump: 1.2
+  mules:
+    health: 300.0
+    speed: 0.4
+    jump: 1.2
+  donkeys:
+    health: 300.0
+    speed: 0.4
+    jump: 1.2
 
 # Settings that determine horse growth
 horse-growth-settings:
@@ -64,6 +80,8 @@ horse-growth-settings:
     skeleton-horses: true
     zombie-horses: true
     camels: false
+    mules: true
+    donkeys: true
 
   # The time in minutes that needs to pass until a horse is fully grown
   time-until-adult: 3
@@ -113,6 +131,13 @@ settings:
     skeleton-horses: true
     zombie-horses: true
     camels: false
+    mules: true
+    donkeys: true
+
+  # Controls whether supported chest-capable mounts (for example donkeys, mules, and any future supported
+  # chest mount) can be converted into horse items while carrying a chest. When enabled, the chest and
+  # its storage contents are moved into the horse item and restored on spawn.
+  allow-chested-mount-despawn: false
 
   # Allows two horses of the same gender to breed
   allow-same-gender-breeding: false

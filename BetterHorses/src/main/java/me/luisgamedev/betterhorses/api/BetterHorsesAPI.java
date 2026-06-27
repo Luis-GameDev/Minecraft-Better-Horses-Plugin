@@ -23,10 +23,13 @@ import org.bukkit.entity.AbstractHorse;
 import org.bukkit.entity.AnimalTamer;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Horse;
+import org.bukkit.entity.ChestedHorse;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.AbstractHorseInventory;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.util.io.BukkitObjectInputStream;
+import org.bukkit.util.io.BukkitObjectOutputStream;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
@@ -34,6 +37,9 @@ import org.bukkit.persistence.PersistentDataType;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.lang.reflect.Method;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -175,6 +181,8 @@ public class BetterHorsesAPI {
         String saddleStr = data.get(BetterHorseKeys.SADDLE, PersistentDataType.STRING);
         String armorStr = data.get(BetterHorseKeys.ARMOR, PersistentDataType.STRING);
         String armorData = data.get(BetterHorseKeys.ARMOR_DATA, PersistentDataType.STRING);
+        Byte chested = data.get(BetterHorseKeys.CHESTED, PersistentDataType.BYTE);
+        String chestContents = data.get(BetterHorseKeys.CHEST_CONTENTS, PersistentDataType.STRING);
         String customName = data.get(BetterHorseKeys.NAME, PersistentDataType.STRING);
         String trait = data.get(BetterHorseKeys.TRAIT, PersistentDataType.STRING);
         Byte neutered = data.get(BetterHorseKeys.NEUTERED, PersistentDataType.BYTE);
@@ -279,6 +287,7 @@ public class BetterHorsesAPI {
         if (saddleStr != null) {
             horse.getInventory().setSaddle(new ItemStack(Material.valueOf(saddleStr)));
         }
+        restoreChestContents(horse, chested != null && chested == (byte) 1, chestContents);
         if (armorStr != null) {
             ItemStack armorItem = restoreArmorItem(armorStr, armorData);
             if (armorItem != null) {
@@ -340,6 +349,11 @@ public class BetterHorsesAPI {
         AbstractHorseInventory inv = horse.getInventory();
         ItemStack saddle = inv.getSaddle();
         ItemStack armor = HorseArmorUtils.getArmor(inv);
+        boolean carryingChest = isCarryingChest(horse);
+        if (carryingChest && !plugin.getConfig().getBoolean("settings.allow-chested-mount-despawn", false)) {
+            return null;
+        }
+        String serializedChestContents = carryingChest ? serializeStorageContents(horse.getInventory().getStorageContents()) : null;
 
         ItemStack item = new ItemStack(getHorseItemMaterial());
         ItemMeta meta = item.getItemMeta();
@@ -401,12 +415,64 @@ public class BetterHorsesAPI {
             itemData.set(BetterHorseKeys.ARMOR, PersistentDataType.STRING, armor.getType().name());
             itemData.set(BetterHorseKeys.ARMOR_DATA, PersistentDataType.STRING, Base64.getEncoder().encodeToString(armor.serializeAsBytes()));
         }
+        if (carryingChest) {
+            itemData.set(BetterHorseKeys.CHESTED, PersistentDataType.BYTE, (byte) 1);
+            if (serializedChestContents != null) {
+                itemData.set(BetterHorseKeys.CHEST_CONTENTS, PersistentDataType.STRING, serializedChestContents);
+            }
+        }
         applyResolvedTextureData(meta, readTextureData(data));
 
         item.setItemMeta(meta);
         return item;
     }
 
+
+    private static boolean isCarryingChest(AbstractHorse horse) {
+        return horse instanceof ChestedHorse chestedHorse && chestedHorse.isCarryingChest();
+    }
+
+    private static void restoreChestContents(AbstractHorse horse, boolean carryingChest, @Nullable String serializedContents) {
+        if (!(horse instanceof ChestedHorse chestedHorse) || !carryingChest) {
+            return;
+        }
+        chestedHorse.setCarryingChest(true);
+        if (serializedContents == null || serializedContents.isBlank()) {
+            return;
+        }
+        ItemStack[] contents = deserializeStorageContents(serializedContents);
+        if (contents != null) {
+            horse.getInventory().setStorageContents(contents);
+        }
+    }
+
+    private static @Nullable String serializeStorageContents(ItemStack[] contents) {
+        try (ByteArrayOutputStream byteOutput = new ByteArrayOutputStream();
+             BukkitObjectOutputStream output = new BukkitObjectOutputStream(byteOutput)) {
+            output.writeInt(contents.length);
+            for (ItemStack content : contents) {
+                output.writeObject(content);
+            }
+            return Base64.getEncoder().encodeToString(byteOutput.toByteArray());
+        } catch (IOException ignored) {
+            return null;
+        }
+    }
+
+    private static @Nullable ItemStack[] deserializeStorageContents(String serializedContents) {
+        try (ByteArrayInputStream byteInput = new ByteArrayInputStream(Base64.getDecoder().decode(serializedContents));
+             BukkitObjectInputStream input = new BukkitObjectInputStream(byteInput)) {
+            int length = input.readInt();
+            ItemStack[] contents = new ItemStack[length];
+            for (int i = 0; i < length; i++) {
+                Object object = input.readObject();
+                contents[i] = object instanceof ItemStack itemStack ? itemStack : null;
+            }
+            return contents;
+        } catch (IOException | ClassNotFoundException | IllegalArgumentException ignored) {
+            return null;
+        }
+    }
 
     public static HorseItemTextureData getConfiguredTextureData() {
         FileConfiguration config = BetterHorses.getInstance().getConfig();

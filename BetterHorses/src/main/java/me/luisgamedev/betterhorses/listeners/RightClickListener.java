@@ -49,6 +49,7 @@ public class RightClickListener implements Listener {
         TrainingManager.ensureTrainingData(meta.getPersistentDataContainer());
         item.setItemMeta(meta);
 
+        boolean hasStoredChest = meta.getPersistentDataContainer().has(BetterHorseKeys.CHEST_CONTENTS, PersistentDataType.STRING);
         Double health = meta.getPersistentDataContainer().get(BetterHorseKeys.HEALTH, PersistentDataType.DOUBLE);
         Double speed = meta.getPersistentDataContainer().get(BetterHorseKeys.SPEED, PersistentDataType.DOUBLE);
         Double jump = meta.getPersistentDataContainer().get(BetterHorseKeys.JUMP, PersistentDataType.DOUBLE);
@@ -64,14 +65,18 @@ public class RightClickListener implements Listener {
 
         AbstractHorse horse = BetterHorsesAPI.toHorse(item, player);
         if (horse == null) {
-            lang.send(player, "messages.cant-spawn");
+            if (hasStoredChest) {
+                lang.sendFormatted(player, "messages.cant-spawn-chested", "%mount%", mountName);
+            } else {
+                lang.send(player, "messages.cant-spawn");
+            }
             return;
         }
 
         BetterHorsesAPI.callSpawnEvent(horse, item.clone(), BetterHorseSpawnEvent.SpawnCause.ITEM);
         TrainingManager.recalculateAndApplyBonuses(horse);
 
-        item.setAmount(item.getAmount() - 1);
+        item.setAmount(hasStoredChest && item.getAmount() > 1 ? 0 : item.getAmount() - 1);
         lang.sendFormatted(player, "messages.horse-respawned", "%mount%", mountName);
     }
 }
