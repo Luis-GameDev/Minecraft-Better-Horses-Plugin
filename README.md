@@ -98,8 +98,13 @@ If you have any questions or need help feel free to join my discord server: http
 
 ### ⚙️ Configuration
 
-Inside your `config.yml`:
-<div style="height:200px; overflow:auto; border:1px solid gray; padding:10px;">
+
+
+<details>
+<summary>Inside your `config.yml`:</summary>
+
+<div style="height:250px; overflow:auto;">
+  
 ```yaml
 # BetterHorses config
 
@@ -443,7 +448,11 @@ training:
         ENCHANTED_GOLDEN_APPLE: 8.0
 
 ```
+
 </div>
+
+</details>
+
 ---
 
 ### 🧩 Requirements
