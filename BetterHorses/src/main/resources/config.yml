@@ -153,14 +153,14 @@ settings:
     show-hotbar-indicator: true
 
 
-# Damages and knocks back nearby entities when a player rides a moving horse through them.
+# Damages and knocks back nearby entities when a player rides a horse through them.
 trample:
-  enabled: true
+  enabled: false
   damage: 4.0
-  knockback: 1.2
+  knockback: 1.5
   radius: 1.2
   cooldown-ticks: 20
-  affect-players: false
+  affect-players: true
   affect-mobs: true
   hit-angle-degrees: 90.0
   min-speed: 0.15
