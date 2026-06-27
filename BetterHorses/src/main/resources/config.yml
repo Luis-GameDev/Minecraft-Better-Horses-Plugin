@@ -273,6 +273,14 @@ traits:
     cooldown: 30
     duration: 10
 
+
+  undead:
+    enabled: true
+    chance: 0.01
+    particle: SOUL
+    transform-back-item: ENCHANTED_GOLDEN_APPLE
+    transform-back-animation: true
+
   heavenhooves:
     enabled: true
     chance: 0.001 # 0.1%

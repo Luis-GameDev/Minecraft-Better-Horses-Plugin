@@ -41,6 +41,14 @@ public final class BetterHorseKeys {
     public static final NamespacedKey TEXTURE_ITEM_MODEL = key("texture_item_model");
     public static final NamespacedKey TEXTURE_CIT_STRING = key("texture_cit_string");
     public static final NamespacedKey TEXTURE_MODEL_STRING = key("texture_model_string");
+    public static final NamespacedKey UNDEAD_SKELETON = key("undead_skeleton");
+    public static final NamespacedKey UNDEAD_ORIGINAL_TYPE = key("undead_original_type");
+    public static final NamespacedKey UNDEAD_ORIGINAL_HEALTH = key("undead_original_health");
+    public static final NamespacedKey UNDEAD_ORIGINAL_SPEED = key("undead_original_speed");
+    public static final NamespacedKey UNDEAD_ORIGINAL_JUMP = key("undead_original_jump");
+    public static final NamespacedKey UNDEAD_ORIGINAL_COLOR = key("undead_original_color");
+    public static final NamespacedKey UNDEAD_ORIGINAL_STYLE = key("undead_original_style");
+    public static final NamespacedKey UNDEAD_ARMOR_DATA = key("undead_armor_data");
 
     private static NamespacedKey key(String key) {
         return new NamespacedKey(BetterHorses.getInstance(), key);

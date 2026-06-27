@@ -301,6 +301,11 @@ public class BetterHorses extends JavaPlugin {
             debugLog("LISTENER", "REGISTER", true, "Registered TraitCleanupListener.");
         }
 
+        if (isAnyTraitEnabled("undead")) {
+            pluginManager.registerEvents(new UndeadTraitListener(), this);
+            debugLog("LISTENER", "REGISTER", true, "Registered UndeadTraitListener.");
+        }
+
         if (isAnyTraitEnabled("frosthooves", "featherhooves", "fireheart")) {
             pluginManager.registerEvents(new PassiveTraitListener(), this);
             debugLog("LISTENER", "REGISTER", true, "Registered PassiveTraitListener.");
