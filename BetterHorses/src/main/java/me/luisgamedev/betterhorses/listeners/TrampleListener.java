@@ -113,7 +113,14 @@ public class TrampleListener implements Listener {
                 continue;
             }
 
-            applyTrample(rider, horseLocation, (LivingEntity) entity, config, currentTick);
+            LivingEntity target = (LivingEntity) entity;
+            EntityDamageByEntityEvent damageEvent = createTrampleDamageEvent(rider, target, config);
+            Bukkit.getPluginManager().callEvent(damageEvent);
+            if (damageEvent.isCancelled()) {
+                continue;
+            }
+
+            applyTrample(rider, horseLocation, target, config, currentTick, damageEvent);
         }
     }
 
@@ -152,20 +159,18 @@ public class TrampleListener implements Listener {
         return dot >= minimumDot;
     }
 
-    private void applyTrample(Player rider, Location horseLocation, LivingEntity target, FileConfiguration config, long currentTick) {
+    private EntityDamageByEntityEvent createTrampleDamageEvent(Player rider, LivingEntity target, FileConfiguration config) {
         double damage = Math.max(0.0, config.getDouble("trample.damage", 4.0));
-        double knockbackStrength = Math.max(0.0, config.getDouble("trample.knockback", 1.2));
-
-        EntityDamageByEntityEvent damageEvent = new EntityDamageByEntityEvent(
+        return new EntityDamageByEntityEvent(
                 rider,
                 target,
                 EntityDamageEvent.DamageCause.ENTITY_ATTACK,
                 damage
         );
-        Bukkit.getPluginManager().callEvent(damageEvent);
-        if (damageEvent.isCancelled()) {
-            return;
-        }
+    }
+
+    private void applyTrample(Player rider, Location horseLocation, LivingEntity target, FileConfiguration config, long currentTick, EntityDamageByEntityEvent damageEvent) {
+        double knockbackStrength = Math.max(0.0, config.getDouble("trample.knockback", 1.2));
 
         int cooldownTicks = Math.max(0, config.getInt("trample.cooldown-ticks", 20));
         targetCooldowns.put(target.getUniqueId(), currentTick + cooldownTicks);
