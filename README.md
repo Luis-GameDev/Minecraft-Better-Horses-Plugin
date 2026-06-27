@@ -101,7 +101,7 @@ If you have any questions or need help feel free to join my discord server: http
 
 
 <details>
-<summary>Inside your `config.yml`:</summary>
+<summary>Inside your config.yml:</summary>
 
 <div style="height:250px; overflow:auto;">
   
