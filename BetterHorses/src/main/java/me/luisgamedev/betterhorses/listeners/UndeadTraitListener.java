@@ -39,7 +39,7 @@ public class UndeadTraitListener implements Listener {
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onFatalDamage(EntityDamageEvent event) {
         if (!(event.getEntity() instanceof AbstractHorse horse)) return;
-        if (horse instanceof SkeletonHorse && isUndeadSkeleton(horse)) return;
+        if (horse instanceof SkeletonHorse) return;
         if (!SupportedMountType.isSupported(horse)) return;
         if (!TRAIT.equalsIgnoreCase(horse.getPersistentDataContainer().get(BetterHorseKeys.TRAIT, PersistentDataType.STRING))) return;
         if (event.getFinalDamage() < horse.getHealth()) return;
@@ -63,8 +63,11 @@ public class UndeadTraitListener implements Listener {
     public void onUndeadSkeletonDeath(EntityDeathEvent event) {
         if (!(event.getEntity() instanceof SkeletonHorse skeleton)) return;
         if (!isUndeadSkeleton(skeleton)) return;
-        ItemStack armor = readStoredArmor(skeleton.getPersistentDataContainer());
-        if (armor != null) event.getDrops().add(armor);
+        PersistentDataContainer data = skeleton.getPersistentDataContainer();
+        ItemStack armor = readStoredArmor(data);
+        if (armor == null) return;
+        data.remove(BetterHorseKeys.UNDEAD_ARMOR_DATA);
+        skeleton.getWorld().dropItemNaturally(skeleton.getLocation(), armor);
     }
 
     private void transformToSkeleton(AbstractHorse original) {
@@ -153,7 +156,7 @@ public class UndeadTraitListener implements Listener {
     }
     private boolean isUndeadSkeleton(AbstractHorse horse) { return horse.getPersistentDataContainer().has(BetterHorseKeys.UNDEAD_SKELETON, PersistentDataType.BYTE); }
     private void applyStats(AbstractHorse horse, double health, double speed, double jump) { setAttribute(horse, AttributeResolver.generic("MAX_HEALTH"), health); setAttribute(horse, AttributeResolver.generic("MOVEMENT_SPEED"), speed); setAttribute(horse, AttributeResolver.horseJumpStrength(), jump); }
-    private double getAttribute(AbstractHorse horse, Attribute attribute, double fallback) { AttributeInstance instance = horse.getAttribute(attribute); return instance == null ? fallback : instance.getBaseValue(); }
+    private double getAttribute(AbstractHorse horse, Attribute attribute, double fallback) { AttributeInstance instance = horse.getAttribute(attribute); return instance == null ? fallback : instance.getValue(); }
     private void setAttribute(AbstractHorse horse, Attribute attribute, double value) { AttributeInstance instance = horse.getAttribute(attribute); if (instance != null) instance.setBaseValue(value); }
     private void copyBetterHorsesData(PersistentDataContainer from, PersistentDataContainer to) {
         for (org.bukkit.NamespacedKey key : from.getKeys()) {
