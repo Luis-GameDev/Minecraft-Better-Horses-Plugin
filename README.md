@@ -75,23 +75,14 @@ If you have any questions or need help feel free to join my discord server: http
 ### ⚙️ Commands 
 
 - 🎒 **/horse despawn**  
-  Converts a **tamed horse you're riding** into a **saddle item** that stores:
-  - All core stats (including current HP)
-  - Gender
-  - Owner UUID
-  - Saddle & Armor
-  - Color & Style
-  - Trait
-  - Neutered status
-  - Custom name (if set)
-    
+  Converts a tamed horse you're riding into a **horse item** that stores all it's data until respawned.
   A horse can only be despawned by its owner.
 
 - ✂️ **/horse neuter**  
   Castrates the horse item in your mainhand. Castration is permanent and cannot be undone. 
 
 - 🧲 **/horse spawn**  
-  Spawns a horse **identical to the original** using the stored data in the horse item. 
+  Respawns your horse using the stored data in the horse item. 
   Additionally a horse can be spawned by rightclicking while holding the horse item.
 
 - ⚙️ **/horse info**
