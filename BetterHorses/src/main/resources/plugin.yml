@@ -48,26 +48,53 @@ permissions:
       betterhorses.spawn.command: true
       betterhorses.despawn: true
 
+  betterhorses.trait.*:
+    description: Grants access to all traits
+    default: true
+    children:
+      betterhorses.trait.hellmare: true
+      betterhorses.trait.fireheart: true
+      betterhorses.trait.featherhooves: true
+      betterhorses.trait.dashboost: true
+      betterhorses.trait.kickback: true
+      betterhorses.trait.ghosthorse: true
+      betterhorses.trait.heavenhooves: true
+      betterhorses.trait.undead: true
+
+  betterhorses.rider.*:
+    description: Grants access to all rider bonuses
+    default: true
+    children:
+      betterhorses.rider.invincible: true
+      betterhorses.rider.damageboost: true
+
+  betterhorses.spawn.*:
+    description: Allows the player to spawn a horse in every possible way
+    default: true
+    children:
+      betterhorses.spawn.rightclick: true
+      betterhorses.spawn.command: true
+
   # Basic Permissions
   betterhorses.mount:
     description: Allows the player to mount a horse
-    default: true #needs impl in cmd
+    default: true
 
   betterhorses.feed:
     description: Allows the player to feed a horse
-    default: true #needs impl in cmd
+    default: true
 
   betterhorses.breed:
     description: Allows the player to breed a horse
-    default: true #needs impl in cmd
+    default: true
 
   betterhorses.tame:
     description: Allows the player to tame a horse
-    default: true #needs impl in cmd
+    default: true
 
   betterhorses.leash:
     description: Allows the player to leash a horse
-    default: true #needs impl in cmd
+    default: true
 
   # Feature Permissions
   betterhorses.bypass:
@@ -75,73 +102,73 @@ permissions:
 
   betterhorses.trample:
     description: Allows for the players horse to use the trample feature
-    default: true #needs impl in cmd
+    default: true
 
   betterhorses.spawn.rightclick:
     description: Allows spawning a horse by rightclicking the horse item
-    default: true #needs impl in cmd
+    default: true
 
   betterhorses.training:
     description: Allows for the players horse to be trained by the player
-    default: true #needs impl in cmd
+    default: true
 
   betterhorses.cooldown.bypass:
     description: Allows the player to bypass breeding cooldowns
-    default: true #needs impl in cmd
+    default: true
 
   betterhorses.rider.invincible:
     description: Allows the rider to use the rider invincibility feature
-    default: true #needs impl in cmd
+    default: true
 
   betterhorses.rider.damageboost:
     description: Allows the rider to use the mounted damage boost feature
-    default: true #needs impl in cmd
+    default: true
 
   betterhorses.trait.use:
     description: Allows the rider to use an active trait if enabled
-    default: true #needs impl in cmd
+    default: true
 
   betterhorses.trait.receive:
     description: Allows the rider to be able to get traited horses when breeding if enabled
-    default: true #needs impl in cmd
+    default: true
 
   # Single trait permissions
   betterhorses.trait.hellmare:
     description: Allows the rider to use the trait hellmare if enabled
-    default: true #needs impl in cmd
+    default: true
 
   betterhorses.trait.fireheart:
     description: Allows the rider to use the trait fireheart if enabled
-    default: true #needs impl in cmd
+    default: true
 
   betterhorses.trait.featherhooves:
     description: Allows the rider to use the trait featherhooves if enabled
-    default: true #needs impl in cmd
+    default: true
 
   betterhorses.trait.dashboost:
     description: Allows the rider to use the trait dashboost if enabled
-    default: true #needs impl in cmd
+    default: true
 
   betterhorses.trait.kickback:
     description: Allows the rider to use the trait kickback if enabled
-    default: true #needs impl in cmd
+    default: true
 
   betterhorses.trait.ghosthorse:
     description: Allows the rider to use the trait ghosthorse if enabled
-    default: true #needs impl in cmd
+    default: true
 
   betterhorses.trait.heavenhooves:
     description: Allows the rider to use the trait heavenhooves if enabled
-    default: true #needs impl in cmd
+    default: true
 
   betterhorses.trait.undead:
     description: Allows the rider to use the trait undead if enabled
-    default: true #needs impl in cmd
+    default: true
 
   # Command permissions
   betterhorses.info:
     description: Allows the player to use the /horse info command
-    default: true #needs impl in cmd
+    default: true
 
   betterhorses.neuter:
     description: Allows using the /horse neuter command
@@ -157,8 +184,8 @@ permissions:
 
   betterhorses.spawn.command:
     description: Allows using the /horse spawn command
-    default: true #needs impl in cmd
+    default: true
 
   betterhorses.despawn:
     description: Allows using the /horse despawn command
-    default: true #needs impl in cmd
+    default: true
