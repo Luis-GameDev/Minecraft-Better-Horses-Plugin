@@ -8,7 +8,6 @@ commands:
   horse:
     description: Manage horse actions like spawn and despawn
     usage: /<command> <spawn|despawn|neuter>
-    permission: betterhorses.base
 
   horsecreate:
     description: Create a custom horse item
