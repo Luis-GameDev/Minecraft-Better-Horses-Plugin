@@ -1,6 +1,7 @@
 package me.luisgamedev.betterhorses.listeners;
 
 import me.luisgamedev.betterhorses.BetterHorses;
+import me.luisgamedev.betterhorses.utils.PermissionUtils;
 import me.luisgamedev.betterhorses.utils.SupportedMountType;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -57,6 +58,9 @@ public class TrampleListener implements Listener {
 
         for (Player rider : Bukkit.getOnlinePlayers()) {
             if (!(rider.getVehicle() instanceof AbstractHorse horse)) {
+                continue;
+            }
+            if (!rider.hasPermission(PermissionUtils.TRAMPLE)) {
                 continue;
             }
             SupportedMountType mountType = SupportedMountType.fromEntity(horse).orElse(null);

@@ -1,22 +1,27 @@
 package me.luisgamedev.betterhorses.listeners;
 
 import me.luisgamedev.betterhorses.BetterHorses;
+import me.luisgamedev.betterhorses.utils.PermissionUtils;
 import org.bukkit.NamespacedKey;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.AbstractHorse;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
-import org.bukkit.event.player.PlayerInteractEntityEvent;
+import org.bukkit.event.entity.EntityMountEvent;
 import org.bukkit.persistence.PersistentDataType;
 
 public class HorseMountListener implements Listener {
 
-    @EventHandler
-    public void onHorseMount(PlayerInteractEntityEvent event) {
+    @EventHandler(ignoreCancelled = true)
+    public void onHorseMount(EntityMountEvent event) {
+        if (!(event.getMount() instanceof AbstractHorse horse)) return;
+        if (!(event.getEntity() instanceof Player player)) return;
 
-        if (!(event.getRightClicked() instanceof AbstractHorse horse)) return;
-        if (!(event.getPlayer() instanceof Player player)) return;
+        if (!player.hasPermission(PermissionUtils.MOUNT)) {
+            event.setCancelled(true);
+            return;
+        }
 
         if (player.hasPermission("betterhorses.bypass")) return;
 

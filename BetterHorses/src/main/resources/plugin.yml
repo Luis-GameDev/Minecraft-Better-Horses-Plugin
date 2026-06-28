@@ -15,6 +15,39 @@ commands:
     permission: betterhorses.create
 
 permissions:
+  betterhorses.*:
+    description: Grants access to all BetterHorses permissions
+    default: op
+    children:
+      betterhorses.mount: true
+      betterhorses.feed: true
+      betterhorses.breed: true
+      betterhorses.tame: true
+      betterhorses.leash: true
+      betterhorses.bypass: true
+      betterhorses.trample: true
+      betterhorses.spawn.rightclick: true
+      betterhorses.training: true
+      betterhorses.cooldown.bypass: true
+      betterhorses.rider.invincible: true
+      betterhorses.rider.damageboost: true
+      betterhorses.trait.use: true
+      betterhorses.trait.receive: true
+      betterhorses.trait.hellmare: true
+      betterhorses.trait.fireheart: true
+      betterhorses.trait.featherhooves: true
+      betterhorses.trait.dashboost: true
+      betterhorses.trait.kickback: true
+      betterhorses.trait.ghosthorse: true
+      betterhorses.trait.heavenhooves: true
+      betterhorses.trait.undead: true
+      betterhorses.info: true
+      betterhorses.neuter: true
+      betterhorses.create: true
+      betterhorses.reload: true
+      betterhorses.spawn.command: true
+      betterhorses.despawn: true
+
   # Basic Permissions
   betterhorses.mount:
     description: Allows the player to mount a horse

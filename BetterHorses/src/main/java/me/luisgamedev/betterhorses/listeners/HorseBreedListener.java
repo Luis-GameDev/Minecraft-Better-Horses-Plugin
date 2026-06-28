@@ -4,6 +4,7 @@ import me.luisgamedev.betterhorses.BetterHorses;
 import me.luisgamedev.betterhorses.api.BetterHorseKeys;
 import me.luisgamedev.betterhorses.api.events.BetterHorseBreedEvent;
 import me.luisgamedev.betterhorses.utils.MountConfig;
+import me.luisgamedev.betterhorses.utils.PermissionUtils;
 import me.luisgamedev.betterhorses.utils.SupportedMountType;
 import org.bukkit.Bukkit;
 import me.luisgamedev.betterhorses.utils.AttributeResolver;
@@ -12,6 +13,8 @@ import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.AbstractHorse;
+import org.bukkit.entity.HumanEntity;
+import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityBreedEvent;
@@ -33,7 +36,13 @@ public class HorseBreedListener implements Listener {
         FileConfiguration config = BetterHorses.getInstance().getConfig();
         if (!mountType.isEnabled(config)) return;
 
-        if (isNeutered(horse) || isOnBreedingCooldown(horse, config)) {
+        HumanEntity feeder = event.getHumanEntity();
+        if (feeder instanceof Player player && !player.hasPermission(PermissionUtils.BREED)) {
+            event.setCancelled(true);
+            return;
+        }
+
+        if (isNeutered(horse) || isOnBreedingCooldown(horse, config, feeder instanceof Player player ? player : null)) {
             event.setCancelled(true);
             return;
         }
@@ -58,6 +67,12 @@ public class HorseBreedListener implements Listener {
         if (childType == null || fatherType == null || motherType == null) return;
         if (!childType.equals(fatherType) || !childType.equals(motherType)) return;
         if (!childType.isEnabled(config)) return;
+
+        Player breeder = event.getBreeder() instanceof Player player ? player : null;
+        if (breeder != null && !breeder.hasPermission(PermissionUtils.BREED)) {
+            event.setCancelled(true);
+            return;
+        }
 
         father.setAge(0);
         mother.setAge(0);
@@ -102,7 +117,10 @@ public class HorseBreedListener implements Listener {
 
                     double chance = tSec.getDouble("chance", 0);
                     if (Math.random() < chance) {
-                        selectedTrait = trait.toLowerCase();
+                        String candidateTrait = trait.toLowerCase();
+                        if (breeder == null || PermissionUtils.canReceiveTrait(breeder, candidateTrait)) {
+                            selectedTrait = candidateTrait;
+                        }
                         break;
                     }
                 }
@@ -147,10 +165,11 @@ public class HorseBreedListener implements Listener {
         mother.setAge(0);
     }
 
-    private boolean isOnBreedingCooldown(AbstractHorse horse, FileConfiguration config) {
+    private boolean isOnBreedingCooldown(AbstractHorse horse, FileConfiguration config, Player breeder) {
         PersistentDataContainer data = horse.getPersistentDataContainer();
         Long last = data.get(BetterHorseKeys.COOLDOWN, PersistentDataType.LONG);
         if (last == null) return false;
+        if (breeder != null && breeder.hasPermission(PermissionUtils.COOLDOWN_BYPASS)) return false;
 
         String gender = getGender(horse);
         if ("male".equalsIgnoreCase(gender) && config.getBoolean("settings.male-ignore-cooldown")) {
