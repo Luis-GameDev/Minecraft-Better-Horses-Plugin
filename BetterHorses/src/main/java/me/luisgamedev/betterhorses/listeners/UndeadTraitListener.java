@@ -5,6 +5,7 @@ import me.luisgamedev.betterhorses.api.BetterHorseKeys;
 import me.luisgamedev.betterhorses.traits.TraitParticleResolver;
 import me.luisgamedev.betterhorses.utils.AttributeResolver;
 import me.luisgamedev.betterhorses.utils.HorseArmorUtils;
+import me.luisgamedev.betterhorses.utils.PermissionUtils;
 import me.luisgamedev.betterhorses.utils.SupportedMountType;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -43,6 +44,7 @@ public class UndeadTraitListener implements Listener {
         if (!SupportedMountType.isSupported(horse)) return;
         if (!TRAIT.equalsIgnoreCase(horse.getPersistentDataContainer().get(BetterHorseKeys.TRAIT, PersistentDataType.STRING))) return;
         if (event.getFinalDamage() < horse.getHealth()) return;
+        if (!canUseUndeadTrait(horse)) return;
         event.setCancelled(true);
         transformToSkeleton(horse);
     }
@@ -54,6 +56,7 @@ public class UndeadTraitListener implements Listener {
         if (!isUndeadSkeleton(skeleton)) return;
         ItemStack item = event.getPlayer().getInventory().getItem(event.getHand());
         if (item == null || item.getType() != getTransformBackItem()) return;
+        if (!PermissionUtils.canUseTrait(event.getPlayer(), TRAIT)) return;
         event.setCancelled(true);
         if (item.getAmount() > 1) item.setAmount(item.getAmount() - 1); else event.getPlayer().getInventory().setItem(event.getHand(), null);
         transformBack(skeleton);
@@ -68,6 +71,15 @@ public class UndeadTraitListener implements Listener {
         if (armor == null) return;
         data.remove(BetterHorseKeys.UNDEAD_ARMOR_DATA);
         skeleton.getWorld().dropItemNaturally(skeleton.getLocation(), armor);
+    }
+
+    private boolean canUseUndeadTrait(AbstractHorse horse) {
+        for (Entity passenger : horse.getPassengers()) {
+            if (passenger instanceof Player player) {
+                return PermissionUtils.canUseTrait(player, TRAIT);
+            }
+        }
+        return !(horse.getOwner() instanceof Player player) || PermissionUtils.canUseTrait(player, TRAIT);
     }
 
     private void transformToSkeleton(AbstractHorse original) {

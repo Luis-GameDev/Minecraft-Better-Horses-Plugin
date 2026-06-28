@@ -3,6 +3,7 @@ package me.luisgamedev.betterhorses.listeners;
 import me.luisgamedev.betterhorses.BetterHorses;
 import me.luisgamedev.betterhorses.api.BetterHorseKeys;
 import me.luisgamedev.betterhorses.training.TrainingManager;
+import me.luisgamedev.betterhorses.utils.PermissionUtils;
 import org.bukkit.Material;
 import org.bukkit.Particle;
 import org.bukkit.configuration.file.FileConfiguration;
@@ -25,6 +26,8 @@ public class HorseTrainingBrushingListener implements Listener {
         if (!TrainingManager.isTrainingEnabled(config) || !TrainingManager.isCategoryEnabled(config, "brushing")) return;
 
         Player player = event.getPlayer();
+        if (!player.hasPermission(PermissionUtils.TRAINING)) return;
+
         ItemStack item = player.getInventory().getItem(event.getHand());
         if (item == null || item.getType() == Material.AIR) return;
 

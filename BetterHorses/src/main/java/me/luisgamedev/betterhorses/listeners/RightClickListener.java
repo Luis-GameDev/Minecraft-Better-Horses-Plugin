@@ -6,6 +6,7 @@ import me.luisgamedev.betterhorses.api.BetterHorsesAPI;
 import me.luisgamedev.betterhorses.api.events.BetterHorseSpawnEvent;
 import me.luisgamedev.betterhorses.language.LanguageManager;
 import me.luisgamedev.betterhorses.training.TrainingManager;
+import me.luisgamedev.betterhorses.utils.PermissionUtils;
 import me.luisgamedev.betterhorses.utils.SupportedMountType;
 import org.bukkit.Material;
 import org.bukkit.configuration.file.FileConfiguration;
@@ -33,8 +34,6 @@ public class RightClickListener implements Listener {
         Player player = event.getPlayer();
         ItemStack item = player.getInventory().getItemInMainHand();
         if (item == null || item.getType() == Material.AIR) return;
-        if (!player.hasPermission("betterhorses.base")) return;
-
         LanguageManager lang = BetterHorses.getInstance().getLang();
         FileConfiguration config = BetterHorses.getInstance().getConfig();
         if (!config.getBoolean("settings.allow-rightclick-spawn")) return;
@@ -44,6 +43,10 @@ public class RightClickListener implements Listener {
         if (expectedMaterial == null || !expectedMaterial.isItem()) expectedMaterial = Material.SADDLE;
 
         if (!item.hasItemMeta() || item.getType() != expectedMaterial) return;
+        if (!player.hasPermission(PermissionUtils.SPAWN_RIGHT_CLICK)) {
+            event.setCancelled(true);
+            return;
+        }
 
         ItemMeta meta = item.getItemMeta();
         TrainingManager.ensureTrainingData(meta.getPersistentDataContainer());

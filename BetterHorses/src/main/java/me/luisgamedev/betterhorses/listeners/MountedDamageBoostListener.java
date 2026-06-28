@@ -1,6 +1,7 @@
 package me.luisgamedev.betterhorses.listeners;
 
 import me.luisgamedev.betterhorses.BetterHorses;
+import me.luisgamedev.betterhorses.utils.PermissionUtils;
 import me.luisgamedev.betterhorses.utils.SupportedMountType;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Entity;
@@ -17,6 +18,7 @@ public class MountedDamageBoostListener implements Listener {
     public void onMountedDamage(EntityDamageByEntityEvent event) {
         Entity damager = event.getDamager();
         if (!(damager instanceof Player player)) return;
+        if (!player.hasPermission(PermissionUtils.RIDER_DAMAGE_BOOST)) return;
 
         Entity vehicle = player.getVehicle();
         if (!(vehicle instanceof AbstractHorse mount) || !SupportedMountType.isSupported(mount)) return;
