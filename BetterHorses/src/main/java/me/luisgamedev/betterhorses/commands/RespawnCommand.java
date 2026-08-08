@@ -10,6 +10,7 @@ import org.bukkit.Material;
 import org.bukkit.entity.AbstractHorse;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
 
 public class RespawnCommand {
@@ -31,11 +32,12 @@ public class RespawnCommand {
             return true;
         }
 
-        Double health = item.getItemMeta().getPersistentDataContainer().get(BetterHorseKeys.HEALTH, PersistentDataType.DOUBLE);
-        Double speed = item.getItemMeta().getPersistentDataContainer().get(BetterHorseKeys.SPEED, PersistentDataType.DOUBLE);
-        Double jump = item.getItemMeta().getPersistentDataContainer().get(BetterHorseKeys.JUMP, PersistentDataType.DOUBLE);
-        String gender = item.getItemMeta().getPersistentDataContainer().get(BetterHorseKeys.GENDER, PersistentDataType.STRING);
-        String mountTypeName = item.getItemMeta().getPersistentDataContainer().get(BetterHorseKeys.MOUNT_TYPE, PersistentDataType.STRING);
+        PersistentDataContainer itemData = item.getItemMeta().getPersistentDataContainer();
+        Double health = itemData.get(BetterHorseKeys.HEALTH, PersistentDataType.DOUBLE);
+        Double speed = itemData.get(BetterHorseKeys.SPEED, PersistentDataType.DOUBLE);
+        Double jump = itemData.get(BetterHorseKeys.JUMP, PersistentDataType.DOUBLE);
+        String gender = itemData.get(BetterHorseKeys.GENDER, PersistentDataType.STRING);
+        String mountTypeName = itemData.get(BetterHorseKeys.MOUNT_TYPE, PersistentDataType.STRING);
         SupportedMountType mountType = SupportedMountType.fromNameOrDefault(mountTypeName);
         String mountName = mountType.getDisplayName(lang, player);
 
@@ -45,14 +47,19 @@ public class RespawnCommand {
             return true;
         }
 
+        boolean hasStoredChest = itemData.has(BetterHorseKeys.CHEST_CONTENTS, PersistentDataType.STRING);
         AbstractHorse horse = BetterHorsesAPI.toHorse(item, player);
         if (horse == null) {
-            lang.send(player, "messages.cant-spawn");
+            if (hasStoredChest) {
+                lang.sendFormatted(player, "messages.cant-spawn-chested", "%mount%", mountName);
+            } else {
+                lang.send(player, "messages.cant-spawn");
+            }
             plugin.debugLog("HORSE_RESPAWN", "SPAWN", false, "Mount spawn failed for " + player.getName() + ".");
             return true;
         }
 
-        item.setAmount(item.getAmount() - 1);
+        item.setAmount(hasStoredChest && item.getAmount() > 1 ? 0 : item.getAmount() - 1);
         BetterHorsesAPI.callSpawnEvent(horse, item, BetterHorseSpawnEvent.SpawnCause.ITEM);
         lang.sendFormatted(player, "messages.horse-respawned", "%mount%", mountName);
         plugin.debugLog("HORSE_RESPAWN", "COMPLETE", true, "Player " + player.getName() + " spawned " + mountName + ".");

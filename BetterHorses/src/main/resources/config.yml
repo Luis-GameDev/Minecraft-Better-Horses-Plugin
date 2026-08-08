@@ -1,5 +1,12 @@
 # BetterHorses config
 
+# Controls how horse stats are displayed on horse item lore.
+# Supported values:
+#   RAW - Shows the internal movement speed and jump strength values.
+#   BLOCKS - Converts speed to blocks per second and jump to block height.
+stats:
+  display-mode: RAW
+
 # Configure custom aliases for the /horse command
 command-aliases:
   # - bh
@@ -29,6 +36,14 @@ mutation-factor:
     health: 3.0
     speed: 0.05
     jump: 0.05
+  mules:
+    health: 3.0
+    speed: 0.05
+    jump: 0.05
+  donkeys:
+    health: 3.0
+    speed: 0.05
+    jump: 0.05
 
 # Max stats a horse can reach
 max-stats:
@@ -47,6 +62,14 @@ max-stats:
     health: 300.0
     speed: 0.4
     jump: 1.2
+  mules:
+    health: 300.0
+    speed: 0.4
+    jump: 1.2
+  donkeys:
+    health: 300.0
+    speed: 0.4
+    jump: 1.2
 
 # Settings that determine horse growth
 horse-growth-settings:
@@ -57,6 +80,8 @@ horse-growth-settings:
     skeleton-horses: true
     zombie-horses: true
     camels: false
+    mules: true
+    donkeys: true
 
   # The time in minutes that needs to pass until a horse is fully grown
   time-until-adult: 3
@@ -70,6 +95,16 @@ settings:
 
   # Customizes the original item a horse item is
   horse-item: SADDLE
+
+  # Optional texture/model references applied to all created horse items.
+  # Leave values empty or 0 to keep the default item appearance.
+  texture:
+    # When enabled, the configured values below always override texture data stored on horse items or supplied through the API.
+    override-texture-data: false
+    custom-model-data: 0
+    item-model: ""
+    cit-string: ""
+    model-string: ""
 
   # Controls which lore parts are shown for horse items and in what order.
   # Use nested sections to ensure child lines are only loaded when the parent section resolves to a visible line.
@@ -96,6 +131,13 @@ settings:
     skeleton-horses: true
     zombie-horses: true
     camels: false
+    mules: true
+    donkeys: true
+
+  # Controls whether supported chest-capable mounts (for example donkeys, mules, and any future supported
+  # chest mount) can be converted into horse items while carrying a chest. When enabled, the chest and
+  # its storage contents are moved into the horse item and restored on spawn.
+  allow-chested-mount-despawn: false
 
   # Allows two horses of the same gender to breed
   allow-same-gender-breeding: false
@@ -144,6 +186,28 @@ settings:
 
     # If true, the trait cooldown is shown above the hotbar when using an ability that is currently on cooldown
     show-hotbar-indicator: true
+
+
+# Damages and knocks back nearby entities when a player rides a horse through them.
+trample:
+  enabled: false
+  # Toggle trample separately for each supported mount type.
+  # Horses remain available here even though they are always an enabled mount type.
+  mount-types:
+    horse: true
+    skeleton-horses: true
+    zombie-horses: true
+    camels: false
+    mules: false
+    donkeys: false
+  damage: 4.0
+  knockback: 1.5
+  radius: 1.2
+  cooldown-ticks: 20
+  affect-players: true
+  affect-mobs: true
+  hit-angle-degrees: 90.0
+  min-speed: 0.15
 
 # Horse Abilities
 traits:
@@ -208,6 +272,14 @@ traits:
     particle: SOUL
     cooldown: 30
     duration: 10
+
+
+  undead:
+    enabled: true
+    chance: 0.01
+    particle: SOUL
+    transform-back-item: ENCHANTED_GOLDEN_APPLE
+    transform-back-animation: true
 
   heavenhooves:
     enabled: true

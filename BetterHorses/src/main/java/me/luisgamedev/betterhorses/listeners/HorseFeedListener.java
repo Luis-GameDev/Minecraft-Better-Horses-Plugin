@@ -3,6 +3,7 @@ package me.luisgamedev.betterhorses.listeners;
 import me.luisgamedev.betterhorses.BetterHorses;
 import me.luisgamedev.betterhorses.api.BetterHorseKeys;
 import me.luisgamedev.betterhorses.training.TrainingManager;
+import me.luisgamedev.betterhorses.utils.PermissionUtils;
 import org.bukkit.Material;
 import org.bukkit.Particle;
 import org.bukkit.configuration.file.FileConfiguration;
@@ -38,6 +39,11 @@ public class HorseFeedListener implements Listener {
 
         if (!isFood) return;
 
+        if (!player.hasPermission(PermissionUtils.FEED)) {
+            event.setCancelled(true);
+            return;
+        }
+
         final double feedingTrainingValue = TrainingManager.getFoodTrainingValue(type);
         final FileConfiguration config = BetterHorses.getInstance().getConfig();
 
@@ -52,14 +58,14 @@ public class HorseFeedListener implements Listener {
         final PersistentDataContainer data = horse.getPersistentDataContainer();
 
         final long cooldownSeconds = config.getLong("settings.breeding-cooldown", 0L);
-        if (cooldownSeconds > 0L) {
+        if (cooldownSeconds > 0L && !player.hasPermission(PermissionUtils.COOLDOWN_BYPASS)) {
             final long cooldownMillis = cooldownSeconds * 1000L;
 
             if (config.getBoolean("settings.male-ignore-cooldown", false)) {
                 final String gender = data.getOrDefault(BetterHorseKeys.GENDER, PersistentDataType.STRING, "UNKNOWN");
                 if ("male".equalsIgnoreCase(gender)) {
                     horse.setAge(0);
-                    tryAddFeedingTraining(horse, data, config, feedingTrainingValue, now);
+                    tryAddFeedingTraining(horse, data, config, player.hasPermission(PermissionUtils.TRAINING) ? feedingTrainingValue : 0.0, now);
                     return;
                 }
             }
@@ -80,7 +86,7 @@ public class HorseFeedListener implements Listener {
         }
 
         if (!event.isCancelled()) {
-            tryAddFeedingTraining(horse, data, config, feedingTrainingValue, now);
+            tryAddFeedingTraining(horse, data, config, player.hasPermission(PermissionUtils.TRAINING) ? feedingTrainingValue : 0.0, now);
         }
     }
 

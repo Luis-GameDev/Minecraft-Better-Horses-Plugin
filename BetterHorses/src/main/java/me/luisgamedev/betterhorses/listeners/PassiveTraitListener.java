@@ -2,6 +2,7 @@ package me.luisgamedev.betterhorses.listeners;
 
 import me.luisgamedev.betterhorses.BetterHorses;
 import me.luisgamedev.betterhorses.traits.TraitRegistry;
+import me.luisgamedev.betterhorses.utils.PermissionUtils;
 import me.luisgamedev.betterhorses.utils.SupportedMountType;
 import org.bukkit.NamespacedKey;
 import org.bukkit.entity.AbstractHorse;
@@ -25,6 +26,7 @@ public class PassiveTraitListener implements Listener {
         if (!data.has(traitKey, PersistentDataType.STRING)) return;
 
         String trait = data.get(traitKey, PersistentDataType.STRING).toLowerCase();
+        if (!PermissionUtils.canUseTrait(player, trait)) return;
 
         switch (trait) {
             case "frosthooves":

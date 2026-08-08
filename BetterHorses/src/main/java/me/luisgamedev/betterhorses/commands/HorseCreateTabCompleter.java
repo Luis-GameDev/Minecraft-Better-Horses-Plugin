@@ -17,6 +17,10 @@ public class HorseCreateTabCompleter implements TabCompleter {
 
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
+        if (!sender.hasPermission("betterhorses.create")) {
+            return Collections.emptyList();
+        }
+
         List<String> suggestions = new ArrayList<>();
 
         switch (args.length) {

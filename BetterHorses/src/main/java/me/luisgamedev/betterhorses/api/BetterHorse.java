@@ -76,6 +76,33 @@ public final class BetterHorse {
         handle.getPersistentDataContainer().set(BetterHorseKeys.GROWTH_STAGE, PersistentDataType.INTEGER, stage);
     }
 
+    public HorseItemTextureData getTextureData() {
+        PersistentDataContainer data = handle.getPersistentDataContainer();
+        return new HorseItemTextureData(
+                data.get(BetterHorseKeys.TEXTURE_CUSTOM_MODEL_DATA, PersistentDataType.INTEGER),
+                data.get(BetterHorseKeys.TEXTURE_ITEM_MODEL, PersistentDataType.STRING),
+                data.get(BetterHorseKeys.TEXTURE_CIT_STRING, PersistentDataType.STRING),
+                data.get(BetterHorseKeys.TEXTURE_MODEL_STRING, PersistentDataType.STRING)
+        );
+    }
+
+    public void setTextureData(HorseItemTextureData textureData) {
+        PersistentDataContainer data = handle.getPersistentDataContainer();
+        HorseItemTextureData normalized = textureData == null ? HorseItemTextureData.empty() : textureData;
+        setOrRemove(data, BetterHorseKeys.TEXTURE_CUSTOM_MODEL_DATA, PersistentDataType.INTEGER, normalized.getCustomModelData());
+        setOrRemove(data, BetterHorseKeys.TEXTURE_ITEM_MODEL, PersistentDataType.STRING, normalized.getItemModel());
+        setOrRemove(data, BetterHorseKeys.TEXTURE_CIT_STRING, PersistentDataType.STRING, normalized.getCitString());
+        setOrRemove(data, BetterHorseKeys.TEXTURE_MODEL_STRING, PersistentDataType.STRING, normalized.getModelString());
+    }
+
+    private <T> void setOrRemove(PersistentDataContainer data, NamespacedKey key, PersistentDataType<?, T> type, T value) {
+        if (value == null) {
+            data.remove(key);
+        } else {
+            data.set(key, type, value);
+        }
+    }
+
     private void setAttribute(Attribute attribute, NamespacedKey key, double value) {
         AttributeInstance attr = handle.getAttribute(attribute);
         if (attr != null) {

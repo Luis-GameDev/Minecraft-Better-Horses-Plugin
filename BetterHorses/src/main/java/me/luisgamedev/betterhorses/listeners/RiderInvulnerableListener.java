@@ -1,6 +1,7 @@
 package me.luisgamedev.betterhorses.listeners;
 
 import me.luisgamedev.betterhorses.BetterHorses;
+import me.luisgamedev.betterhorses.utils.PermissionUtils;
 import me.luisgamedev.betterhorses.utils.SupportedMountType;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Entity;
@@ -17,6 +18,7 @@ public class RiderInvulnerableListener implements Listener {
         Entity entity = event.getEntity();
 
         if (!(entity instanceof Player player)) return;
+        if (!player.hasPermission(PermissionUtils.RIDER_INVINCIBLE)) return;
 
         FileConfiguration config = BetterHorses.getInstance().getConfig();
         if (!config.getBoolean("settings.rider-invulnerable", false)) return;

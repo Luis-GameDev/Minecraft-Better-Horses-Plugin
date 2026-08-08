@@ -243,6 +243,7 @@ public class BetterHorses extends JavaPlugin {
         pluginManager.registerEvents(new HorseFeedListener(), this);
         pluginManager.registerEvents(new HorseItemBlockerListener(), this);
         pluginManager.registerEvents(new HorseMountListener(), this);
+        pluginManager.registerEvents(new HorsePermissionListener(), this);
 
         debugLog("LISTENER", "REGISTER_BASE", true, "Registered core horse listeners.");
 
@@ -281,6 +282,11 @@ public class BetterHorses extends JavaPlugin {
             debugLog("LISTENER", "REGISTER", true, "Registered SandSlownessListener.");
         }
 
+        if (config.getBoolean("trample.enabled", true)) {
+            pluginManager.registerEvents(new TrampleListener(this), this);
+            debugLog("LISTENER", "REGISTER", true, "Registered TrampleListener.");
+        }
+
         if (!config.getBoolean("traits.enabled", true)) {
             debugLog("LISTENER", "REGISTER_TRAITS", false, "Trait listeners were skipped because traits are disabled.");
             return;
@@ -294,6 +300,11 @@ public class BetterHorses extends JavaPlugin {
         if (isAnyTraitEnabled("dashboost", "ghosthorse")) {
             pluginManager.registerEvents(new TraitCleanupListener(), this);
             debugLog("LISTENER", "REGISTER", true, "Registered TraitCleanupListener.");
+        }
+
+        if (isAnyTraitEnabled("undead")) {
+            pluginManager.registerEvents(new UndeadTraitListener(), this);
+            debugLog("LISTENER", "REGISTER", true, "Registered UndeadTraitListener.");
         }
 
         if (isAnyTraitEnabled("frosthooves", "featherhooves", "fireheart")) {

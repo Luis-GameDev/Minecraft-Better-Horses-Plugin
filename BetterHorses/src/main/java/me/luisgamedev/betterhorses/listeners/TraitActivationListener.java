@@ -3,6 +3,7 @@ package me.luisgamedev.betterhorses.listeners;
 import me.luisgamedev.betterhorses.BetterHorses;
 import me.luisgamedev.betterhorses.api.events.BetterHorseAbilityUseEvent;
 import me.luisgamedev.betterhorses.traits.TraitRegistry;
+import me.luisgamedev.betterhorses.utils.PermissionUtils;
 import me.luisgamedev.betterhorses.utils.SupportedMountType;
 import org.bukkit.Bukkit;
 import org.bukkit.NamespacedKey;
@@ -34,6 +35,10 @@ public class TraitActivationListener implements Listener {
 
         String trait = data.get(traitKey, PersistentDataType.STRING);
         if (trait == null) return;
+        if (!PermissionUtils.canUseTrait(player, trait)) {
+            event.setCancelled(true);
+            return;
+        }
 
         BetterHorseAbilityUseEvent abilityEvent = new BetterHorseAbilityUseEvent(player, mount, trait.toLowerCase());
         Bukkit.getPluginManager().callEvent(abilityEvent);
@@ -78,11 +83,6 @@ public class TraitActivationListener implements Listener {
         if (traitKey == null) {
             return "";
         }
-        return traitKey
-                .toLowerCase()
-                .replace("_", "")
-                .replace("-", "")
-                .replace(" ", "")
-                .trim();
+        return PermissionUtils.normalizeTraitKey(traitKey);
     }
 }

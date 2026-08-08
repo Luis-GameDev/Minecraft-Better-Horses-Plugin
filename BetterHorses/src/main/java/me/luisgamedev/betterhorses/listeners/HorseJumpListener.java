@@ -3,6 +3,7 @@ package me.luisgamedev.betterhorses.listeners;
 import me.luisgamedev.betterhorses.BetterHorses;
 import me.luisgamedev.betterhorses.language.LanguageManager;
 import me.luisgamedev.betterhorses.traits.TraitRegistry;
+import me.luisgamedev.betterhorses.utils.PermissionUtils;
 import me.luisgamedev.betterhorses.utils.SupportedMountType;
 import org.bukkit.NamespacedKey;
 import org.bukkit.configuration.file.FileConfiguration;
@@ -31,9 +32,9 @@ public class HorseJumpListener implements Listener {
     public void onHorseJump(HorseJumpEvent event) {
         if (!(event.getEntity() instanceof AbstractHorse horse)) return;
         if (!SupportedMountType.isSupported(horse)) return;
-        if (hasHeavenHoovesTrait(horse)) {
+        if (hasHeavenHoovesTrait(horse) && !horse.getPassengers().isEmpty()) {
             Entity rider = horse.getPassengers().get(0);
-            if (rider instanceof Player player) {
+            if (rider instanceof Player player && PermissionUtils.canUseTrait(player, "heavenhooves")) {
                 TraitRegistry.activateHeavenHooves(player, horse, event);
             }
         }
@@ -64,7 +65,7 @@ public class HorseJumpListener implements Listener {
                         if (horse.isOnGround()) {
                             if (!horse.getPassengers().isEmpty()) {
                                 Entity rider = horse.getPassengers().get(0);
-                                if (rider instanceof Player player) {
+                                if (rider instanceof Player player && PermissionUtils.canUseTrait(player, "skyburst")) {
                                     TraitRegistry.activateSkyburst(player, horse);
                                 }
                             }

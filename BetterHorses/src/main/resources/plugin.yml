@@ -1,6 +1,6 @@
 name: BetterHorses
 main: me.luisgamedev.betterhorses.BetterHorses
-version: 6.1
+version: 6.2
 api-version: 1.20
 softdepend: [ ProtocolLib, PlaceholderAPI ]
 
@@ -8,7 +8,6 @@ commands:
   horse:
     description: Manage horse actions like spawn and despawn
     usage: /<command> <spawn|despawn|neuter>
-    permission: betterhorses.base
 
   horsecreate:
     description: Create a custom horse item
@@ -16,8 +15,159 @@ commands:
     permission: betterhorses.create
 
 permissions:
-  betterhorses.base:
-    description: Allows using the /horse spawn|despawn command
+  betterhorses.*:
+    description: Grants access to all BetterHorses permissions
+    default: op
+    children:
+      betterhorses.mount: true
+      betterhorses.feed: true
+      betterhorses.breed: true
+      betterhorses.tame: true
+      betterhorses.leash: true
+      betterhorses.bypass: true
+      betterhorses.trample: true
+      betterhorses.spawn.rightclick: true
+      betterhorses.training: true
+      betterhorses.cooldown.bypass: true
+      betterhorses.rider.invincible: true
+      betterhorses.rider.damageboost: true
+      betterhorses.trait.use: true
+      betterhorses.trait.receive: true
+      betterhorses.trait.hellmare: true
+      betterhorses.trait.fireheart: true
+      betterhorses.trait.featherhooves: true
+      betterhorses.trait.dashboost: true
+      betterhorses.trait.kickback: true
+      betterhorses.trait.ghosthorse: true
+      betterhorses.trait.heavenhooves: true
+      betterhorses.trait.undead: true
+      betterhorses.info: true
+      betterhorses.neuter: true
+      betterhorses.create: true
+      betterhorses.reload: true
+      betterhorses.spawn.command: true
+      betterhorses.despawn: true
+
+  betterhorses.trait.*:
+    description: Grants access to all traits
+    default: true
+    children:
+      betterhorses.trait.hellmare: true
+      betterhorses.trait.fireheart: true
+      betterhorses.trait.featherhooves: true
+      betterhorses.trait.dashboost: true
+      betterhorses.trait.kickback: true
+      betterhorses.trait.ghosthorse: true
+      betterhorses.trait.heavenhooves: true
+      betterhorses.trait.undead: true
+
+  betterhorses.rider.*:
+    description: Grants access to all rider bonuses
+    default: true
+    children:
+      betterhorses.rider.invincible: true
+      betterhorses.rider.damageboost: true
+
+  betterhorses.spawn.*:
+    description: Allows the player to spawn a horse in every possible way
+    default: true
+    children:
+      betterhorses.spawn.rightclick: true
+      betterhorses.spawn.command: true
+
+  # Basic Permissions
+  betterhorses.mount:
+    description: Allows the player to mount a horse
+    default: true
+
+  betterhorses.feed:
+    description: Allows the player to feed a horse
+    default: true
+
+  betterhorses.breed:
+    description: Allows the player to breed a horse
+    default: true
+
+  betterhorses.tame:
+    description: Allows the player to tame a horse
+    default: true
+
+  betterhorses.leash:
+    description: Allows the player to leash a horse
+    default: true
+
+  # Feature Permissions
+  betterhorses.bypass:
+    description: Allows riding horses of other players
+
+  betterhorses.trample:
+    description: Allows for the players horse to use the trample feature
+    default: true
+
+  betterhorses.spawn.rightclick:
+    description: Allows spawning a horse by rightclicking the horse item
+    default: true
+
+  betterhorses.training:
+    description: Allows for the players horse to be trained by the player
+    default: true
+
+  betterhorses.cooldown.bypass:
+    description: Allows the player to bypass breeding cooldowns
+    default: true
+
+  betterhorses.rider.invincible:
+    description: Allows the rider to use the rider invincibility feature
+    default: true
+
+  betterhorses.rider.damageboost:
+    description: Allows the rider to use the mounted damage boost feature
+    default: true
+
+  betterhorses.trait.use:
+    description: Allows the rider to use an active trait if enabled
+    default: true
+
+  betterhorses.trait.receive:
+    description: Allows the rider to be able to get traited horses when breeding if enabled
+    default: true
+
+  # Single trait permissions
+  betterhorses.trait.hellmare:
+    description: Allows the rider to use the trait hellmare if enabled
+    default: true
+
+  betterhorses.trait.fireheart:
+    description: Allows the rider to use the trait fireheart if enabled
+    default: true
+
+  betterhorses.trait.featherhooves:
+    description: Allows the rider to use the trait featherhooves if enabled
+    default: true
+
+  betterhorses.trait.dashboost:
+    description: Allows the rider to use the trait dashboost if enabled
+    default: true
+
+  betterhorses.trait.kickback:
+    description: Allows the rider to use the trait kickback if enabled
+    default: true
+
+  betterhorses.trait.ghosthorse:
+    description: Allows the rider to use the trait ghosthorse if enabled
+    default: true
+
+  betterhorses.trait.heavenhooves:
+    description: Allows the rider to use the trait heavenhooves if enabled
+    default: true
+
+  betterhorses.trait.undead:
+    description: Allows the rider to use the trait undead if enabled
+    default: true
+
+  # Command permissions
+  betterhorses.info:
+    description: Allows the player to use the /horse info command
     default: true
 
   betterhorses.neuter:
@@ -32,5 +182,10 @@ permissions:
     description: Allows reloading the BetterHorses configuration
     default: op
 
-  betterhorses.bypass:
-    description: Allows riding horses of other players
+  betterhorses.spawn.command:
+    description: Allows using the /horse spawn command
+    default: true
+
+  betterhorses.despawn:
+    description: Allows using the /horse despawn command
+    default: true

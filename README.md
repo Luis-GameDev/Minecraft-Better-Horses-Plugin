@@ -309,6 +309,7 @@ trample:
     camels: false
     mules: false
     donkeys: false
+  
   damage: 4.0
   knockback: 1.5
   radius: 1.2

@@ -8,6 +8,7 @@ import me.luisgamedev.betterhorses.utils.SupportedMountType;
 import org.bukkit.Material;
 import org.bukkit.entity.AbstractHorse;
 import org.bukkit.entity.AnimalTamer;
+import org.bukkit.entity.ChestedHorse;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataContainer;
@@ -51,6 +52,14 @@ public class DespawnCommand {
         if (ownershipRequired && !isOwner) {
             lang.sendFormatted(player, "messages.not-horse-owner", "%mount%", mountName);
             plugin.debugLog("HORSE_DESPAWN", "OWNERSHIP", false, "Player " + player.getName() + " is not owner of " + horse.getUniqueId() + ".");
+            return true;
+        }
+
+        if (horse instanceof ChestedHorse chestedHorse
+                && chestedHorse.isCarryingChest()
+                && !plugin.getConfig().getBoolean("settings.allow-chested-mount-despawn", false)) {
+            lang.sendFormatted(player, "messages.cant-despawn-chested", "%mount%", mountName);
+            plugin.debugLog("HORSE_DESPAWN", "CHEST", false, "Chested mount despawn is disabled for " + horse.getUniqueId() + ".");
             return true;
         }
 

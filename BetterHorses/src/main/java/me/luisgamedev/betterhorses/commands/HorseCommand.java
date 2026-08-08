@@ -2,6 +2,7 @@ package me.luisgamedev.betterhorses.commands;
 
 import me.luisgamedev.betterhorses.BetterHorses;
 import me.luisgamedev.betterhorses.language.LanguageManager;
+import me.luisgamedev.betterhorses.utils.PermissionUtils;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -49,19 +50,19 @@ public class HorseCommand implements CommandExecutor {
 
         switch (subcommand) {
             case "spawn":
-                if (!player.hasPermission("betterhorses.base")) {
+                if (!player.hasPermission(PermissionUtils.SPAWN_COMMAND)) {
                     lang.sendFormatted(player, "messages.insufficient-permission", "%command%", "/horse spawn");
                     plugin.debugLog("HORSE_COMMAND", "SPAWN_PERMISSION", false,
-                            "Player " + player.getName() + " lacks betterhorses.base");
+                            "Player " + player.getName() + " lacks betterhorses.spawn.command");
                     return true;
                 }
                 return RespawnCommand.spawnHorseFromItem(player);
 
             case "despawn":
-                if (!player.hasPermission("betterhorses.base")) {
+                if (!player.hasPermission(PermissionUtils.DESPAWN)) {
                     lang.sendFormatted(player, "messages.insufficient-permission", "%command%", "/horse despawn");
                     plugin.debugLog("HORSE_COMMAND", "DESPAWN_PERMISSION", false,
-                            "Player " + player.getName() + " lacks betterhorses.base");
+                            "Player " + player.getName() + " lacks betterhorses.despawn");
                     return true;
                 }
                 return DespawnCommand.despawnHorseToItem(player);
@@ -76,6 +77,12 @@ public class HorseCommand implements CommandExecutor {
                 return HorseNeuterCommand.handle(player);
 
             case "info":
+                if (!player.hasPermission(PermissionUtils.INFO)) {
+                    lang.sendFormatted(player, "messages.insufficient-permission", "%command%", "/horse info");
+                    plugin.debugLog("HORSE_COMMAND", "INFO_PERMISSION", false,
+                            "Player " + player.getName() + " lacks betterhorses.info");
+                    return true;
+                }
                 if (!plugin.isDebugModeEnabled()) {
                     lang.send(player, "messages.unknown-subcommand");
                     plugin.debugLog("HORSE_COMMAND", "INFO_DEBUG_DISABLED", false,
