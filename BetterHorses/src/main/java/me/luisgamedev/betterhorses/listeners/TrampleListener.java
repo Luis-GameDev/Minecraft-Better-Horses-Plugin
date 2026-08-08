@@ -3,7 +3,6 @@ package me.luisgamedev.betterhorses.listeners;
 import me.luisgamedev.betterhorses.BetterHorses;
 import me.luisgamedev.betterhorses.utils.PermissionUtils;
 import me.luisgamedev.betterhorses.utils.SupportedMountType;
-import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.AbstractHorse;
@@ -16,8 +15,6 @@ import org.bukkit.entity.Player;
 import org.bukkit.entity.Projectile;
 import org.bukkit.entity.Vehicle;
 import org.bukkit.event.Listener;
-import org.bukkit.event.entity.EntityDamageByEntityEvent;
-import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.Vector;
 
@@ -118,13 +115,7 @@ public class TrampleListener implements Listener {
             }
 
             LivingEntity target = (LivingEntity) entity;
-            EntityDamageByEntityEvent damageEvent = createTrampleDamageEvent(rider, target, config);
-            Bukkit.getPluginManager().callEvent(damageEvent);
-            if (damageEvent.isCancelled()) {
-                continue;
-            }
-
-            applyTrample(rider, horseLocation, target, config, currentTick, damageEvent);
+            applyTrample(rider, horseLocation, target, config, currentTick);
         }
     }
 
@@ -163,24 +154,15 @@ public class TrampleListener implements Listener {
         return dot >= minimumDot;
     }
 
-    private EntityDamageByEntityEvent createTrampleDamageEvent(Player rider, LivingEntity target, FileConfiguration config) {
+    private void applyTrample(Player rider, Location horseLocation, LivingEntity target, FileConfiguration config, long currentTick) {
         double damage = Math.max(0.0, config.getDouble("trample.damage", 4.0));
-        return new EntityDamageByEntityEvent(
-                rider,
-                target,
-                EntityDamageEvent.DamageCause.ENTITY_ATTACK,
-                damage
-        );
-    }
-
-    private void applyTrample(Player rider, Location horseLocation, LivingEntity target, FileConfiguration config, long currentTick, EntityDamageByEntityEvent damageEvent) {
         double knockbackStrength = Math.max(0.0, config.getDouble("trample.knockback", 1.2));
 
         int cooldownTicks = Math.max(0, config.getInt("trample.cooldown-ticks", 20));
         targetCooldowns.put(target.getUniqueId(), currentTick + cooldownTicks);
 
-        if (damageEvent.getDamage() > 0.0) {
-            target.damage(damageEvent.getDamage(), rider);
+        if (damage > 0.0) {
+            target.damage(damage, rider);
         }
 
         if (knockbackStrength > 0.0) {

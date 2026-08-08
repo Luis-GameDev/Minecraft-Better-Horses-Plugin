@@ -16,7 +16,10 @@ public final class PermissionUtils {
             "kickback",
             "ghosthorse",
             "heavenhooves",
-            "undead"
+            "undead",
+            "frosthooves",
+            "skyburst",
+            "revenantcurse"
     );
 
     private PermissionUtils() {

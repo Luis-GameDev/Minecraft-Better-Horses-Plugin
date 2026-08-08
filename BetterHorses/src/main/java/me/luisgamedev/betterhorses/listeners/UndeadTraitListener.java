@@ -15,6 +15,7 @@ import org.bukkit.Sound;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.entity.AbstractHorse;
+import org.bukkit.entity.ChestedHorse;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Horse;
 import org.bukkit.entity.Player;
@@ -29,7 +30,13 @@ import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
+import org.bukkit.util.io.BukkitObjectInputStream;
+import org.bukkit.util.io.BukkitObjectOutputStream;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.util.Base64;
 import java.util.List;
 import java.util.Locale;
 
@@ -68,9 +75,19 @@ public class UndeadTraitListener implements Listener {
         if (!isUndeadSkeleton(skeleton)) return;
         PersistentDataContainer data = skeleton.getPersistentDataContainer();
         ItemStack armor = readStoredArmor(data);
-        if (armor == null) return;
-        data.remove(BetterHorseKeys.UNDEAD_ARMOR_DATA);
-        skeleton.getWorld().dropItemNaturally(skeleton.getLocation(), armor);
+        if (armor != null) {
+            data.remove(BetterHorseKeys.UNDEAD_ARMOR_DATA);
+            skeleton.getWorld().dropItemNaturally(skeleton.getLocation(), armor);
+        }
+        ItemStack[] chestContents = readStoredChestContents(data);
+        if (chestContents != null) {
+            data.remove(BetterHorseKeys.UNDEAD_CHEST_CONTENTS);
+            for (ItemStack item : chestContents) {
+                if (item != null && !item.getType().isAir()) {
+                    skeleton.getWorld().dropItemNaturally(skeleton.getLocation(), item);
+                }
+            }
+        }
     }
 
     private boolean canUseUndeadTrait(AbstractHorse horse) {
@@ -91,6 +108,8 @@ public class UndeadTraitListener implements Listener {
         double jump = getAttribute(original, AttributeResolver.horseJumpStrength(), 0.7);
         ItemStack armor = HorseArmorUtils.getArmor(original.getInventory());
         ItemStack saddle = original.getInventory().getSaddle();
+        boolean carryingChest = original instanceof ChestedHorse chestedHorse && chestedHorse.isCarryingChest();
+        String chestContents = carryingChest ? serializeStorageContents(original.getInventory().getStorageContents()) : null;
 
         SkeletonHorse skeleton = location.getWorld().spawn(location, SkeletonHorse.class);
         copyBetterHorsesData(oldData, skeleton.getPersistentDataContainer());
@@ -105,6 +124,10 @@ public class UndeadTraitListener implements Listener {
             data.set(BetterHorseKeys.UNDEAD_ORIGINAL_STYLE, PersistentDataType.STRING, h.getStyle().name());
         }
         if (armor != null) data.set(BetterHorseKeys.UNDEAD_ARMOR_DATA, PersistentDataType.BYTE_ARRAY, armor.serializeAsBytes());
+        if (carryingChest) {
+            data.set(BetterHorseKeys.UNDEAD_CHESTED, PersistentDataType.BYTE, (byte) 1);
+            if (chestContents != null) data.set(BetterHorseKeys.UNDEAD_CHEST_CONTENTS, PersistentDataType.STRING, chestContents);
+        }
         applyStats(skeleton, maxHealth, speed, jump);
         skeleton.setHealth(maxHealth);
         skeleton.setTamed(original.isTamed());
@@ -135,6 +158,7 @@ public class UndeadTraitListener implements Listener {
         restored.setTamed(skeleton.isTamed());
         restored.setOwner(skeleton.getOwner());
         restored.getInventory().setSaddle(skeleton.getInventory().getSaddle());
+        restoreChestContents(restored, data);
         if (restored instanceof Horse horse) {
             setHorseVariant(horse, data.get(BetterHorseKeys.UNDEAD_ORIGINAL_COLOR, PersistentDataType.STRING), data.get(BetterHorseKeys.UNDEAD_ORIGINAL_STYLE, PersistentDataType.STRING));
             ItemStack armor = readStoredArmor(data);
@@ -177,7 +201,30 @@ public class UndeadTraitListener implements Listener {
         }
     }
     private <T, Z> void copyKey(PersistentDataContainer from, PersistentDataContainer to, org.bukkit.NamespacedKey key, PersistentDataType<T, Z> type) { if (from.has(key, type)) to.set(key, type, from.get(key, type)); }
-    private void cleanupUndeadKeys(PersistentDataContainer data) { data.remove(BetterHorseKeys.UNDEAD_SKELETON); data.remove(BetterHorseKeys.UNDEAD_ORIGINAL_TYPE); data.remove(BetterHorseKeys.UNDEAD_ORIGINAL_HEALTH); data.remove(BetterHorseKeys.UNDEAD_ORIGINAL_SPEED); data.remove(BetterHorseKeys.UNDEAD_ORIGINAL_JUMP); data.remove(BetterHorseKeys.UNDEAD_ORIGINAL_COLOR); data.remove(BetterHorseKeys.UNDEAD_ORIGINAL_STYLE); data.remove(BetterHorseKeys.UNDEAD_ARMOR_DATA); }
+    private void cleanupUndeadKeys(PersistentDataContainer data) { data.remove(BetterHorseKeys.UNDEAD_SKELETON); data.remove(BetterHorseKeys.UNDEAD_ORIGINAL_TYPE); data.remove(BetterHorseKeys.UNDEAD_ORIGINAL_HEALTH); data.remove(BetterHorseKeys.UNDEAD_ORIGINAL_SPEED); data.remove(BetterHorseKeys.UNDEAD_ORIGINAL_JUMP); data.remove(BetterHorseKeys.UNDEAD_ORIGINAL_COLOR); data.remove(BetterHorseKeys.UNDEAD_ORIGINAL_STYLE); data.remove(BetterHorseKeys.UNDEAD_ARMOR_DATA); data.remove(BetterHorseKeys.UNDEAD_CHESTED); data.remove(BetterHorseKeys.UNDEAD_CHEST_CONTENTS); }
     private ItemStack readStoredArmor(PersistentDataContainer data) { byte[] bytes = data.get(BetterHorseKeys.UNDEAD_ARMOR_DATA, PersistentDataType.BYTE_ARRAY); if (bytes == null || bytes.length == 0) return null; try { return ItemStack.deserializeBytes(bytes); } catch (Exception ignored) { return null; } }
+    private void restoreChestContents(AbstractHorse horse, PersistentDataContainer data) {
+        if (!(horse instanceof ChestedHorse chestedHorse) || !data.has(BetterHorseKeys.UNDEAD_CHESTED, PersistentDataType.BYTE)) return;
+        chestedHorse.setCarryingChest(true);
+        ItemStack[] contents = readStoredChestContents(data);
+        if (contents != null) horse.getInventory().setStorageContents(contents);
+    }
+    private String serializeStorageContents(ItemStack[] contents) {
+        try (ByteArrayOutputStream bytes = new ByteArrayOutputStream(); BukkitObjectOutputStream output = new BukkitObjectOutputStream(bytes)) {
+            output.writeInt(contents.length);
+            for (ItemStack item : contents) output.writeObject(item);
+            return Base64.getEncoder().encodeToString(bytes.toByteArray());
+        } catch (IOException ignored) { return null; }
+    }
+    private ItemStack[] readStoredChestContents(PersistentDataContainer data) {
+        String serialized = data.get(BetterHorseKeys.UNDEAD_CHEST_CONTENTS, PersistentDataType.STRING);
+        if (serialized == null || serialized.isBlank()) return null;
+        try (ByteArrayInputStream bytes = new ByteArrayInputStream(Base64.getDecoder().decode(serialized)); BukkitObjectInputStream input = new BukkitObjectInputStream(bytes)) {
+            int length = input.readInt();
+            ItemStack[] contents = new ItemStack[length];
+            for (int i = 0; i < length; i++) contents[i] = (ItemStack) input.readObject();
+            return contents;
+        } catch (IOException | ClassNotFoundException | IllegalArgumentException | ClassCastException ignored) { return null; }
+    }
     private void setHorseVariant(Horse horse, String color, String style) { try { if (color != null) horse.setColor(Horse.Color.valueOf(color)); } catch (IllegalArgumentException ignored) {} try { if (style != null) horse.setStyle(Horse.Style.valueOf(style)); } catch (IllegalArgumentException ignored) {} }
 }
