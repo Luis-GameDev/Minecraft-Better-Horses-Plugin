@@ -41,6 +41,9 @@ permissions:
       betterhorses.trait.ghosthorse: true
       betterhorses.trait.heavenhooves: true
       betterhorses.trait.undead: true
+      betterhorses.trait.frosthooves: true
+      betterhorses.trait.skyburst: true
+      betterhorses.trait.revenantcurse: true
       betterhorses.info: true
       betterhorses.neuter: true
       betterhorses.create: true
@@ -60,6 +63,9 @@ permissions:
       betterhorses.trait.ghosthorse: true
       betterhorses.trait.heavenhooves: true
       betterhorses.trait.undead: true
+      betterhorses.trait.frosthooves: true
+      betterhorses.trait.skyburst: true
+      betterhorses.trait.revenantcurse: true
 
   betterhorses.rider.*:
     description: Grants access to all rider bonuses
@@ -114,7 +120,7 @@ permissions:
 
   betterhorses.cooldown.bypass:
     description: Allows the player to bypass breeding cooldowns
-    default: true
+    default: false
 
   betterhorses.rider.invincible:
     description: Allows the rider to use the rider invincibility feature
@@ -163,6 +169,18 @@ permissions:
 
   betterhorses.trait.undead:
     description: Allows the rider to use the trait undead if enabled
+    default: true
+
+  betterhorses.trait.frosthooves:
+    description: Allows the rider to use the trait frosthooves if enabled
+    default: true
+
+  betterhorses.trait.skyburst:
+    description: Allows the rider to use the trait skyburst if enabled
+    default: true
+
+  betterhorses.trait.revenantcurse:
+    description: Allows the rider to use the trait revenantcurse if enabled
     default: true
 
   # Command permissions

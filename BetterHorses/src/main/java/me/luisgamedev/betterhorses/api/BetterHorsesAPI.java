@@ -546,6 +546,8 @@ public class BetterHorsesAPI {
         copyPdcKey(source, target, BetterHorseKeys.UNDEAD_ORIGINAL_COLOR, PersistentDataType.STRING);
         copyPdcKey(source, target, BetterHorseKeys.UNDEAD_ORIGINAL_STYLE, PersistentDataType.STRING);
         copyPdcKey(source, target, BetterHorseKeys.UNDEAD_ARMOR_DATA, PersistentDataType.BYTE_ARRAY);
+        copyPdcKey(source, target, BetterHorseKeys.UNDEAD_CHESTED, PersistentDataType.BYTE);
+        copyPdcKey(source, target, BetterHorseKeys.UNDEAD_CHEST_CONTENTS, PersistentDataType.STRING);
     }
 
     private static <T, Z> void copyPdcKey(PersistentDataContainer source, PersistentDataContainer target, NamespacedKey key, PersistentDataType<T, Z> type) {

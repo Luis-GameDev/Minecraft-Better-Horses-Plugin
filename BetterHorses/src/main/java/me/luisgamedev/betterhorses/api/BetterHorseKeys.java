@@ -49,6 +49,8 @@ public final class BetterHorseKeys {
     public static final NamespacedKey UNDEAD_ORIGINAL_COLOR = key("undead_original_color");
     public static final NamespacedKey UNDEAD_ORIGINAL_STYLE = key("undead_original_style");
     public static final NamespacedKey UNDEAD_ARMOR_DATA = key("undead_armor_data");
+    public static final NamespacedKey UNDEAD_CHESTED = key("undead_chested");
+    public static final NamespacedKey UNDEAD_CHEST_CONTENTS = key("undead_chest_contents");
 
     private static NamespacedKey key(String key) {
         return new NamespacedKey(BetterHorses.getInstance(), key);
