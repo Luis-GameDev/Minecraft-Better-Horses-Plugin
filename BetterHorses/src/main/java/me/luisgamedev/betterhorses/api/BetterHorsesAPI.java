@@ -56,7 +56,7 @@ public class BetterHorsesAPI {
         return createHorseItem(health, speed, jump, gender, name, owner, targetInventory, dropIfFull, traitOverride, isNeutered, growthStage, mountType, getConfiguredTextureData());
     }
 
-    @Description("Creates a horseitem with explicit texture/model references and either returns the ItemStack or directly puts it into the provided Inventory")
+    @Description("Creates a horseitem with explicit texture/model references and either returns the ItemStack or directly puts it into the targetInventory if provided")
     public static ItemStack createHorseItem(@Nonnull double health, @Nonnull double speed, @Nonnull double jump, @Nonnull String gender, @Nullable String name, @Nullable Player owner, @Nullable Inventory targetInventory, @Nullable boolean dropIfFull, @Nullable String traitOverride, @Nonnull boolean isNeutered, @Nonnull Integer growthStage, @Nullable SupportedMountType mountType, @Nullable HorseItemTextureData textureData) {
 
         BetterHorses plugin = BetterHorses.getInstance();
@@ -147,7 +147,7 @@ public class BetterHorsesAPI {
             plugin.debugLog("API_CREATE_ITEM", "INVENTORY", true, "Adding horse item to target inventory.");
             HashMap<Integer, ItemStack> leftovers = targetInventory.addItem(item);
             if (!leftovers.isEmpty() && dropIfFull) {
-                owner.getWorld().dropItem(owner.getLocation(), item);
+                targetInventory.getLocation().getWorld().dropItem(targetInventory.getLocation(), item);
             }
         }
 
@@ -155,14 +155,14 @@ public class BetterHorsesAPI {
         return item;
     }
 
-    public static Optional<BetterHorse> getBetterHorse(AbstractHorse horse) {
-        if (!isBetterHorse(horse)) return Optional.empty();
-        return Optional.of(new BetterHorse(horse));
+    public static BetterHorse getBetterHorse(AbstractHorse horse) {
+        if (!isBetterHorse(horse)) return null;
+        return new BetterHorse(horse);
     }
 
-    public static Optional<BetterHorseItem> getBetterHorse(ItemStack item) {
-        if (!isHorseItem(item)) return Optional.empty();
-        return Optional.of(new BetterHorseItem(item));
+    public static BetterHorseItem getBetterHorse(ItemStack item) {
+        if (!isHorseItem(item)) return null;
+        return new BetterHorseItem(item);
     }
 
     public static @Nullable AbstractHorse toHorse(@Nonnull ItemStack item, @Nonnull Player player) {
