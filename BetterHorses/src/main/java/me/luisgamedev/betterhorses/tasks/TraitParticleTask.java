@@ -21,8 +21,7 @@ public class TraitParticleTask implements Runnable {
         if (!plugin.getConfig().getBoolean("settings.trait-particle-indicator", false)) return;
 
         for (World world : Bukkit.getWorlds()) {
-            for (LivingEntity entity : world.getLivingEntities()) {
-                if (!(entity instanceof AbstractHorse horse)) continue;
+            for (AbstractHorse horse : world.getEntitiesByClass(AbstractHorse.class)) {
                 if (!SupportedMountType.isSupported(horse)) continue;
 
                 String trait = horse.getPersistentDataContainer().get(traitKey, PersistentDataType.STRING);
