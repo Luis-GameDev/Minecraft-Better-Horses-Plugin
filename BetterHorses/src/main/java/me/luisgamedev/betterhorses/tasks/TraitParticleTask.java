@@ -1,5 +1,7 @@
 package me.luisgamedev.betterhorses.tasks;
 
+import me.luisgamedev.betterhorses.utils.WorldAccessPolicy;
+
 import me.luisgamedev.betterhorses.BetterHorses;
 import me.luisgamedev.betterhorses.traits.TraitParticleResolver;
 import org.bukkit.Bukkit;
@@ -21,6 +23,7 @@ public class TraitParticleTask implements Runnable {
         if (!plugin.getConfig().getBoolean("settings.trait-particle-indicator", false)) return;
 
         for (World world : Bukkit.getWorlds()) {
+            if (!WorldAccessPolicy.isEnabled(world)) continue;
             for (AbstractHorse horse : world.getEntitiesByClass(AbstractHorse.class)) {
                 if (!SupportedMountType.isSupported(horse)) continue;
 

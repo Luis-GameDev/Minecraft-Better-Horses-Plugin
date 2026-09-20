@@ -1,5 +1,15 @@
 # BetterHorses config
 
+# Prevents BetterHorses from running in selected worlds. World entries accept either
+# the exact world name or UUID (case-insensitive). BLACKLIST disables listed worlds;
+# WHITELIST enables only listed worlds. Commands are also hidden and blocked there.
+world-filter:
+  mode: BLACKLIST
+  worlds: []
+  # worlds:
+  #   - world_disabled
+  #   - 00000000-0000-0000-0000-000000000000
+
 # Controls how horse stats are displayed on horse item lore.
 # Supported values:
 #   RAW - Shows the internal movement speed and jump strength values.

@@ -11,6 +11,7 @@ import me.luisgamedev.betterhorses.language.LanguageManager;
 import me.luisgamedev.betterhorses.listeners.HorseMountListener;
 import me.luisgamedev.betterhorses.listeners.*;
 import me.luisgamedev.betterhorses.tasks.TraitParticleTask;
+import me.luisgamedev.betterhorses.utils.WorldAccessPolicy;
 import net.kyori.adventure.platform.bukkit.BukkitAudiences;
 import org.bukkit.Bukkit;
 import org.bukkit.command.PluginCommand;
@@ -20,6 +21,18 @@ import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.plugin.PluginManager;
+import org.bukkit.event.Event;
+import org.bukkit.event.EventException;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
+import org.bukkit.event.entity.EntityEvent;
+import org.bukkit.event.block.BlockEvent;
+import org.bukkit.event.inventory.InventoryEvent;
+import org.bukkit.event.player.PlayerEvent;
+import org.bukkit.event.vehicle.VehicleEvent;
+
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 
 import java.io.File;
 import java.io.IOException;
@@ -47,6 +60,7 @@ public class BetterHorses extends JavaPlugin {
     public void onEnable() {
         instance = this;
         initializeConfigurationFiles();
+        WorldAccessPolicy.reload(this);
         audiences = BukkitAudiences.create(this);
         debugLog("PLUGIN", "ENABLE_START", true, "Starting BetterHorses plugin bootstrap.");
         if (getServer().getPluginManager().getPlugin("ProtocolLib") != null) {
@@ -62,6 +76,7 @@ public class BetterHorses extends JavaPlugin {
         languageManager = new LanguageManager(this, audiences);
 
         registerListeners();
+        getServer().getPluginManager().registerEvents(new WorldCommandListener(), this);
 
         PluginCommand horseCommand = getCommand("horse");
         if (horseCommand != null) {
@@ -107,8 +122,10 @@ public class BetterHorses extends JavaPlugin {
         updateYamlWithMissingSections("config.yml", false);
         updateYamlWithMissingSections("language.yml", true);
         reloadConfig();
+        WorldAccessPolicy.reload(this);
         languageManager.reload();
         applyHorseCommandAliases();
+        Bukkit.getOnlinePlayers().forEach(org.bukkit.entity.Player::updateCommands);
         debugLog("PLUGIN", "RELOAD", true, "Configuration and language files were reloaded.");
     }
 
@@ -238,52 +255,52 @@ public class BetterHorses extends JavaPlugin {
         PluginManager pluginManager = getServer().getPluginManager();
         FileConfiguration config = getConfig();
 
-        pluginManager.registerEvents(new HorseSpawnListener(), this);
-        pluginManager.registerEvents(new HorseBreedListener(), this);
-        pluginManager.registerEvents(new HorseFeedListener(), this);
-        pluginManager.registerEvents(new HorseItemBlockerListener(), this);
-        pluginManager.registerEvents(new HorseMountListener(), this);
-        pluginManager.registerEvents(new HorsePermissionListener(), this);
+        registerWorldFilteredEvents(new HorseSpawnListener());
+        registerWorldFilteredEvents(new HorseBreedListener());
+        registerWorldFilteredEvents(new HorseFeedListener());
+        registerWorldFilteredEvents(new HorseItemBlockerListener());
+        registerWorldFilteredEvents(new HorseMountListener());
+        registerWorldFilteredEvents(new HorsePermissionListener());
 
         debugLog("LISTENER", "REGISTER_BASE", true, "Registered core horse listeners.");
 
         if (config.getBoolean("training.enabled", true) && config.getBoolean("training.categories.riding.enabled", true)) {
-            pluginManager.registerEvents(new HorseTrainingRidingListener(), this);
+            registerWorldFilteredEvents(new HorseTrainingRidingListener());
             debugLog("LISTENER", "REGISTER", true, "Registered HorseTrainingRidingListener.");
         }
 
         if (config.getBoolean("training.enabled", true) && config.getBoolean("training.categories.brushing.enabled", true)) {
-            pluginManager.registerEvents(new HorseTrainingBrushingListener(), this);
+            registerWorldFilteredEvents(new HorseTrainingBrushingListener());
             debugLog("LISTENER", "REGISTER", true, "Registered HorseTrainingBrushingListener.");
         }
 
         if (config.getBoolean("settings.allow-rightclick-spawn", true)) {
-            pluginManager.registerEvents(new RightClickListener(), this);
+            registerWorldFilteredEvents(new RightClickListener());
             debugLog("LISTENER", "REGISTER", true, "Registered RightClickListener.");
         }
 
         if (config.getBoolean("settings.rider-invulnerable", false)) {
-            pluginManager.registerEvents(new RiderInvulnerableListener(), this);
+            registerWorldFilteredEvents(new RiderInvulnerableListener());
             debugLog("LISTENER", "REGISTER", true, "Registered RiderInvulnerableListener.");
         }
 
         if (config.getBoolean("settings.fix-step-height", true)) {
-            pluginManager.registerEvents(new HorseStepHeightListener(), this);
+            registerWorldFilteredEvents(new HorseStepHeightListener());
             debugLog("LISTENER", "REGISTER", true, "Registered HorseStepHeightListener.");
         }
 
         if (config.getBoolean("settings.mounted-damage-boost.enabled", false)) {
-            pluginManager.registerEvents(new MountedDamageBoostListener(), this);
+            registerWorldFilteredEvents(new MountedDamageBoostListener());
             debugLog("LISTENER", "REGISTER", true, "Registered MountedDamageBoostListener.");
         }
 
         if (config.getBoolean("settings.sand-slowness.enabled", false)) {
-            pluginManager.registerEvents(new SandSlownessListener(), this);
+            registerWorldFilteredEvents(new SandSlownessListener());
             debugLog("LISTENER", "REGISTER", true, "Registered SandSlownessListener.");
         }
 
         if (config.getBoolean("trample.enabled", true)) {
-            pluginManager.registerEvents(new TrampleListener(this), this);
+            registerWorldFilteredEvents(new TrampleListener(this));
             debugLog("LISTENER", "REGISTER", true, "Registered TrampleListener.");
         }
 
@@ -293,35 +310,67 @@ public class BetterHorses extends JavaPlugin {
         }
 
         if (isAnyTraitEnabled("hellmare", "dashboost", "kickback", "ghosthorse", "revenantcurse")) {
-            pluginManager.registerEvents(new TraitActivationListener(), this);
+            registerWorldFilteredEvents(new TraitActivationListener());
             debugLog("LISTENER", "REGISTER", true, "Registered TraitActivationListener.");
         }
 
         if (isAnyTraitEnabled("dashboost", "ghosthorse")) {
-            pluginManager.registerEvents(new TraitCleanupListener(), this);
+            registerWorldFilteredEvents(new TraitCleanupListener());
             debugLog("LISTENER", "REGISTER", true, "Registered TraitCleanupListener.");
         }
 
         if (isAnyTraitEnabled("undead")) {
-            pluginManager.registerEvents(new UndeadTraitListener(), this);
+            registerWorldFilteredEvents(new UndeadTraitListener());
             debugLog("LISTENER", "REGISTER", true, "Registered UndeadTraitListener.");
         }
 
         if (isAnyTraitEnabled("frosthooves", "featherhooves", "fireheart")) {
-            pluginManager.registerEvents(new PassiveTraitListener(), this);
+            registerWorldFilteredEvents(new PassiveTraitListener());
             debugLog("LISTENER", "REGISTER", true, "Registered PassiveTraitListener.");
         }
 
         if (config.getBoolean("traits.revenantcurse.enabled", false)) {
-            pluginManager.registerEvents(new RevenantCurseListener(), this);
+            registerWorldFilteredEvents(new RevenantCurseListener());
             debugLog("LISTENER", "REGISTER", true, "Registered RevenantCurseListener.");
         }
 
         if (config.getBoolean("traits.skyburst.enabled", false)
                 || config.getBoolean("traits.heavenhooves.enabled", false)) {
-            pluginManager.registerEvents(new HorseJumpListener(), this);
+            registerWorldFilteredEvents(new HorseJumpListener());
             debugLog("LISTENER", "REGISTER", true, "Registered HorseJumpListener.");
         }
+    }
+
+    @SuppressWarnings("unchecked")
+    private void registerWorldFilteredEvents(Listener listener) {
+        PluginManager manager = getServer().getPluginManager();
+        for (Method method : listener.getClass().getMethods()) {
+            EventHandler handler = method.getAnnotation(EventHandler.class);
+            if (handler == null || method.getParameterCount() != 1
+                    || !Event.class.isAssignableFrom(method.getParameterTypes()[0])) continue;
+            Class<? extends Event> eventType = (Class<? extends Event>) method.getParameterTypes()[0];
+            manager.registerEvent(eventType, listener, handler.priority(), (ignored, event) -> {
+                if (!isEventWorldEnabled(event)) return;
+                try {
+                    method.invoke(listener, event);
+                } catch (InvocationTargetException exception) {
+                    throw new EventException(exception.getCause());
+                } catch (ReflectiveOperationException exception) {
+                    throw new EventException(exception);
+                }
+            }, this, handler.ignoreCancelled());
+        }
+    }
+
+    private boolean isEventWorldEnabled(Event event) {
+        if (event instanceof PlayerEvent playerEvent) return WorldAccessPolicy.isEnabled(playerEvent.getPlayer().getWorld());
+        if (event instanceof EntityEvent entityEvent) return WorldAccessPolicy.isEnabled(entityEvent.getEntity().getWorld());
+        if (event instanceof BlockEvent blockEvent) return WorldAccessPolicy.isEnabled(blockEvent.getBlock().getWorld());
+        if (event instanceof VehicleEvent vehicleEvent) return WorldAccessPolicy.isEnabled(vehicleEvent.getVehicle().getWorld());
+        if (event instanceof InventoryEvent inventoryEvent && inventoryEvent.getView().getPlayer() instanceof org.bukkit.entity.Entity entity) {
+            return WorldAccessPolicy.isEnabled(entity.getWorld());
+        }
+        return true;
     }
 
     private boolean isHorseTrampleEnabled(FileConfiguration config) {
