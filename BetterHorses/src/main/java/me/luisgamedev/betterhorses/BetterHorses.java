@@ -294,9 +294,9 @@ public class BetterHorses extends JavaPlugin {
             debugLog("LISTENER", "REGISTER", true, "Registered MountedDamageBoostListener.");
         }
 
-        if (config.getBoolean("settings.sand-slowness.enabled", false)) {
-            registerWorldFilteredEvents(new SandSlownessListener());
-            debugLog("LISTENER", "REGISTER", true, "Registered SandSlownessListener.");
+        if (config.getBoolean("settings.block-speed-effects.enabled", false)) {
+            registerWorldFilteredEvents(new BlockSpeedEffectListener(this));
+            debugLog("LISTENER", "REGISTER", true, "Registered BlockSpeedEffectListener.");
         }
 
         if (config.getBoolean("trample.enabled", true)) {
