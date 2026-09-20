@@ -70,6 +70,8 @@ public enum SupportedMountType {
 
     public static Optional<SupportedMountType> fromEntity(Entity entity) {
         if (!(entity instanceof AbstractHorse)) return Optional.empty();
+        // Camel husks use all of the normal camel settings and messages.
+        if (entity.getType().name().equals("CAMEL_HUSK")) return Optional.of(CAMEL);
         return Arrays.stream(values())
                 .filter(type -> type.entityClass.isInstance(entity))
                 .findFirst();
