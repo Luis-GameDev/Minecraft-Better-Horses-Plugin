@@ -1,5 +1,7 @@
 package me.luisgamedev.betterhorses.growing;
 
+import me.luisgamedev.betterhorses.utils.WorldAccessPolicy;
+
 import me.luisgamedev.betterhorses.BetterHorses;
 import me.luisgamedev.betterhorses.utils.MountConfig;
 import me.luisgamedev.betterhorses.utils.SupportedMountType;
@@ -33,7 +35,7 @@ public class HorseGrowthManager {
             new BukkitRunnable() {
                 @Override
                 public void run() {
-                    Bukkit.getWorlds().forEach(world -> world.getEntitiesByClass(AbstractHorse.class).forEach(horse -> {
+                    Bukkit.getWorlds().stream().filter(WorldAccessPolicy::isEnabled).forEach(world -> world.getEntitiesByClass(AbstractHorse.class).forEach(horse -> {
                         if (!SupportedMountType.isSupported(horse)) return;
                         resetGrowthForHorse(horse);
                     }));
@@ -51,6 +53,7 @@ public class HorseGrowthManager {
             @Override
             public void run() {
                 for (World world : Bukkit.getWorlds()) {
+                    if (!WorldAccessPolicy.isEnabled(world)) continue;
                     for (Entity entity : world.getEntitiesByClass(AbstractHorse.class)) {
                         if (!(entity instanceof AbstractHorse horse)) continue;
                         SupportedMountType mountType = SupportedMountType.fromEntity(horse).orElse(null);

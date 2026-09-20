@@ -1,6 +1,7 @@
 package me.luisgamedev.betterhorses.commands;
 
 import me.luisgamedev.betterhorses.BetterHorses;
+import me.luisgamedev.betterhorses.utils.WorldAccessPolicy;
 import me.luisgamedev.betterhorses.language.LanguageManager;
 import me.luisgamedev.betterhorses.utils.PermissionUtils;
 import org.bukkit.command.Command;
@@ -13,6 +14,7 @@ public class HorseCommand implements CommandExecutor {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+        if (sender instanceof Player player && !WorldAccessPolicy.isEnabled(player.getWorld())) return true;
         BetterHorses plugin = BetterHorses.getInstance();
         LanguageManager lang = plugin.getLang();
         OfflinePlayer audience = sender instanceof Player senderPlayer ? senderPlayer : null;
