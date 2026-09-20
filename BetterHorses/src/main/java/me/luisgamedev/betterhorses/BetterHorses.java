@@ -350,6 +350,9 @@ public class BetterHorses extends JavaPlugin {
                     || !Event.class.isAssignableFrom(method.getParameterTypes()[0])) continue;
             Class<? extends Event> eventType = (Class<? extends Event>) method.getParameterTypes()[0];
             manager.registerEvent(eventType, listener, handler.priority(), (ignored, event) -> {
+                // Related Bukkit events can share a HandlerList, so this executor may be
+                // called with an event that is not accepted by the listener method.
+                if (!eventType.isInstance(event)) return;
                 if (!isEventWorldEnabled(event)) return;
                 try {
                     method.invoke(listener, event);
