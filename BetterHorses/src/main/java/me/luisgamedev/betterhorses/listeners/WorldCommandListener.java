@@ -36,8 +36,9 @@ public final class WorldCommandListener implements Listener {
     private Set<String> commandNames() {
         Set<String> names = new HashSet<>(Set.of("horse", "horsecreate"));
         names.addAll(BetterHorses.getInstance().getConfig().getStringList("command-aliases"));
-        names.replaceAll(name -> name.toLowerCase(Locale.ROOT));
-        return names;
+        Set<String> normalizedNames = new HashSet<>();
+        for (String name : names) normalizedNames.add(name.toLowerCase(Locale.ROOT));
+        return normalizedNames;
     }
 
     private String unqualified(String command) {
