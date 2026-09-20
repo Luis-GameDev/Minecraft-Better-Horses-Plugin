@@ -189,6 +189,8 @@ public class BetterHorsesAPI {
         Byte neutered = data.get(BetterHorseKeys.NEUTERED, PersistentDataType.BYTE);
         Integer storedStage = data.get(BetterHorseKeys.GROWTH_STAGE, PersistentDataType.INTEGER);
         String mountTypeName = data.get(BetterHorseKeys.MOUNT_TYPE, PersistentDataType.STRING);
+        boolean camelHusk = data.has(BetterHorseKeys.CAMEL_HUSK, PersistentDataType.BYTE)
+                && data.getOrDefault(BetterHorseKeys.CAMEL_HUSK, PersistentDataType.BYTE, (byte) 0) == (byte) 1;
         long brushTrainingCooldown = data.getOrDefault(BetterHorseKeys.TRAINING_BRUSH_COOLDOWN, PersistentDataType.LONG, 0L);
         long feedTrainingCooldown = data.getOrDefault(BetterHorseKeys.TRAINING_FEED_COOLDOWN, PersistentDataType.LONG, 0L);
         Long cooldown = data.has(BetterHorseKeys.COOLDOWN, PersistentDataType.LONG)
@@ -209,7 +211,16 @@ public class BetterHorsesAPI {
 
         AbstractHorse horse;
         try {
-            horse = mountType.spawn(player.getLocation());
+            if (camelHusk && mountType == SupportedMountType.CAMEL) {
+                Entity spawnedEntity = player.getWorld().spawnEntity(
+                        player.getLocation(),
+                        org.bukkit.entity.EntityType.valueOf("CAMEL_HUSK")
+                );
+                horse = spawnedEntity instanceof AbstractHorse spawnedHorse ? spawnedHorse : null;
+                if (horse == null) spawnedEntity.remove();
+            } else {
+                horse = mountType.spawn(player.getLocation());
+            }
         } catch (Exception e) {
             return null;
         }
@@ -262,6 +273,9 @@ public class BetterHorsesAPI {
         horseData.set(BetterHorseKeys.OWNER, PersistentDataType.STRING, ownerUUID);
         horseData.set(BetterHorseKeys.GENDER, PersistentDataType.STRING, gender);
         horseData.set(BetterHorseKeys.MOUNT_TYPE, PersistentDataType.STRING, mountType.getEntityType().name());
+        if (camelHusk) {
+            horseData.set(BetterHorseKeys.CAMEL_HUSK, PersistentDataType.BYTE, (byte) 1);
+        }
         copyTextureData(data, horseData);
         copyUndeadData(data, horseData);
 
@@ -413,6 +427,10 @@ public class BetterHorsesAPI {
         itemData.set(BetterHorseKeys.COLOR, PersistentDataType.STRING, color.name());
         itemData.set(BetterHorseKeys.GROWTH_STAGE, PersistentDataType.INTEGER, growthStage);
         itemData.set(BetterHorseKeys.MOUNT_TYPE, PersistentDataType.STRING, mountType.getEntityType().name());
+        if (horse.getType().name().equals("CAMEL_HUSK")
+                || data.getOrDefault(BetterHorseKeys.CAMEL_HUSK, PersistentDataType.BYTE, (byte) 0) == (byte) 1) {
+            itemData.set(BetterHorseKeys.CAMEL_HUSK, PersistentDataType.BYTE, (byte) 1);
+        }
         copyUndeadData(data, itemData);
         if (trait != null) itemData.set(traitKey, PersistentDataType.STRING, trait.toLowerCase());
         if (isNeutered) itemData.set(neuterKey, PersistentDataType.BYTE, (byte) 1);

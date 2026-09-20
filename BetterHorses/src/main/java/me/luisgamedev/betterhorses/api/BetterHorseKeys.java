@@ -21,6 +21,7 @@ public final class BetterHorseKeys {
     public static final NamespacedKey COLOR = key("color");
     public static final NamespacedKey GROWTH_STAGE = key("growth_stage");
     public static final NamespacedKey MOUNT_TYPE = key("mount_type");
+    public static final NamespacedKey CAMEL_HUSK = key("camel_husk");
     public static final NamespacedKey TRAIT = key("trait");
     public static final NamespacedKey NEUTERED = key("neutered");
     public static final NamespacedKey COOLDOWN = key("cooldown");
