@@ -282,10 +282,21 @@ settings:
     enabled: false
     percentage: 25.0 # 25% more damage while mounted
 
-  # Applies Slowness II to mounted horses while they walk on sand blocks.
-  # This affects all supported mount types except camels.
-  sand-slowness:
+  # Applies a two-second speed or slowness effect to a mounted BetterHorse while it stands on a configured block.
+  # Effects: SLOWNESS_I, SLOWNESS_II, SPEED_I, SPEED_II, SPEED_III.
+  # Mount types: horse, skeleton-horses, zombie-horses, camels, llamas, mules, donkeys.
+  block-speed-effects:
     enabled: false
+    entries:
+      - block: SAND
+        effect: SLOWNESS_II
+        mount-type: horse
+      - block: RED_SAND
+        effect: SLOWNESS_II
+        mount-type: horse
+      - block: SUSPICIOUS_SAND
+        effect: SLOWNESS_II
+        mount-type: horse
 
   # Traited horses will have particles around them, disabling this will result in slightly better performance
   trait-particle-indicator: true
@@ -509,4 +520,3 @@ ItemStack horse = BetterHorsesAPI.createHorseItem(
     String trait        // optional trait name, or null
 );
 ```
-
