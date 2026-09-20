@@ -70,7 +70,7 @@ If you have any questions or need help feel free to join my discord server: http
   - Define duration, cooldown, radius, intensity and more
 
 - **NEW**
-  Camels, Skeleton Horses, Zombie Horses, Mules and Donkeys are now supported by the plugin if enabled in the config!
+  Camels, Llamas, Skeleton Horses, Zombie Horses, Mules and Donkeys are now supported by the plugin if enabled in the config!
 
 ### ⚙️ Commands 
 
@@ -145,6 +145,10 @@ mutation-factor:
     health: 3.0
     speed: 0.05
     jump: 0.05
+  llamas:
+    health: 3.0
+    speed: 0.05
+    jump: 0.05
   mules:
     health: 3.0
     speed: 0.05
@@ -171,6 +175,10 @@ max-stats:
     health: 300.0
     speed: 0.4
     jump: 1.2
+  llamas:
+    health: 300.0
+    speed: 0.4
+    jump: 1.2
   mules:
     health: 300.0
     speed: 0.4
@@ -189,6 +197,7 @@ horse-growth-settings:
     skeleton-horses: true
     zombie-horses: true
     camels: false
+    llamas: false
     mules: true
     donkeys: true
 
@@ -240,6 +249,7 @@ settings:
     skeleton-horses: true
     zombie-horses: true
     camels: false
+    llamas: false
     mules: true
     donkeys: true
 
@@ -307,6 +317,7 @@ trample:
     skeleton-horses: true
     zombie-horses: true
     camels: false
+    llamas: false
     mules: false
     donkeys: false
   

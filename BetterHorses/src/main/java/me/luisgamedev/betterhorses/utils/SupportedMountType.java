@@ -10,6 +10,7 @@ import org.bukkit.entity.Camel;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Horse;
+import org.bukkit.entity.Llama;
 import org.bukkit.entity.Mule;
 import org.bukkit.entity.Donkey;
 import org.bukkit.entity.SkeletonHorse;
@@ -24,6 +25,7 @@ public enum SupportedMountType {
     SKELETON_HORSE(EntityType.SKELETON_HORSE, SkeletonHorse.class, "skeleton-horses", "horse", false),
     ZOMBIE_HORSE(EntityType.ZOMBIE_HORSE, ZombieHorse.class, "zombie-horses", "horse", false),
     CAMEL(EntityType.CAMEL, Camel.class, "camels", "camel", false),
+    LLAMA(EntityType.LLAMA, Llama.class, "llamas", "llama", false),
     MULE(EntityType.MULE, Mule.class, "mules", "mule", false),
     DONKEY(EntityType.DONKEY, Donkey.class, "donkeys", "donkey", false);
 

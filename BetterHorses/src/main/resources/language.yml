@@ -3,6 +3,7 @@ prefix: "&7[&6BetterHorses&7] "
 messages:
   horse: "Horse"
   camel: "Camel"
+  llama: "Llama"
   mule: "Mule"
   donkey: "Donkey"
   horse-item-name: "<gold>%name% %gender%</gold>"
