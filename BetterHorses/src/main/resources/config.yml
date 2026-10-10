@@ -5,7 +5,8 @@
 # WHITELIST enables only listed worlds. Commands are also hidden and blocked there.
 world-filter:
   mode: BLACKLIST
-  worlds: []
+  worlds:
+    - PlaceholderWorld
   # worlds:
   #   - world_disabled
   #   - 00000000-0000-0000-0000-000000000000
