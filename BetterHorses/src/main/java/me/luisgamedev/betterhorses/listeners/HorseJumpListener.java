@@ -24,8 +24,6 @@ import java.util.Set;
 public class HorseJumpListener implements Listener {
 
     private final Set<AbstractHorse> airborneHorses = new HashSet<>();
-    private final FileConfiguration config = BetterHorses.getInstance().getConfig();
-    private final LanguageManager lang = BetterHorses.getInstance().getLang();
     private final NamespacedKey traitKey = new NamespacedKey(BetterHorses.getInstance(), "trait");
 
     @EventHandler
@@ -54,9 +52,11 @@ public class HorseJumpListener implements Listener {
 
                 // Wait for landing
                 new BukkitRunnable() {
+                    int checks;
                     @Override
                     public void run() {
-                        if (!horse.isValid()) {
+                        if (!horse.isValid() || !me.luisgamedev.betterhorses.utils.WorldAccessPolicy.isEnabled(horse.getWorld())
+                                || horse.getPassengers().isEmpty() || ++checks > 300) {
                             clear(horse);
                             cancel();
                             return;
@@ -86,13 +86,13 @@ public class HorseJumpListener implements Listener {
     private boolean hasSkyburstTrait(AbstractHorse horse) {
         if (!horse.getPersistentDataContainer().has(traitKey, PersistentDataType.STRING)) return false;
         String trait = horse.getPersistentDataContainer().get(traitKey, PersistentDataType.STRING);
-        return "skyburst".equalsIgnoreCase(trait) && config.getBoolean("traits.skyburst.enabled", true);
+        return "skyburst".equalsIgnoreCase(trait) && BetterHorses.getInstance().getConfig().getBoolean("traits.skyburst.enabled", true);
     }
 
     private boolean hasHeavenHoovesTrait(AbstractHorse horse) {
         if (!horse.getPersistentDataContainer().has(traitKey, PersistentDataType.STRING)) return false;
         String trait = horse.getPersistentDataContainer().get(traitKey, PersistentDataType.STRING);
-        return "heavenhooves".equalsIgnoreCase(trait) && config.getBoolean("traits.heavenhooves.enabled", true);
+        return "heavenhooves".equalsIgnoreCase(trait) && BetterHorses.getInstance().getConfig().getBoolean("traits.heavenhooves.enabled", true);
     }
 
     @EventHandler

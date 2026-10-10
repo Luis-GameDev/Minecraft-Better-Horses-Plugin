@@ -21,14 +21,17 @@ public class TraitParticleTask implements Runnable {
     @Override
     public void run() {
         if (!plugin.getConfig().getBoolean("settings.trait-particle-indicator", false)) return;
+        if (!plugin.getConfig().getBoolean("traits.enabled", true)) return;
 
         for (World world : Bukkit.getWorlds()) {
             if (!WorldAccessPolicy.isEnabled(world)) continue;
             for (AbstractHorse horse : world.getEntitiesByClass(AbstractHorse.class)) {
-                if (!SupportedMountType.isSupported(horse)) continue;
+                SupportedMountType mountType = SupportedMountType.fromEntity(horse).orElse(null);
+                if (mountType == null || !mountType.isEnabled(plugin.getConfig())) continue;
 
                 String trait = horse.getPersistentDataContainer().get(traitKey, PersistentDataType.STRING);
                 if (trait == null) continue;
+                if (!plugin.getConfig().getBoolean("traits." + trait.toLowerCase() + ".enabled", false)) continue;
 
                 switch (trait.toLowerCase()) {
                     case "skyburst":

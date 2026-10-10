@@ -42,7 +42,7 @@ public class RightClickListener implements Listener {
         Material expectedMaterial = Material.getMaterial(configuredItem.toUpperCase());
         if (expectedMaterial == null || !expectedMaterial.isItem()) expectedMaterial = Material.SADDLE;
 
-        if (!item.hasItemMeta() || item.getType() != expectedMaterial) return;
+        if (!item.hasItemMeta() || item.getType() != expectedMaterial || !BetterHorsesAPI.isHorseItem(item)) return;
         if (!player.hasPermission(PermissionUtils.SPAWN_RIGHT_CLICK)) {
             event.setCancelled(true);
             return;
@@ -76,7 +76,12 @@ public class RightClickListener implements Listener {
             return;
         }
 
-        BetterHorsesAPI.callSpawnEvent(horse, item.clone(), BetterHorseSpawnEvent.SpawnCause.ITEM);
+        ItemStack snapshot = item.clone();
+        snapshot.setAmount(1);
+        if (BetterHorsesAPI.callCancellableSpawnEvent(horse, snapshot, BetterHorseSpawnEvent.SpawnCause.ITEM)) {
+            horse.remove();
+            return;
+        }
         if (!horse.getPersistentDataContainer().has(BetterHorseKeys.UNDEAD_SKELETON, PersistentDataType.BYTE)) {
             TrainingManager.recalculateAndApplyBonuses(horse);
         }
