@@ -15,7 +15,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class HorseStepHeightListener implements Listener {
+public class HorseStepHeightListener implements Listener, ListenerLifecycle {
     private static final Map<UUID, Double> ORIGINAL = new ConcurrentHashMap<>();
 
     @EventHandler
@@ -70,5 +70,10 @@ public class HorseStepHeightListener implements Listener {
         for (org.bukkit.World world : org.bukkit.Bukkit.getWorlds())
             for (AbstractHorse horse : world.getEntitiesByClass(AbstractHorse.class)) restore(horse);
         ORIGINAL.clear();
+    }
+
+    @Override
+    public void shutdown() {
+        cleanupAll();
     }
 }

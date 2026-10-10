@@ -17,6 +17,7 @@ public class PassiveTraitListener implements Listener {
 
     @EventHandler
     public void onPlayerMove(PlayerMoveEvent event) {
+        if (!BetterHorses.getInstance().getConfig().getBoolean("traits.enabled", true)) return;
         Player player = event.getPlayer();
         if (!(player.getVehicle() instanceof AbstractHorse mount)) return;
         if (!SupportedMountType.isSupported(mount)) return;
