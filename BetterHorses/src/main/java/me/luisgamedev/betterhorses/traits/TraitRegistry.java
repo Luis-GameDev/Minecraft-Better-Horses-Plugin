@@ -364,7 +364,7 @@ public class TraitRegistry {
                     if (!frostEvent.isCancelled()) {
                         block.setType(Material.FROSTED_ICE);
                         Location restoreAt = block.getLocation();
-                        BetterHorses.getInstance().scheduler().region(restoreAt, 20L * 15L, ignored -> {
+                        BetterHorses.getInstance().scheduler().region(restoreAt, 20L * 15L, restoreTask -> {
                             Block current = restoreAt.getBlock();
                             if (current.getType() == Material.FROSTED_ICE) current.setType(Material.WATER);
                         });
