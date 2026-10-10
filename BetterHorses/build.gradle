@@ -4,7 +4,55 @@ plugins {
 }
 
 shadowJar {
+    archiveClassifier.set('Folia')
     relocate 'net.kyori', 'me.luisgamedev.betterhorses.libs.kyori'
+}
+
+// Only the shaded artifact is suitable for installation on a server.
+jar {
+    enabled = false
+}
+
+tasks.register('verifyPluginJar') {
+    group = 'verification'
+    description = 'Checks the deployable JAR for its plugin descriptor and runtime resources.'
+    dependsOn tasks.named('shadowJar')
+    def pluginJar = tasks.named('shadowJar').flatMap { it.archiveFile }
+    inputs.file(pluginJar)
+
+    doLast {
+        def artifact = pluginJar.get().asFile
+        new java.util.jar.JarFile(artifact).withCloseable { jarFile ->
+            def requiredEntries = [
+                'plugin.yml',
+                'config.yml',
+                'language.yml',
+                'me/luisgamedev/betterhorses/BetterHorses.class',
+                'me/luisgamedev/betterhorses/libs/kyori/adventure/text/minimessage/MiniMessage.class',
+                'me/luisgamedev/betterhorses/libs/kyori/adventure/platform/bukkit/BukkitAudiences.class'
+            ]
+            requiredEntries.each { path ->
+                def entry = jarFile.getJarEntry(path)
+                if (entry == null || entry.isDirectory()) {
+                    throw new GradleException("${artifact.name} is missing ${path}; it cannot be installed as a Folia plugin.")
+                }
+            }
+            def descriptor = jarFile.getInputStream(jarFile.getJarEntry('plugin.yml')).withCloseable {
+                it.getText('UTF-8')
+            }
+            if (!(descriptor =~ /(?m)^folia-supported:\s*true\s*$/)) {
+                throw new GradleException("${artifact.name} must declare folia-supported: true in plugin.yml.")
+            }
+        }
+    }
+}
+
+tasks.named('assemble') {
+    dependsOn tasks.named('verifyPluginJar')
+}
+
+tasks.named('check') {
+    dependsOn tasks.named('verifyPluginJar')
 }
 
 group = 'dev.luisgamedev'
@@ -27,6 +75,7 @@ dependencies {
     implementation 'net.kyori:adventure-api:4.17.0'
     implementation 'net.kyori:adventure-text-minimessage:4.17.0'
     implementation 'net.kyori:adventure-platform-bukkit:4.3.4'
+    testImplementation 'io.papermc.paper:paper-api:1.20.6-R0.1-SNAPSHOT'
     testImplementation platform('org.junit:junit-bom:5.11.3')
     testImplementation 'org.junit.jupiter:junit-jupiter'
 }
