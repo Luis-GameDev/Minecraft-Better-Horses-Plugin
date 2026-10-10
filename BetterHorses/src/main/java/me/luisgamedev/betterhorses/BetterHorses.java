@@ -17,8 +17,8 @@ import org.bukkit.command.SimpleCommandMap;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
-import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.plugin.PluginManager;
+import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.event.Event;
 import org.bukkit.event.EventException;
 import org.bukkit.event.EventHandler;
@@ -45,12 +45,13 @@ public class BetterHorses extends JavaPlugin {
     private static BetterHorses instance;
     private LanguageManager languageManager;
     private BukkitAudiences audiences;
+    private ListenerRegistrationManager listenerRegistrationManager;
 
 
     @Override
     public void onDisable() {
         me.luisgamedev.betterhorses.traits.TraitRegistry.cleanupAll();
-        HorseStepHeightListener.cleanupAll();
+        if (listenerRegistrationManager != null) listenerRegistrationManager.shutdown();
         if(audiences != null) audiences.close();
     }
 
@@ -63,8 +64,8 @@ public class BetterHorses extends JavaPlugin {
         debugLog("PLUGIN", "ENABLE_START", true, "Starting BetterHorses plugin bootstrap.");
         languageManager = new LanguageManager(this, audiences);
 
-        registerListeners();
-        getServer().getPluginManager().registerEvents(new WorldCommandListener(), this);
+        configureListeners();
+        listenerRegistrationManager.synchronize();
 
         PluginCommand horseCommand = getCommand("horse");
         if (horseCommand != null) {
@@ -113,6 +114,7 @@ public class BetterHorses extends JavaPlugin {
         updateYamlWithMissingSections("language.yml", true);
         reloadConfig();
         WorldAccessPolicy.reload(this);
+        listenerRegistrationManager.synchronize();
         languageManager.reload();
         applyHorseCommandAliases();
         Bukkit.getOnlinePlayers().forEach(org.bukkit.entity.Player::updateCommands);
@@ -237,35 +239,64 @@ public class BetterHorses extends JavaPlugin {
         debugLog("PLUGIN", "COMMAND_ALIAS", true, "Applied /horse aliases: " + aliases);
     }
 
-    private void registerListeners() {
-        PluginManager pluginManager = getServer().getPluginManager();
-        FileConfiguration config = getConfig();
-        registerWorldFilteredEvents(new HorseSpawnListener());
-        registerWorldFilteredEvents(new HorseBreedListener());
-        registerWorldFilteredEvents(new HorseFeedListener());
-        registerWorldFilteredEvents(new HorseItemBlockerListener());
-        registerWorldFilteredEvents(new HorseMountListener());
-        registerWorldFilteredEvents(new HorsePermissionListener());
+    private void configureListeners() {
+        listenerRegistrationManager = new ListenerRegistrationManager(this::registerWorldFilteredEvents);
 
-        debugLog("LISTENER", "REGISTER_BASE", true, "Registered core horse listeners.");
+        defineCore("horse-spawn", HorseSpawnListener::new);
+        defineCore("horse-breed", HorseBreedListener::new);
+        defineCore("horse-feed", HorseFeedListener::new);
+        defineCore("horse-item-blocker", HorseItemBlockerListener::new);
+        // Mount permission enforcement is always active; owner restriction is an optional
+        // second responsibility inside this same listener.
+        defineCore("horse-mount", HorseMountListener::new);
+        defineCore("horse-permission", HorsePermissionListener::new);
+        listenerRegistrationManager.define("world-command", WorldCommandListener::new, () -> true,
+                listener -> getServer().getPluginManager().registerEvents(listener, this));
 
-        // Feature listeners are always registered. Each handler reads the live configuration,
-        // which makes repeated reloads deterministic and avoids duplicate registrations.
-        registerWorldFilteredEvents(new HorseTrainingRidingListener());
-        registerWorldFilteredEvents(new HorseTrainingBrushingListener());
-        registerWorldFilteredEvents(new RightClickListener());
+        listenerRegistrationManager.define("right-click-spawn", RightClickListener::new,
+                () -> getConfig().getBoolean("settings.allow-rightclick-spawn", true));
+        listenerRegistrationManager.define("training-riding", HorseTrainingRidingListener::new,
+                () -> trainingCategoryEnabled("riding"));
+        listenerRegistrationManager.define("training-brushing", HorseTrainingBrushingListener::new,
+                () -> trainingCategoryEnabled("brushing"));
+        listenerRegistrationManager.define("rider-invulnerable", RiderInvulnerableListener::new,
+                () -> getConfig().getBoolean("settings.rider-invulnerable", false));
+        listenerRegistrationManager.define("step-height", HorseStepHeightListener::new,
+                () -> getConfig().getBoolean("settings.fix-step-height", true));
+        listenerRegistrationManager.define("mounted-damage-boost", MountedDamageBoostListener::new,
+                () -> getConfig().getBoolean("settings.mounted-damage-boost.enabled", false));
+        listenerRegistrationManager.define("block-speed-effects", () -> new BlockSpeedEffectListener(this),
+                () -> getConfig().getBoolean("settings.block-speed-effects.enabled", false));
+        listenerRegistrationManager.define("trample", () -> new TrampleListener(this),
+                () -> getConfig().getBoolean("trample.enabled", false));
 
-        registerWorldFilteredEvents(new RiderInvulnerableListener());
-        registerWorldFilteredEvents(new HorseStepHeightListener());
-        registerWorldFilteredEvents(new MountedDamageBoostListener());
-        registerWorldFilteredEvents(new BlockSpeedEffectListener(this));
-        registerWorldFilteredEvents(new TrampleListener(this));
-        registerWorldFilteredEvents(new TraitActivationListener());
-        registerWorldFilteredEvents(new TraitCleanupListener());
-        registerWorldFilteredEvents(new UndeadTraitListener());
-        registerWorldFilteredEvents(new PassiveTraitListener());
-        registerWorldFilteredEvents(new RevenantCurseListener());
-        registerWorldFilteredEvents(new HorseJumpListener());
+        listenerRegistrationManager.define("trait-activation", TraitActivationListener::new,
+                () -> traitsEnabled("hellmare", "dashboost", "kickback", "ghosthorse", "revenantcurse"));
+        listenerRegistrationManager.define("trait-cleanup", TraitCleanupListener::new,
+                () -> traitsEnabled("dashboost", "ghosthorse"));
+        listenerRegistrationManager.define("trait-undead", UndeadTraitListener::new,
+                () -> traitsEnabled("undead"));
+        listenerRegistrationManager.define("trait-passive", PassiveTraitListener::new,
+                () -> traitsEnabled("frosthooves", "featherhooves", "fireheart"));
+        listenerRegistrationManager.define("trait-revenant-curse", RevenantCurseListener::new,
+                () -> traitsEnabled("revenantcurse"));
+        listenerRegistrationManager.define("trait-jump", HorseJumpListener::new,
+                () -> traitsEnabled("skyburst", "heavenhooves"));
+
+        debugLog("LISTENER", "DEFINE", true, "Configured centralized listener registrations.");
+    }
+
+    private void defineCore(String key, java.util.function.Supplier<? extends Listener> factory) {
+        listenerRegistrationManager.define(key, factory, () -> true);
+    }
+
+    private boolean trainingCategoryEnabled(String category) {
+        return getConfig().getBoolean("training.enabled", false)
+                && getConfig().getBoolean("training.categories." + category + ".enabled", true);
+    }
+
+    private boolean traitsEnabled(String... traits) {
+        return getConfig().getBoolean("traits.enabled", true) && isAnyTraitEnabled(traits);
     }
 
     @SuppressWarnings("unchecked")
@@ -301,15 +332,6 @@ public class BetterHorses extends JavaPlugin {
             return WorldAccessPolicy.isEnabled(entity.getWorld());
         }
         return true;
-    }
-
-    private boolean isHorseTrampleEnabled(FileConfiguration config) {
-        for (me.luisgamedev.betterhorses.utils.SupportedMountType mountType : me.luisgamedev.betterhorses.utils.SupportedMountType.values()) {
-            if (config.getBoolean("settings.horse-trample.mount-types." + mountType.getConfigKey() + ".enabled", false)) {
-                return true;
-            }
-        }
-        return false;
     }
 
     private boolean isAnyTraitEnabled(String... traits) {

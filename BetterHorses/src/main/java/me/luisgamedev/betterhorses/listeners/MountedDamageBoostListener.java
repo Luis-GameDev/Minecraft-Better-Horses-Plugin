@@ -24,6 +24,7 @@ public class MountedDamageBoostListener implements Listener {
         if (!(vehicle instanceof AbstractHorse mount) || !SupportedMountType.isSupported(mount)) return;
 
         FileConfiguration config = BetterHorses.getInstance().getConfig();
+        if (!config.getBoolean("settings.mounted-damage-boost.enabled", false)) return;
         double percentage = config.getDouble("settings.mounted-damage-boost.percentage", 0.0);
         if (percentage == 0) {
             return;

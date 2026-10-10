@@ -19,6 +19,7 @@ import org.bukkit.entity.Projectile;
 import org.bukkit.entity.Vehicle;
 import org.bukkit.event.Listener;
 import org.bukkit.scheduler.BukkitRunnable;
+import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.util.Vector;
 
 import java.util.HashMap;
@@ -26,12 +27,13 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.UUID;
 
-public class TrampleListener implements Listener {
+public class TrampleListener implements Listener, ListenerLifecycle {
 
     private final BetterHorses plugin;
     private final Map<UUID, Location> previousHorseLocations = new HashMap<>();
     private final Map<UUID, Long> targetCooldowns = new HashMap<>();
     private long currentTick = 0L;
+    private BukkitTask task;
 
     public TrampleListener(BetterHorses plugin) {
         this.plugin = plugin;
@@ -39,12 +41,23 @@ public class TrampleListener implements Listener {
     }
 
     private void startTrampleTask() {
-        new BukkitRunnable() {
+        task = new BukkitRunnable() {
             @Override
             public void run() {
                 tickTrample();
             }
         }.runTaskTimer(plugin, 1L, 1L);
+    }
+
+    @Override
+    public void shutdown() {
+        if (task != null) {
+            task.cancel();
+            task = null;
+        }
+        previousHorseLocations.clear();
+        targetCooldowns.clear();
+        currentTick = 0L;
     }
 
     private void tickTrample() {
