@@ -1,131 +1,147 @@
 package me.luisgamedev.betterhorses.growing;
 
-import me.luisgamedev.betterhorses.utils.WorldAccessPolicy;
-
+import com.destroystokyo.paper.event.entity.EntityAddToWorldEvent;
+import com.destroystokyo.paper.event.entity.EntityRemoveFromWorldEvent;
 import me.luisgamedev.betterhorses.BetterHorses;
+import me.luisgamedev.betterhorses.scheduler.ScheduledTaskHandle;
+import me.luisgamedev.betterhorses.traits.TraitParticleResolver;
+import me.luisgamedev.betterhorses.utils.AttributeResolver;
 import me.luisgamedev.betterhorses.utils.MountConfig;
 import me.luisgamedev.betterhorses.utils.SupportedMountType;
-import org.bukkit.Bukkit;
+import me.luisgamedev.betterhorses.utils.WorldAccessPolicy;
 import org.bukkit.NamespacedKey;
-import org.bukkit.attribute.Attribute;
+import org.bukkit.Particle;
 import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.AbstractHorse;
-import org.bukkit.entity.Entity;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
+import org.bukkit.event.Listener;
+import org.bukkit.event.entity.EntityMountEvent;
+import org.bukkit.event.entity.EntitySpawnEvent;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
-import org.bukkit.scheduler.BukkitRunnable;
-import org.bukkit.World;
 
-public class HorseGrowthManager {
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
+/** Event-driven, entity-owned growth and trait indicator processing. */
+public final class HorseGrowthManager implements Listener {
+    private static final int MAX_STAGE = 10;
+    private final BetterHorses plugin;
     private final NamespacedKey growthKey;
-    private final int maxStage = 10;
-    BetterHorses plugin = BetterHorses.getInstance();
+    private final NamespacedKey growthUpdatedKey;
+    private final NamespacedKey traitKey;
+    private final ConcurrentMap<UUID, ScheduledTaskHandle> tasks = new ConcurrentHashMap<>();
 
     public HorseGrowthManager(BetterHorses plugin) {
-        this.growthKey = new NamespacedKey(plugin, "growth_stage");
+        this.plugin = plugin;
+        growthKey = new NamespacedKey(plugin, "growth_stage");
+        growthUpdatedKey = new NamespacedKey(plugin, "growth_updated_at");
+        traitKey = new NamespacedKey(plugin, "trait");
     }
 
-    public void start() {
+    public void start() { plugin.getServer().getPluginManager().registerEvents(this, plugin); }
 
-        FileConfiguration config = BetterHorses.getInstance().getConfig();
+    public void shutdown() {
+        tasks.values().forEach(ScheduledTaskHandle::cancel);
+        tasks.clear();
+    }
 
-        if (!config.getBoolean("horse-growth-settings.enabled")) {
-            new BukkitRunnable() {
-                @Override
-                public void run() {
-                    Bukkit.getWorlds().stream().filter(WorldAccessPolicy::isEnabled).forEach(world -> world.getEntitiesByClass(AbstractHorse.class).forEach(horse -> {
-                        if (!SupportedMountType.isSupported(horse)) return;
-                        resetGrowthForHorse(horse);
-                    }));
-                }
-            }.runTask(BetterHorses.getInstance());
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onSpawn(EntitySpawnEvent event) { track(event.getEntity()); }
+
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onAdded(EntityAddToWorldEvent event) { track(event.getEntity()); }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onMount(EntityMountEvent event) { track(event.getMount()); }
+
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onRemoved(EntityRemoveFromWorldEvent event) {
+        ScheduledTaskHandle task = tasks.remove(event.getEntity().getUniqueId());
+        if (task != null) task.cancel();
+    }
+
+    public void track(org.bukkit.entity.Entity entity) {
+        if (!(entity instanceof AbstractHorse horse) || !SupportedMountType.isSupported(horse)) return;
+        UUID id = horse.getUniqueId();
+        tasks.compute(id, (ignored, existing) -> {
+            if (existing != null && !existing.isCancelled()) return existing;
+            return plugin.scheduler().entityRepeating(horse, 1L, 20L, task -> tick(horse), () -> tasks.remove(id));
+        });
+    }
+
+    private void tick(AbstractHorse horse) {
+        if (!horse.isValid() || !WorldAccessPolicy.isEnabled(horse.getWorld())) return;
+        FileConfiguration config = plugin.getConfig();
+        SupportedMountType type = SupportedMountType.fromEntity(horse).orElse(null);
+        if (type == null || !type.isEnabled(config)) return;
+        processGrowth(horse, type, config);
+        processParticle(horse, config);
+    }
+
+    private void processGrowth(AbstractHorse horse, SupportedMountType type, FileConfiguration config) {
+        PersistentDataContainer data = horse.getPersistentDataContainer();
+        if (!config.getBoolean("horse-growth-settings.enabled") || !MountConfig.isGrowthEnabled(config, type)) {
+            if (data.has(growthKey)) reset(horse);
             return;
         }
-
-        int minutes = config.getInt("horse-growth-settings.time-until-adult", 60);
-        if (minutes <= 0) {
-            plugin.getLogger().warning("horse-growth-settings.time-until-adult must be positive; using 60 minutes");
-            minutes = 60;
+        int minutes = Math.max(1, config.getInt("horse-growth-settings.time-until-adult", 60));
+        long stageMillis = Math.max(1L, minutes * 60_000L / MAX_STAGE);
+        long now = System.currentTimeMillis();
+        Integer stored = data.get(growthKey, PersistentDataType.INTEGER);
+        if (stored == null) {
+            data.set(growthKey, PersistentDataType.INTEGER, MAX_STAGE);
+            data.set(growthUpdatedKey, PersistentDataType.LONG, now);
+            horse.setAdult();
+            setScale(horse, config.getDouble("horse-growth-settings.max-size", 1.3));
+            return;
         }
-        long intervalTicks;
-        try { intervalTicks = Math.max(1L, Math.multiplyExact((long) minutes, 1200L) / maxStage); }
-        catch (ArithmeticException exception) { intervalTicks = 7200L; }
-        float maxScale = (float) config.getDouble("horse-growth-settings.max-size", 1.3f);
+        int stage = Math.max(0, Math.min(MAX_STAGE, stored));
+        long updated = data.getOrDefault(growthUpdatedKey, PersistentDataType.LONG, now);
+        if (!horse.getPassengers().isEmpty()) {
+            data.set(growthUpdatedKey, PersistentDataType.LONG, now);
+            return;
+        }
+        long advances = Math.min(MAX_STAGE - stage, Math.max(0L, (now - updated) / stageMillis));
+        if (advances > 0) {
+            stage += (int) advances;
+            data.set(growthKey, PersistentDataType.INTEGER, stage);
+            data.set(growthUpdatedKey, PersistentDataType.LONG, updated + advances * stageMillis);
+        }
         int threshold = config.getInt("horse-growth-settings.ride-and-breed-threshhold", 7);
-
-        new BukkitRunnable() {
-            @Override
-            public void run() {
-                for (World world : Bukkit.getWorlds()) {
-                    if (!WorldAccessPolicy.isEnabled(world)) continue;
-                    for (Entity entity : world.getEntitiesByClass(AbstractHorse.class)) {
-                        if (!(entity instanceof AbstractHorse horse)) continue;
-                        SupportedMountType mountType = SupportedMountType.fromEntity(horse).orElse(null);
-                        if (mountType == null || !mountType.isEnabled(config)) continue;
-                        if (!MountConfig.isGrowthEnabled(config, mountType)) {
-                            resetGrowthForHorse(horse);
-                            continue;
-                        }
-                        if (!horse.isValid() || horse.getPassengers().size() > 0) continue;
-
-                        PersistentDataContainer data = horse.getPersistentDataContainer();
-                        int stage;
-
-                        if (data.has(growthKey, PersistentDataType.INTEGER)) {
-                            stage = data.get(growthKey, PersistentDataType.INTEGER);
-                        } else {
-                            stage = maxStage;
-                            data.set(growthKey, PersistentDataType.INTEGER, stage);
-                            horse.setAdult();
-                        }
-
-                        if (!horse.isAdult()) {
-                            horse.setAgeLock(true);
-                        } else {
-                            horse.setAgeLock(false);
-                        }
-
-                        if (stage >= maxStage) {
-                            setScaleSafe(horse, maxScale);
-                            continue;
-                        }
-
-                        stage++;
-                        data.set(growthKey, PersistentDataType.INTEGER, stage);
-
-                        if (stage >= threshold && !horse.isAdult()) {
-                            horse.setAdult();
-                            horse.setAgeLock(false);
-                        }
-
-                        double scaledSize = GrowthScale.forStage(stage, maxScale);
-                        setScaleSafe(horse, scaledSize);
-                    }
-                }
-            }
-        }.runTaskTimer(BetterHorses.getInstance(), 0L, intervalTicks);
+        if (stage >= threshold && !horse.isAdult()) horse.setAdult();
+        horse.setAgeLock(!horse.isAdult());
+        setScale(horse, GrowthScale.forStage(stage, config.getDouble("horse-growth-settings.max-size", 1.3)));
     }
 
-    private void resetGrowthForHorse(AbstractHorse horse) {
-        if (!horse.isAdult()) {
-            horse.setAgeLock(false);
-        }
-        setScaleSafe(horse, 1.0);
+    private void reset(AbstractHorse horse) {
+        if (!horse.isAdult()) horse.setAgeLock(false);
+        setScale(horse, 1.0);
         horse.getPersistentDataContainer().remove(growthKey);
+        horse.getPersistentDataContainer().remove(growthUpdatedKey);
     }
 
-    private void setScaleSafe(AbstractHorse horse, double scale) {
-        try {
-            Attribute attr = Attribute.valueOf("SCALE");
-            AttributeInstance instance = horse.getAttribute(attr);
-            if (instance != null) {
-                instance.setBaseValue(scale);
-            }
-        } catch (IllegalArgumentException | NoSuchFieldError e) {
-            plugin.debugLog("GROWTH_MANAGER", "SET_SCALE", false, e.getMessage());
-        }
+    private void setScale(AbstractHorse horse, double scale) {
+        AttributeInstance attribute = horse.getAttribute(AttributeResolver.generic("SCALE"));
+        if (attribute != null) attribute.setBaseValue(scale);
     }
 
+    private void processParticle(AbstractHorse horse, FileConfiguration config) {
+        if (!config.getBoolean("settings.trait-particle-indicator", false)
+                || !config.getBoolean("traits.enabled", true)) return;
+        String trait = horse.getPersistentDataContainer().get(traitKey, PersistentDataType.STRING);
+        if (trait == null || !config.getBoolean("traits." + trait.toLowerCase() + ".enabled", false)) return;
+        Particle fallback = switch (trait.toLowerCase()) {
+            case "hellmare" -> Particle.FLAME; case "ghosthorse" -> Particle.SMOKE;
+            case "dashboost" -> Particle.SWEEP_ATTACK; case "revenantcurse" -> Particle.SOUL;
+            case "frosthooves" -> Particle.SNOWFLAKE; case "kickback" -> Particle.CRIT;
+            case "fireheart" -> Particle.LAVA; case "heavenhooves" -> Particle.GLOW;
+            default -> Particle.CLOUD;
+        };
+        horse.getWorld().spawnParticle(TraitParticleResolver.getTraitParticle(trait.toLowerCase(), fallback),
+                horse.getLocation().add(0, 1.2, 0), 2, .3, .2, .3, .01);
+    }
 }

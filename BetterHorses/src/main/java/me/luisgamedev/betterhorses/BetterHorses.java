@@ -8,7 +8,7 @@ import me.luisgamedev.betterhorses.growing.HorseGrowthManager;
 import me.luisgamedev.betterhorses.language.LanguageManager;
 import me.luisgamedev.betterhorses.listeners.HorseMountListener;
 import me.luisgamedev.betterhorses.listeners.*;
-import me.luisgamedev.betterhorses.tasks.TraitParticleTask;
+import me.luisgamedev.betterhorses.scheduler.BetterHorsesScheduler;
 import me.luisgamedev.betterhorses.utils.WorldAccessPolicy;
 import net.kyori.adventure.platform.bukkit.BukkitAudiences;
 import org.bukkit.Bukkit;
@@ -46,18 +46,24 @@ public class BetterHorses extends JavaPlugin {
     private LanguageManager languageManager;
     private BukkitAudiences audiences;
     private ListenerRegistrationManager listenerRegistrationManager;
+    private BetterHorsesScheduler scheduler;
+    private HorseGrowthManager growthManager;
 
 
     @Override
     public void onDisable() {
         me.luisgamedev.betterhorses.traits.TraitRegistry.cleanupAll();
+        me.luisgamedev.betterhorses.utils.CooldownDisplay.cleanupAll();
+        if (growthManager != null) growthManager.shutdown();
         if (listenerRegistrationManager != null) listenerRegistrationManager.shutdown();
+        if (scheduler != null) scheduler.shutdown();
         if(audiences != null) audiences.close();
     }
 
     @Override
     public void onEnable() {
         instance = this;
+        scheduler = new BetterHorsesScheduler(this);
         initializeConfigurationFiles();
         WorldAccessPolicy.reload(this);
         audiences = BukkitAudiences.create(this);
@@ -76,14 +82,8 @@ public class BetterHorses extends JavaPlugin {
         getCommand("horsecreate").setExecutor(new CustomHorseCommand());
         getCommand("horsecreate").setTabCompleter(new HorseCreateTabCompleter());
 
-        new HorseGrowthManager(this).start();
-
-        Bukkit.getScheduler().runTaskTimer(
-                this,
-                new TraitParticleTask(),
-                20L, // delay 1s
-                20L  // repeat every 1s
-        );
+        growthManager = new HorseGrowthManager(this);
+        growthManager.start();
         debugLog("PLUGIN", "ENABLE_COMPLETE", true, "BetterHorses plugin enabled successfully.");
     }
 
@@ -98,6 +98,8 @@ public class BetterHorses extends JavaPlugin {
     public BukkitAudiences getAudiences() {
         return audiences;
     }
+
+    public BetterHorsesScheduler scheduler() { return scheduler; }
 
     private void initializeConfigurationFiles() {
         saveDefaultConfig();
@@ -117,7 +119,10 @@ public class BetterHorses extends JavaPlugin {
         listenerRegistrationManager.synchronize();
         languageManager.reload();
         applyHorseCommandAliases();
-        Bukkit.getOnlinePlayers().forEach(org.bukkit.entity.Player::updateCommands);
+        // The collection itself is a server snapshot; every player mutation is dispatched to
+        // that player's scheduler rather than being performed from the reloading region.
+        List.copyOf(Bukkit.getOnlinePlayers()).forEach(player -> scheduler.entity(player, 1L,
+                ignored -> player.updateCommands(), () -> { }));
         debugLog("PLUGIN", "RELOAD", true, "Configuration and language files were reloaded.");
     }
 

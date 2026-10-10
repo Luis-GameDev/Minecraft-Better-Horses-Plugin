@@ -26,11 +26,11 @@ public final class ListenerRegistrationManager {
         this.unregistrar = Objects.requireNonNull(unregistrar, "unregistrar");
     }
 
-    public void define(String key, Supplier<? extends Listener> factory, BooleanSupplier enabled) {
+    public synchronized void define(String key, Supplier<? extends Listener> factory, BooleanSupplier enabled) {
         define(key, factory, enabled, registrar);
     }
 
-    public void define(String key, Supplier<? extends Listener> factory, BooleanSupplier enabled,
+    public synchronized void define(String key, Supplier<? extends Listener> factory, BooleanSupplier enabled,
                        Consumer<Listener> listenerRegistrar) {
         Objects.requireNonNull(key, "key");
         if (definitions.putIfAbsent(key, new Definition(factory, enabled, listenerRegistrar)) != null) {
@@ -39,7 +39,7 @@ public final class ListenerRegistrationManager {
     }
 
     /** Register newly enabled listeners, retain unchanged instances, and remove disabled ones. */
-    public void synchronize() {
+    public synchronized void synchronize() {
         for (Map.Entry<String, Definition> entry : definitions.entrySet()) {
             String key = entry.getKey();
             Definition definition = entry.getValue();
@@ -58,17 +58,17 @@ public final class ListenerRegistrationManager {
         }
     }
 
-    public void shutdown() {
+    public synchronized void shutdown() {
         for (Map.Entry<String, Listener> entry : new LinkedHashMap<>(registered).entrySet()) {
             unregister(entry.getKey(), entry.getValue());
         }
     }
 
-    public boolean isRegistered(String key) {
+    public synchronized boolean isRegistered(String key) {
         return registered.containsKey(key);
     }
 
-    public int registeredCount() {
+    public synchronized int registeredCount() {
         return registered.size();
     }
 

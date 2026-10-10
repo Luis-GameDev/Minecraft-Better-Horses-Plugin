@@ -178,12 +178,12 @@ public class UndeadTraitListener implements Listener {
     }
 
     private void remountNextTick(AbstractHorse mount, List<Entity> passengers) {
-        Bukkit.getScheduler().runTask(plugin, () -> {
+        plugin.scheduler().entity(mount, 1L, ignored -> {
             if (!mount.isValid()) return;
             for (Entity passenger : passengers) {
                 if (passenger instanceof Player && passenger.isValid() && passenger.getVehicle() == null) mount.addPassenger(passenger);
             }
-        });
+        }, () -> { });
     }
 
     private Material getTransformBackItem() {

@@ -16,18 +16,17 @@ import org.bukkit.event.entity.HorseJumpEvent;
 import org.bukkit.event.vehicle.VehicleExitEvent;
 import org.bukkit.metadata.FixedMetadataValue;
 import org.bukkit.persistence.PersistentDataType;
-import org.bukkit.scheduler.BukkitRunnable;
-import org.bukkit.scheduler.BukkitTask;
+import me.luisgamedev.betterhorses.scheduler.ScheduledTaskHandle;
 
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class HorseJumpListener implements Listener, ListenerLifecycle {
 
-    private final Set<AbstractHorse> airborneHorses = new HashSet<>();
-    private final Map<AbstractHorse, BukkitTask> landingTasks = new HashMap<>();
+    private final Set<AbstractHorse> airborneHorses = ConcurrentHashMap.newKeySet();
+    private final Map<UUID, ScheduledTaskHandle> landingTasks = new ConcurrentHashMap<>();
     private final NamespacedKey traitKey = new NamespacedKey(BetterHorses.getInstance(), "trait");
 
     @EventHandler
@@ -46,48 +45,27 @@ public class HorseJumpListener implements Listener, ListenerLifecycle {
         horse.setMetadata("SkyburstCandidate", new FixedMetadataValue(BetterHorses.getInstance(), true));
         airborneHorses.add(horse);
 
-        BukkitTask delayedTask = new BukkitRunnable() {
-            @Override
-            public void run() {
-                if (!horse.isValid()) {
-                    clear(horse);
-                    return;
-                }
-
-                // Wait for landing
-                BukkitTask landingTask = new BukkitRunnable() {
-                    int checks;
-                    @Override
-                    public void run() {
-                        if (!horse.isValid() || !me.luisgamedev.betterhorses.utils.WorldAccessPolicy.isEnabled(horse.getWorld())
-                                || horse.getPassengers().isEmpty() || ++checks > 300) {
-                            clear(horse);
-                            cancel();
-                            return;
-                        }
-
-                        if (horse.isOnGround()) {
-                            if (!horse.getPassengers().isEmpty()) {
-                                Entity rider = horse.getPassengers().get(0);
-                                if (rider instanceof Player player && PermissionUtils.canUseTrait(player, "skyburst")) {
-                                    TraitRegistry.activateSkyburst(player, horse);
-                                }
-                            }
-                            clear(horse);
-                            cancel();
-                        }
-                    }
-                }.runTaskTimer(BetterHorses.getInstance(), 0L, 2L);
-                landingTasks.put(horse, landingTask);
+        final int[] checks = {0};
+        ScheduledTaskHandle landingTask = BetterHorses.getInstance().scheduler().entityRepeating(horse, 1L, 2L, scheduled -> {
+            if (!horse.isValid() || !me.luisgamedev.betterhorses.utils.WorldAccessPolicy.isEnabled(horse.getWorld())
+                    || horse.getPassengers().isEmpty() || ++checks[0] > 300) {
+                clear(horse); scheduled.cancel(); return;
             }
-        }.runTaskLater(BetterHorses.getInstance(), 1L);
-        landingTasks.put(horse, delayedTask);
+            if (horse.isOnGround()) {
+                Entity rider = horse.getPassengers().get(0);
+                if (rider instanceof Player player && PermissionUtils.canUseTrait(player, "skyburst")) {
+                    TraitRegistry.activateSkyburst(player, horse);
+                }
+                clear(horse); scheduled.cancel();
+            }
+        }, () -> { airborneHorses.remove(horse); landingTasks.remove(horse.getUniqueId()); });
+        landingTasks.put(horse.getUniqueId(), landingTask);
     }
 
     private void clear(AbstractHorse horse) {
         horse.removeMetadata("SkyburstCandidate", BetterHorses.getInstance());
         airborneHorses.remove(horse);
-        BukkitTask task = landingTasks.remove(horse);
+        ScheduledTaskHandle task = landingTasks.remove(horse.getUniqueId());
         if (task != null && !task.isCancelled()) task.cancel();
     }
 
@@ -120,7 +98,7 @@ public class HorseJumpListener implements Listener, ListenerLifecycle {
 
     @Override
     public void shutdown() {
-        for (AbstractHorse horse : new HashSet<>(airborneHorses)) clear(horse);
+        for (AbstractHorse horse : Set.copyOf(airborneHorses)) clear(horse);
         landingTasks.values().forEach(task -> {
             if (!task.isCancelled()) task.cancel();
         });
