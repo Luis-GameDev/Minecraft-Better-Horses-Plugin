@@ -1,5 +1,7 @@
 package me.luisgamedev.betterhorses.listeners;
 
+import me.luisgamedev.betterhorses.utils.WorldAccessPolicy;
+
 import me.luisgamedev.betterhorses.BetterHorses;
 import me.luisgamedev.betterhorses.utils.PermissionUtils;
 import me.luisgamedev.betterhorses.utils.SupportedMountType;
@@ -55,6 +57,7 @@ public class TrampleListener implements Listener {
         cleanupCooldowns(currentTick);
 
         for (Player rider : Bukkit.getOnlinePlayers()) {
+            if (!WorldAccessPolicy.isEnabled(rider.getWorld())) continue;
             if (!(rider.getVehicle() instanceof AbstractHorse horse)) {
                 continue;
             }

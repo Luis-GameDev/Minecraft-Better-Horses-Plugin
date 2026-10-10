@@ -41,15 +41,13 @@ public class DespawnCommand {
 
         PersistentDataContainer data = horse.getPersistentDataContainer();
         String storedOwner = data.get(BetterHorseKeys.OWNER, PersistentDataType.STRING);
-        boolean ownershipRequired = mountType != SupportedMountType.CAMEL || storedOwner != null;
-        boolean isOwner = storedOwner != null && storedOwner.equals(player.getUniqueId().toString());
-
-        if (storedOwner == null) {
+        String ownerUUID = storedOwner;
+        if (ownerUUID == null || ownerUUID.isBlank()) {
             AnimalTamer owner = horse.getOwner();
-            isOwner = horse.isTamed() && owner != null && owner.getUniqueId().equals(player.getUniqueId());
+            ownerUUID = owner == null ? null : owner.getUniqueId().toString();
         }
 
-        if (ownershipRequired && !isOwner) {
+        if (ownerUUID != null && !ownerUUID.equals(player.getUniqueId().toString())) {
             lang.sendFormatted(player, "messages.not-horse-owner", "%mount%", mountName);
             plugin.debugLog("HORSE_DESPAWN", "OWNERSHIP", false, "Player " + player.getName() + " is not owner of " + horse.getUniqueId() + ".");
             return true;

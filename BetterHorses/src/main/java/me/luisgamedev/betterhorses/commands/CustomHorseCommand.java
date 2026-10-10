@@ -1,6 +1,7 @@
 package me.luisgamedev.betterhorses.commands;
 
 import me.luisgamedev.betterhorses.BetterHorses;
+import me.luisgamedev.betterhorses.utils.WorldAccessPolicy;
 import me.luisgamedev.betterhorses.api.BetterHorsesAPI;
 import me.luisgamedev.betterhorses.language.LanguageManager;
 import me.luisgamedev.betterhorses.utils.SupportedMountType;
@@ -20,6 +21,7 @@ public class CustomHorseCommand implements CommandExecutor {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+        if (sender instanceof Player player && !WorldAccessPolicy.isEnabled(player.getWorld())) return true;
         BetterHorses plugin = BetterHorses.getInstance();
         LanguageManager lang = plugin.getLang();
         plugin.debugLog("HORSE_CREATE", "RECEIVED", true, "Sender=" + sender.getName() + ", args=" + args.length + ".");

@@ -1,5 +1,7 @@
 package me.luisgamedev.betterhorses.commands;
 
+import me.luisgamedev.betterhorses.utils.WorldAccessPolicy;
+
 import me.luisgamedev.betterhorses.BetterHorses;
 import me.luisgamedev.betterhorses.utils.SupportedMountType;
 import org.bukkit.command.Command;
@@ -17,6 +19,7 @@ public class HorseCreateTabCompleter implements TabCompleter {
 
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
+        if (sender instanceof org.bukkit.entity.Player player && !WorldAccessPolicy.isEnabled(player.getWorld())) return List.of();
         if (!sender.hasPermission("betterhorses.create")) {
             return Collections.emptyList();
         }

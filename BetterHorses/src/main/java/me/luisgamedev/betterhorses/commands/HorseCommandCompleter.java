@@ -1,5 +1,7 @@
 package me.luisgamedev.betterhorses.commands;
 
+import me.luisgamedev.betterhorses.utils.WorldAccessPolicy;
+
 import me.luisgamedev.betterhorses.BetterHorses;
 import me.luisgamedev.betterhorses.utils.PermissionUtils;
 import org.bukkit.command.Command;
@@ -13,6 +15,7 @@ public class HorseCommandCompleter implements TabCompleter {
 
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
+        if (sender instanceof org.bukkit.entity.Player player && !WorldAccessPolicy.isEnabled(player.getWorld())) return List.of();
         if (args.length == 1) {
             List<String> suggestions = new ArrayList<>();
             if (sender.hasPermission(PermissionUtils.SPAWN_COMMAND)) suggestions.add("spawn");
