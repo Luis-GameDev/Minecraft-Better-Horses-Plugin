@@ -20,26 +20,28 @@ import org.bukkit.event.entity.HorseJumpEvent;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
-import org.bukkit.scheduler.BukkitRunnable;
-import org.bukkit.scheduler.BukkitTask;
+import me.luisgamedev.betterhorses.scheduler.ScheduledTaskHandle;
 import org.bukkit.util.Vector;
 
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.UUID;
 
 public class TraitRegistry {
 
-    private static final Map<UUID, Map<String, Long>> cooldowns = new HashMap<>();
+    private static final Map<UUID, Map<String, Long>> cooldowns = new ConcurrentHashMap<>();
     private static LanguageManager lang() { return BetterHorses.getInstance().getLang(); }
     private static FileConfiguration config() { return BetterHorses.getInstance().getConfig(); }
-    private static final Map<UUID, Double> dashBoostOriginalSpeeds = new HashMap<>();
-    private static final Map<UUID, BukkitTask> dashBoostTasks = new HashMap<>();
-    private static final Set<UUID> activeGhostHorsePlayers = new HashSet<>();
-    private static final Set<UUID> activeGhostHorseMounts = new HashSet<>();
-    private static final Map<UUID, BukkitTask> ghostHorseTasks = new HashMap<>();
+    private static final Map<UUID, Double> dashBoostOriginalSpeeds = new ConcurrentHashMap<>();
+    private static final Map<UUID, ScheduledTaskHandle> dashBoostTasks = new ConcurrentHashMap<>();
+    private static final Set<UUID> activeGhostHorsePlayers = ConcurrentHashMap.newKeySet();
+    private static final Set<UUID> activeGhostHorseMounts = ConcurrentHashMap.newKeySet();
+    private static final Map<UUID, ScheduledTaskHandle> ghostHorseTasks = new ConcurrentHashMap<>();
+    private static final Map<UUID, AbstractHorse> boostedHorses = new ConcurrentHashMap<>();
+    private static final Map<UUID, AbstractHorse> ghostHorses = new ConcurrentHashMap<>();
+    private static final Map<UUID, Player> ghostPlayers = new ConcurrentHashMap<>();
 
     public static void activateHellmare(Player player, AbstractHorse horse) {
         FileConfiguration config = config();
@@ -61,12 +63,10 @@ public class TraitRegistry {
 
         setCooldown(horse, key, config.getInt("traits.hellmare.cooldown", 30));
 
-        new BukkitRunnable() {
-            int ticks = 0;
-            @Override
-            public void run() {
+        AtomicInteger ticks = new AtomicInteger();
+        BetterHorses.getInstance().scheduler().entityRepeating(horse, 1L, 5L, scheduled -> {
                 if (!allowed(player, horse)) {
-                    cancel();
+                    scheduled.cancel();
                     return;
                 }
                 Location center = horse.getLocation().clone().subtract(0, 1, 0);
@@ -77,9 +77,10 @@ public class TraitRegistry {
                 for (int dx = -radius; dx <= radius; dx++) {
                     for (int dz = -radius; dz <= radius; dz++) {
                         Location fireLoc = center.clone().add(dx, 0, dz);
-                        Block ground = fireLoc.getBlock();
-                        Block above = ground.getRelative(0, 1, 0);
-                        if (ground.getType().isSolid() && above.getType() == Material.AIR) {
+                        BetterHorses.getInstance().scheduler().region(fireLoc, 1L, ignored -> {
+                            Block ground = fireLoc.getBlock();
+                            Block above = ground.getRelative(0, 1, 0);
+                            if (!ground.getType().isSolid() || above.getType() != Material.AIR) return;
                             BlockIgniteEvent igniteEvent = new BlockIgniteEvent(
                                     above,
                                     BlockIgniteEvent.IgniteCause.FLINT_AND_STEEL,
@@ -89,16 +90,14 @@ public class TraitRegistry {
                             if (!igniteEvent.isCancelled()) {
                                 above.setType(Material.FIRE);
                             }
-                        }
+                        });
                     }
                 }
 
-                ticks++;
-                if (ticks >= duration * 20 / 5) {
-                    cancel();
+                if (ticks.incrementAndGet() >= duration * 20 / 5) {
+                    scheduled.cancel();
                 }
-            }
-        }.runTaskTimer(BetterHorses.getInstance(), 0, 5);
+        }, () -> { });
     }
 
     public static void activateFireheart(Player player, AbstractHorse horse) {
@@ -161,6 +160,7 @@ public class TraitRegistry {
 
         double originalSpeed = speedAttr.getBaseValue();
         dashBoostOriginalSpeeds.putIfAbsent(horse.getUniqueId(), originalSpeed);
+        boostedHorses.put(horse.getUniqueId(), horse);
         double boostedSpeed = originalSpeed * 1.5;
 
         speedAttr.setBaseValue(boostedSpeed);
@@ -168,12 +168,7 @@ public class TraitRegistry {
 
         setCooldown(horse, key, config.getInt("traits.dashboost.cooldown", 30));
 
-        BukkitTask task = new BukkitRunnable() {
-            @Override
-            public void run() {
-                revertDashBoostIfActive(horse);
-            }
-        }.runTaskLater(BetterHorses.getInstance(), duration * 20L);
+        ScheduledTaskHandle task = BetterHorses.getInstance().scheduler().entity(horse, duration * 20L, ignored -> revertDashBoostIfActive(horse), () -> clearDashBoostState(horse.getUniqueId()));
         dashBoostTasks.put(horse.getUniqueId(), task);
     }
 
@@ -181,12 +176,13 @@ public class TraitRegistry {
         if (horse == null) return;
 
         UUID horseId = horse.getUniqueId();
-        BukkitTask task = dashBoostTasks.remove(horseId);
+        ScheduledTaskHandle task = dashBoostTasks.remove(horseId);
         if (task != null) {
             task.cancel();
         }
 
         Double storedOriginal = dashBoostOriginalSpeeds.remove(horseId);
+        boostedHorses.remove(horseId);
         if (storedOriginal == null) return;
 
         if (!horse.isValid()) return;
@@ -222,13 +218,10 @@ public class TraitRegistry {
         player.addPotionEffect(effect, false);
         activeGhostHorsePlayers.add(player.getUniqueId());
         activeGhostHorseMounts.add(horse.getUniqueId());
+        ghostPlayers.put(player.getUniqueId(), player);
+        ghostHorses.put(horse.getUniqueId(), horse);
 
-        BukkitTask task = new BukkitRunnable() {
-            @Override
-            public void run() {
-                endGhostHorseIfActive(player, horse);
-            }
-        }.runTaskLater(BetterHorses.getInstance(), duration * 20L);
+        ScheduledTaskHandle task = BetterHorses.getInstance().scheduler().entity(horse, duration * 20L, ignored -> endGhostHorseIfActive(player, horse), () -> clearGhostState(player.getUniqueId(), horse.getUniqueId()));
         ghostHorseTasks.put(horse.getUniqueId(), task);
 
         setCooldown(horse, key, config.getInt("traits.ghosthorse.cooldown", 30));
@@ -241,20 +234,26 @@ public class TraitRegistry {
         UUID playerId = player.getUniqueId();
         boolean horseWasActive = activeGhostHorseMounts.remove(horseId);
         boolean playerWasActive = activeGhostHorsePlayers.remove(playerId);
+        ghostPlayers.remove(playerId);
+        ghostHorses.remove(horseId);
         if (!horseWasActive && !playerWasActive) return;
 
-        BukkitTask task = ghostHorseTasks.remove(horseId);
+        ScheduledTaskHandle task = ghostHorseTasks.remove(horseId);
         if (task != null) {
             task.cancel();
         }
 
-        // Only remove our exact bounded effect. A stronger/longer external effect is retained.
-        PotionEffect playerEffect = player.getPotionEffect(PotionEffectType.INVISIBILITY);
-        if (playerEffect != null && playerEffect.getAmplifier() == 0 && playerEffect.getDuration() <= 2) player.removePotionEffect(PotionEffectType.INVISIBILITY);
-        if (horse.isValid()) {
+        // Each effect is inspected and removed only on its entity's owning thread. A
+        // stronger/longer external effect is retained.
+        BetterHorses.getInstance().scheduler().entity(player, 1L, ignored -> {
+            PotionEffect playerEffect = player.getPotionEffect(PotionEffectType.INVISIBILITY);
+            if (playerEffect != null && playerEffect.getAmplifier() == 0 && playerEffect.getDuration() <= 2)
+                player.removePotionEffect(PotionEffectType.INVISIBILITY);
+        }, () -> { });
+        BetterHorses.getInstance().scheduler().entity(horse, 1L, ignored -> {
             PotionEffect horseEffect = horse.getPotionEffect(PotionEffectType.INVISIBILITY);
             if (horseEffect != null && horseEffect.getAmplifier() == 0 && horseEffect.getDuration() <= 2) horse.removePotionEffect(PotionEffectType.INVISIBILITY);
-        }
+        }, () -> { });
     }
 
     public static void activateSkyburst(Player player, AbstractHorse horse) {
@@ -266,14 +265,18 @@ public class TraitRegistry {
         player.playSound(horse.getLocation(), Sound.ENTITY_GENERIC_EXPLODE, 1.0f, 1.2f);
 
         for (Entity entity : horse.getNearbyEntities(radius, radius, radius)) {
-            if (entity instanceof LivingEntity && entity != player && entity != horse) {
-                EntityDamageByEntityEvent event = new EntityDamageByEntityEvent(player, entity, EntityDamageEvent.DamageCause.ENTITY_ATTACK, 0.0);
+            if (entity instanceof LivingEntity target && entity != player && entity != horse) {
+                UUID world = horse.getWorld().getUID();
+                BetterHorses.getInstance().scheduler().entity(target, 1L, ignored -> {
+                if (!target.isValid() || !target.getWorld().getUID().equals(world)) return;
+                EntityDamageByEntityEvent event = new EntityDamageByEntityEvent(player, target, EntityDamageEvent.DamageCause.ENTITY_ATTACK, 0.0);
                 Bukkit.getPluginManager().callEvent(event);
                 if (!event.isCancelled()) {
-                    Vector velocity = entity.getVelocity();
+                    Vector velocity = target.getVelocity();
                     velocity.setY(1);
-                    entity.setVelocity(velocity);
+                    target.setVelocity(velocity);
                 }
+                }, () -> { });
             }
         }
     }
@@ -316,16 +319,21 @@ public class TraitRegistry {
 
         double radius = config.getDouble("traits.kickback.radius", 2.5);
         double strength = config.getDouble("traits.kickback.strength", 1.5);
+        Location origin = horse.getLocation();
 
         for (Entity entity : horse.getNearbyEntities(radius, radius, radius)) {
-            if (entity instanceof LivingEntity && entity != player) {
-                EntityDamageByEntityEvent event = new EntityDamageByEntityEvent(player, entity, EntityDamageEvent.DamageCause.ENTITY_ATTACK, 0.0);
+            if (entity instanceof LivingEntity target && entity != player) {
+                BetterHorses.getInstance().scheduler().entity(target, 1L, ignored -> {
+                if (!target.isValid() || target.getWorld() != origin.getWorld()
+                        || target.getLocation().distanceSquared(origin) > radius * radius * 3) return;
+                EntityDamageByEntityEvent event = new EntityDamageByEntityEvent(player, target, EntityDamageEvent.DamageCause.ENTITY_ATTACK, 0.0);
                 Bukkit.getPluginManager().callEvent(event);
 
                 if (!event.isCancelled()) {
-                    Vector knockback = entity.getLocation().toVector().subtract(horse.getLocation().toVector()).normalize().multiply(strength);
-                    entity.setVelocity(knockback);
+                    Vector knockback = target.getLocation().toVector().subtract(origin.toVector()).normalize().multiply(strength);
+                    target.setVelocity(knockback);
                 }
+                }, () -> { });
             }
         }
 
@@ -343,9 +351,9 @@ public class TraitRegistry {
         for (int x = -radius; x <= radius; x++) {
             for (int z = -radius; z <= radius; z++) {
                 Location loc = center.clone().add(x, 0, z);
-                Block block = loc.getBlock();
-
-                if (block.getType() == Material.WATER) {
+                BetterHorses.getInstance().scheduler().region(loc, 1L, ignored -> {
+                    Block block = loc.getBlock();
+                    if (block.getType() != Material.WATER) return;
                     EntityChangeBlockEvent frostEvent = new EntityChangeBlockEvent(
                             player,
                             block,
@@ -355,11 +363,13 @@ public class TraitRegistry {
 
                     if (!frostEvent.isCancelled()) {
                         block.setType(Material.FROSTED_ICE);
-                        Bukkit.getScheduler().runTaskLater(BetterHorses.getInstance(), () -> {
-                            if (block.getType() == Material.FROSTED_ICE && block.getChunk().isLoaded()) block.setType(Material.WATER);
-                        }, 20L * 15L);
+                        Location restoreAt = block.getLocation();
+                        BetterHorses.getInstance().scheduler().region(restoreAt, 20L * 15L, ignored -> {
+                            Block current = restoreAt.getBlock();
+                            if (current.getType() == Material.FROSTED_ICE) current.setType(Material.WATER);
+                        });
                     }
-                }
+                });
             }
         }
     }
@@ -392,7 +402,7 @@ public class TraitRegistry {
 
     private static void setCooldown(AbstractHorse horse, String key, int seconds) {
         UUID id = horse.getUniqueId();
-        cooldowns.putIfAbsent(id, new HashMap<>());
+        cooldowns.putIfAbsent(id, new ConcurrentHashMap<>());
         cooldowns.get(id).put(key, System.currentTimeMillis() + seconds * 1000L);
     }
 
@@ -403,23 +413,37 @@ public class TraitRegistry {
     }
 
     public static void cleanupAll() {
-        dashBoostTasks.values().forEach(BukkitTask::cancel);
-        ghostHorseTasks.values().forEach(BukkitTask::cancel);
-        for (UUID horseId : new HashSet<>(activeGhostHorseMounts)) {
-            Entity entity = Bukkit.getEntity(horseId);
-            if (!(entity instanceof AbstractHorse horse)) continue;
-            for (UUID playerId : new HashSet<>(activeGhostHorsePlayers)) {
-                Player player = Bukkit.getPlayer(playerId);
-                if (player != null) endGhostHorseIfActive(player, horse);
-            }
-        }
-        for (World world : Bukkit.getWorlds()) for (AbstractHorse horse : world.getEntitiesByClass(AbstractHorse.class)) {
-            revertDashBoostIfActive(horse);
-        }
+        dashBoostTasks.values().forEach(ScheduledTaskHandle::cancel);
+        ghostHorseTasks.values().forEach(ScheduledTaskHandle::cancel);
+        boostedHorses.forEach((id, horse) -> {
+            Double original = dashBoostOriginalSpeeds.get(id);
+            BetterHorses.getInstance().scheduler().entity(horse, 1L, ignored -> {
+                AttributeInstance speed = horse.getAttribute(AttributeResolver.generic("MOVEMENT_SPEED"));
+                if (original != null && speed != null) speed.setBaseValue(original);
+                clearDashBoostState(id);
+            }, () -> clearDashBoostState(id));
+        });
+        ghostHorses.forEach((id, horse) -> BetterHorses.getInstance().scheduler().entity(horse, 1L, ignored -> {
+            PotionEffect effect = horse.getPotionEffect(PotionEffectType.INVISIBILITY);
+            if (effect != null && effect.getAmplifier() == 0) horse.removePotionEffect(PotionEffectType.INVISIBILITY);
+        }, () -> ghostHorses.remove(id)));
+        ghostPlayers.forEach((id, player) -> BetterHorses.getInstance().scheduler().entity(player, 1L, ignored -> {
+            PotionEffect effect = player.getPotionEffect(PotionEffectType.INVISIBILITY);
+            if (effect != null && effect.getAmplifier() == 0) player.removePotionEffect(PotionEffectType.INVISIBILITY);
+        }, () -> ghostPlayers.remove(id)));
         cooldowns.clear();
         activeGhostHorsePlayers.clear();
         activeGhostHorseMounts.clear();
         dashBoostTasks.clear();
         ghostHorseTasks.clear();
+    }
+
+    private static void clearDashBoostState(UUID id) {
+        dashBoostTasks.remove(id); dashBoostOriginalSpeeds.remove(id); boostedHorses.remove(id);
+    }
+
+    private static void clearGhostState(UUID playerId, UUID horseId) {
+        activeGhostHorsePlayers.remove(playerId); activeGhostHorseMounts.remove(horseId);
+        ghostPlayers.remove(playerId); ghostHorses.remove(horseId); ghostHorseTasks.remove(horseId);
     }
 }

@@ -17,6 +17,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class HorseStepHeightListener implements Listener, ListenerLifecycle {
     private static final Map<UUID, Double> ORIGINAL = new ConcurrentHashMap<>();
+    private static final Map<UUID, AbstractHorse> HORSES = new ConcurrentHashMap<>();
 
     @EventHandler
     public void onMount(EntityMountEvent event) {
@@ -29,6 +30,7 @@ public class HorseStepHeightListener implements Listener, ListenerLifecycle {
         AttributeInstance instance = getStepHeight(horse);
         if (instance != null) {
             ORIGINAL.putIfAbsent(horse.getUniqueId(), instance.getBaseValue());
+            HORSES.put(horse.getUniqueId(), horse);
             instance.setBaseValue(1.1);
         }
     }
@@ -62,14 +64,14 @@ public class HorseStepHeightListener implements Listener, ListenerLifecycle {
 
     private static void restore(AbstractHorse horse) {
         Double original = ORIGINAL.remove(horse.getUniqueId());
+        HORSES.remove(horse.getUniqueId());
         AttributeInstance instance = getStepHeight(horse);
         if (original != null && instance != null && horse.isValid()) instance.setBaseValue(original);
     }
 
     public static void cleanupAll() {
-        for (org.bukkit.World world : org.bukkit.Bukkit.getWorlds())
-            for (AbstractHorse horse : world.getEntitiesByClass(AbstractHorse.class)) restore(horse);
-        ORIGINAL.clear();
+        HORSES.forEach((id, horse) -> BetterHorses.getInstance().scheduler().entity(horse, 1L,
+                ignored -> restore(horse), () -> { ORIGINAL.remove(id); HORSES.remove(id); }));
     }
 
     @Override

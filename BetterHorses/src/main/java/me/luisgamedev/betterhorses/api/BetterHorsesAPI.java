@@ -175,6 +175,7 @@ public class BetterHorsesAPI {
     }
 
     public static @Nullable AbstractHorse toHorse(@Nonnull ItemStack item, @Nonnull Player player) {
+        requireOwnedThread(player, "toHorse");
         ItemMeta meta = item.getItemMeta();
         if (meta == null) return null;
 
@@ -342,6 +343,7 @@ public class BetterHorsesAPI {
     }
 
     public static @Nullable ItemStack toItem(@Nonnull AbstractHorse horse, @Nullable Player ownerOverride) {
+        requireOwnedThread(horse, "toItem");
         BetterHorses plugin = BetterHorses.getInstance();
         LanguageManager lang = plugin.getLang();
         PersistentDataContainer data = horse.getPersistentDataContainer();
@@ -952,6 +954,13 @@ public class BetterHorsesAPI {
         Material material = Material.getMaterial(materialName.toUpperCase());
         if (material == null || !material.isItem()) return Material.SADDLE;
         return material;
+    }
+
+    private static void requireOwnedThread(Entity entity, String operation) {
+        if (!Bukkit.isOwnedByCurrentRegion(entity)) {
+            throw new IllegalStateException(operation + " must be invoked on the owning entity region; "
+                    + "schedule it with Entity#getScheduler() first");
+        }
     }
 
     private static void setAttribute(AbstractHorse horse, Attribute attribute, double value) {

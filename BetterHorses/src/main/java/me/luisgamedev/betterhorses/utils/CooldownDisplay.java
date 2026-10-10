@@ -2,130 +2,62 @@ package me.luisgamedev.betterhorses.utils;
 
 import me.luisgamedev.betterhorses.BetterHorses;
 import me.luisgamedev.betterhorses.language.LanguageManager;
+import me.luisgamedev.betterhorses.scheduler.ScheduledTaskHandle;
 import org.bukkit.Bukkit;
-import org.bukkit.boss.*;
+import org.bukkit.boss.BarColor;
+import org.bukkit.boss.BarStyle;
+import org.bukkit.boss.BossBar;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
-import org.bukkit.scheduler.BukkitRunnable;
 
-import java.util.HashMap;
 import java.util.Locale;
-import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
-public class CooldownDisplay {
+/** Player-owned cooldown UI; one display task can exist for each player. */
+public final class CooldownDisplay {
+    private static final ConcurrentMap<UUID, Display> DISPLAYS = new ConcurrentHashMap<>();
 
-    private static final Map<UUID, BossBar> bossbars = new HashMap<>();
-    private static final Map<UUID, BukkitRunnable> hotbarTasks = new HashMap<>();
-    private static final Map<UUID, BukkitRunnable> bossbarTasks = new HashMap<>();
+    private CooldownDisplay() { }
 
-    public static void showCooldown(double remainingSeconds, double fullCooldownSeconds, Player player, String abilityName) {
-        FileConfiguration config = BetterHorses.getInstance().getConfig();
-        LanguageManager lang = BetterHorses.getInstance().getLang();
-        boolean displayEnabled = config.getBoolean("settings.cooldown-display.enabled", true);
-        boolean showBossbar = config.getBoolean("settings.cooldown-display.show-bossbar-indicator", false);
-        boolean showHotbar = config.getBoolean("settings.cooldown-display.show-hotbar-indicator", true);
-
-        if (!displayEnabled) return;
-
-        UUID uuid = player.getUniqueId();
-
-        if (showBossbar) {
-            if (bossbarTasks.containsKey(uuid)) {
-                bossbarTasks.get(uuid).cancel();
-                bossbarTasks.remove(uuid);
+    public static void showCooldown(double remaining, double full, Player player, String ability) {
+        BetterHorses plugin = BetterHorses.getInstance();
+        FileConfiguration config = plugin.getConfig();
+        if (!config.getBoolean("settings.cooldown-display.enabled", true)) return;
+        UUID id = player.getUniqueId();
+        remove(id);
+        boolean boss = config.getBoolean("settings.cooldown-display.show-bossbar-indicator", false);
+        boolean hotbar = config.getBoolean("settings.cooldown-display.show-hotbar-indicator", true);
+        LanguageManager lang = plugin.getLang();
+        BossBar bar = boss ? Bukkit.createBossBar(lang.getFormattedRaw(player,
+                "messages.cooldown-message-bossbar", "%value%", ability), BarColor.YELLOW, BarStyle.SOLID) : null;
+        if (bar != null) { bar.addPlayer(player); bar.setVisible(true); }
+        long started = System.nanoTime();
+        ScheduledTaskHandle task = plugin.scheduler().entityRepeating(player, 1L, 2L, scheduled -> {
+            double elapsed = (System.nanoTime() - started) / 1_000_000_000.0;
+            if (!player.isOnline() || elapsed >= Math.min(5.0, remaining) || remaining <= elapsed) {
+                remove(id);
+                scheduled.cancel();
+                return;
             }
-            if (bossbars.containsKey(uuid)) {
-                bossbars.get(uuid).removeAll();
-                bossbars.remove(uuid);
-            }
-            showBossbarCooldown(player, abilityName, remainingSeconds, fullCooldownSeconds, lang);
-        }
-
-        if (showHotbar) {
-            if (hotbarTasks.containsKey(uuid)) {
-                hotbarTasks.get(uuid).cancel();
-                hotbarTasks.remove(uuid);
-            }
-            showHotbarMessage(player, abilityName, remainingSeconds, lang);
-        }
+            if (bar != null) bar.setProgress(Math.max(0, Math.min(1, (remaining - elapsed) / full)));
+            if (hotbar) player.sendActionBar(lang.getFormattedRaw(player, "messages.cooldown-message-hotbar",
+                    "%value%", ability, "%remaining%", String.format(Locale.US, "%.1f", remaining - elapsed)));
+        }, () -> DISPLAYS.remove(id));
+        DISPLAYS.put(id, new Display(task, bar));
     }
 
-    private static void showBossbarCooldown(Player player, String abilityName, double remaining, double fullCooldown, LanguageManager lang) {
-        UUID uuid = player.getUniqueId();
-        double updateInterval = 0.1;
-        int ticksPerUpdate = 2;
-        double maxDisplayDuration = 5.0;
-        double displayTime = Math.min(maxDisplayDuration, remaining);
+    public static void cleanup(Player player) { remove(player.getUniqueId()); }
 
-        String title = lang.getFormattedRaw(player, "messages.cooldown-message-bossbar", "%value%", abilityName);
+    public static void cleanupAll() { DISPLAYS.keySet().forEach(CooldownDisplay::remove); }
 
-        BossBar bar = Bukkit.createBossBar(
-                title,
-                BarColor.YELLOW,
-                BarStyle.SOLID
-        );
-
-        double initialProgress = Math.max(0.0, Math.min(1.0, remaining / fullCooldown));
-        bar.setProgress(initialProgress);
-        bar.addPlayer(player);
-        bar.setVisible(true);
-        bossbars.put(uuid, bar);
-
-        BukkitRunnable task = new BukkitRunnable() {
-            double secondsShown = 0;
-
-            @Override
-            public void run() {
-                if (!player.isOnline() || secondsShown >= displayTime || remaining - secondsShown <= 0) {
-                    bar.removePlayer(player);
-                    bar.setVisible(false);
-                    bossbars.remove(uuid);
-                    bossbarTasks.remove(uuid);
-                    cancel();
-                    return;
-                }
-
-                double progress = Math.max(0.0, Math.min(1.0, (remaining - secondsShown) / fullCooldown));
-                bar.setProgress(progress);
-                secondsShown += updateInterval;
-            }
-        };
-
-        task.runTaskTimer(BetterHorses.getInstance(), 0, ticksPerUpdate);
-        bossbarTasks.put(uuid, task);
+    private static void remove(UUID id) {
+        Display display = DISPLAYS.remove(id);
+        if (display == null) return;
+        display.task.cancel();
+        if (display.bar != null) { display.bar.removeAll(); display.bar.setVisible(false); }
     }
 
-    private static void showHotbarMessage(Player player, String abilityName, double secondsLeft, LanguageManager lang) {
-        UUID uuid = player.getUniqueId();
-        double updateInterval = 0.1;
-        int ticksPerUpdate = 2;
-        double displayTime = Math.min(5.0, secondsLeft);
-
-        BukkitRunnable task = new BukkitRunnable() {
-            double secondsShown = 0;
-
-            @Override
-            public void run() {
-                if (!player.isOnline() || secondsShown >= displayTime || secondsLeft - secondsShown <= 0) {
-                    player.sendActionBar("");
-                    hotbarTasks.remove(uuid);
-                    cancel();
-                    return;
-                }
-
-                String message = lang.getFormattedRaw(
-                        player,
-                        "messages.cooldown-message-hotbar",
-                        "%value%", abilityName,
-                        "%remaining%", String.format(Locale.US, "%.1f", secondsLeft - secondsShown)
-                );
-                player.sendActionBar(message);
-                secondsShown += updateInterval;
-            }
-        };
-
-        task.runTaskTimer(BetterHorses.getInstance(), 0, ticksPerUpdate);
-        hotbarTasks.put(uuid, task);
-    }
+    private record Display(ScheduledTaskHandle task, BossBar bar) { }
 }

@@ -1,203 +1,120 @@
 package me.luisgamedev.betterhorses.listeners;
 
-import me.luisgamedev.betterhorses.utils.WorldAccessPolicy;
-
 import me.luisgamedev.betterhorses.BetterHorses;
+import me.luisgamedev.betterhorses.scheduler.ScheduledTaskHandle;
 import me.luisgamedev.betterhorses.utils.PermissionUtils;
 import me.luisgamedev.betterhorses.utils.SupportedMountType;
-import org.bukkit.Bukkit;
+import me.luisgamedev.betterhorses.utils.WorldAccessPolicy;
 import org.bukkit.Location;
 import org.bukkit.configuration.file.FileConfiguration;
-import org.bukkit.entity.AbstractHorse;
-import org.bukkit.entity.ArmorStand;
-import org.bukkit.entity.Entity;
-import org.bukkit.entity.ExperienceOrb;
-import org.bukkit.entity.Item;
-import org.bukkit.entity.LivingEntity;
-import org.bukkit.entity.Player;
-import org.bukkit.entity.Projectile;
-import org.bukkit.entity.Vehicle;
+import org.bukkit.entity.*;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
-import org.bukkit.scheduler.BukkitRunnable;
-import org.bukkit.scheduler.BukkitTask;
+import org.bukkit.event.entity.EntityDismountEvent;
+import org.bukkit.event.entity.EntityMountEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.util.Vector;
 
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 
-public class TrampleListener implements Listener, ListenerLifecycle {
-
+/** Runs only while an eligible player is mounted; target changes execute on target schedulers. */
+public final class TrampleListener implements Listener, ListenerLifecycle {
     private final BetterHorses plugin;
-    private final Map<UUID, Location> previousHorseLocations = new HashMap<>();
-    private final Map<UUID, Long> targetCooldowns = new HashMap<>();
-    private long currentTick = 0L;
-    private BukkitTask task;
+    private final ConcurrentMap<UUID, RiderState> riders = new ConcurrentHashMap<>();
+    private final ConcurrentMap<UUID, Long> targetCooldowns = new ConcurrentHashMap<>();
 
-    public TrampleListener(BetterHorses plugin) {
-        this.plugin = plugin;
-        startTrampleTask();
+    public TrampleListener(BetterHorses plugin) { this.plugin = plugin; }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onMount(EntityMountEvent event) {
+        if (event.getEntity() instanceof Player player && event.getMount() instanceof AbstractHorse horse) start(player, horse);
     }
 
-    private void startTrampleTask() {
-        task = new BukkitRunnable() {
-            @Override
-            public void run() {
-                tickTrample();
-            }
-        }.runTaskTimer(plugin, 1L, 1L);
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onDismount(EntityDismountEvent event) {
+        if (event.getEntity() instanceof Player player) stop(player.getUniqueId());
     }
 
-    @Override
-    public void shutdown() {
-        if (task != null) {
-            task.cancel();
-            task = null;
-        }
-        previousHorseLocations.clear();
-        targetCooldowns.clear();
-        currentTick = 0L;
+    @EventHandler public void onQuit(PlayerQuitEvent event) { stop(event.getPlayer().getUniqueId()); }
+
+    private void start(Player rider, AbstractHorse horse) {
+        stop(rider.getUniqueId());
+        UUID id = rider.getUniqueId();
+        RiderState state = new RiderState(horse.getUniqueId(), horse.getLocation(), null);
+        riders.put(id, state);
+        ScheduledTaskHandle task = plugin.scheduler().entityRepeating(horse, 1L, 1L,
+                scheduled -> tick(rider, horse), () -> riders.remove(id));
+        riders.computeIfPresent(id, (ignored, current) -> current.withTask(task));
     }
 
-    private void tickTrample() {
+    private void stop(UUID rider) {
+        RiderState state = riders.remove(rider);
+        if (state != null && state.task != null) state.task.cancel();
+    }
+
+    private void tick(Player rider, AbstractHorse horse) {
+        RiderState state = riders.get(rider.getUniqueId());
+        if (state == null || rider.getVehicle() != horse || !horse.isValid()) { stop(rider.getUniqueId()); return; }
         FileConfiguration config = plugin.getConfig();
-        if (!config.getBoolean("trample.enabled", true)) {
-            return;
-        }
-
-        currentTick++;
-        cleanupCooldowns(currentTick);
-
-        for (Player rider : Bukkit.getOnlinePlayers()) {
-            if (!WorldAccessPolicy.isEnabled(rider.getWorld())) continue;
-            if (!(rider.getVehicle() instanceof AbstractHorse horse)) {
-                continue;
-            }
-            if (!rider.hasPermission(PermissionUtils.TRAMPLE)) {
-                continue;
-            }
-            SupportedMountType mountType = SupportedMountType.fromEntity(horse).orElse(null);
-            if (mountType == null || !mountType.isEnabled(config) || !isTrampleEnabled(config, mountType)) {
-                continue;
-            }
-
-            Location currentLocation = horse.getLocation();
-            Location previousLocation = previousHorseLocations.put(horse.getUniqueId(), currentLocation.clone());
-            if (previousLocation == null || previousLocation.getWorld() != currentLocation.getWorld()) {
-                continue;
-            }
-
-            double currentSpeed = currentLocation.distance(previousLocation);
-            if (currentSpeed <= 0.0) {
-                continue;
-            }
-
-            double minSpeed = config.getDouble("trample.min-speed", 0.15);
-            if (minSpeed > 0.0 && currentSpeed < minSpeed) {
-                continue;
-            }
-
-            trampleNearbyTargets(rider, horse, currentLocation, config, currentTick);
-        }
-    }
-
-    private boolean isTrampleEnabled(FileConfiguration config, SupportedMountType mountType) {
-        return config.getBoolean("trample.mount-types." + mountType.getConfigKey(), true);
-    }
-
-    private void trampleNearbyTargets(Player rider, AbstractHorse horse, Location horseLocation, FileConfiguration config, long currentTick) {
-        double radius = Math.max(0.0, config.getDouble("trample.radius", 1.2));
-        if (radius <= 0.0) {
-            return;
-        }
-
-        double hitAngleDegrees = config.getDouble("trample.hit-angle-degrees", 90.0);
-        double minimumDot = Math.cos(Math.toRadians(Math.max(0.0, Math.min(360.0, hitAngleDegrees)) / 2.0));
-        Vector horseForward = horseLocation.getDirection();
-        if (horseForward.lengthSquared() == 0.0) {
-            return;
-        }
-        horseForward.normalize();
-
-        for (Entity entity : horse.getNearbyEntities(radius, radius, radius)) {
-            if (!isValidTarget(entity, rider, horse, config)) {
-                continue;
-            }
-            if (isOnCooldown(entity, currentTick)) {
-                continue;
-            }
-            if (!isInsideHitCone(horseLocation, horseForward, entity, hitAngleDegrees, minimumDot)) {
-                continue;
-            }
-
-            LivingEntity target = (LivingEntity) entity;
-            applyTrample(rider, horseLocation, target, config, currentTick);
+        SupportedMountType type = SupportedMountType.fromEntity(horse).orElse(null);
+        if (!config.getBoolean("trample.enabled", true) || !WorldAccessPolicy.isEnabled(horse.getWorld())
+                || !rider.hasPermission(PermissionUtils.TRAMPLE) || type == null || !type.isEnabled(config)
+                || !config.getBoolean("trample.mount-types." + type.getConfigKey(), true)) return;
+        Location now = horse.getLocation();
+        Location before = state.previous;
+        riders.computeIfPresent(rider.getUniqueId(), (ignored, current) -> current.withPrevious(now));
+        if (before.getWorld() != now.getWorld()) return;
+        double speed = now.distance(before);
+        if (speed < config.getDouble("trample.min-speed", .15)) return;
+        double radius = Math.max(0, config.getDouble("trample.radius", 1.2));
+        Vector forward = now.getDirection().setY(0);
+        if (radius == 0 || forward.lengthSquared() == 0) return;
+        forward.normalize();
+        for (Entity candidate : horse.getNearbyEntities(radius, radius, radius)) {
+            if (!(candidate instanceof LivingEntity target) || candidate == rider || candidate == horse
+                    || candidate instanceof ArmorStand || candidate instanceof Vehicle || target.isDead()) continue;
+            boolean permitted = target instanceof Player ? config.getBoolean("trample.affect-players", false)
+                    : config.getBoolean("trample.affect-mobs", true);
+            if (!permitted) continue;
+            long nowMillis = System.currentTimeMillis();
+            long cooldown = Math.max(0, config.getInt("trample.cooldown-ticks", 20)) * 50L;
+            AtomicBoolean claimed = new AtomicBoolean();
+            targetCooldowns.compute(target.getUniqueId(), (key, until) -> {
+                if (until != null && until > nowMillis) return until;
+                claimed.set(true);
+                return nowMillis + cooldown;
+            });
+            if (!claimed.get()) continue;
+            Location origin = now.clone();
+            double damage = Math.max(0, config.getDouble("trample.damage", 4));
+            double knockback = Math.max(0, config.getDouble("trample.knockback", 1.2));
+            double minDot = Math.cos(Math.toRadians(Math.min(360, Math.max(0,
+                    config.getDouble("trample.hit-angle-degrees", 90))) / 2));
+            plugin.scheduler().entity(target, 1L, ignored -> apply(rider, target, origin, forward, minDot, damage, knockback),
+                    () -> targetCooldowns.remove(target.getUniqueId()));
         }
     }
 
-    private boolean isValidTarget(Entity entity, Player rider, AbstractHorse horse, FileConfiguration config) {
-        if (entity == rider || entity == horse) return false;
-        if (!(entity instanceof LivingEntity livingEntity)) return false;
-        if (entity instanceof ArmorStand) return false;
-        if (entity instanceof Item) return false;
-        if (entity instanceof ExperienceOrb) return false;
-        if (entity instanceof Projectile) return false;
-        if (entity instanceof Vehicle) return false;
-        if (livingEntity.isDead() || !livingEntity.isValid() || livingEntity.isInvulnerable()) return false;
-
-        if (livingEntity instanceof Player) {
-            return config.getBoolean("trample.affect-players", false);
-        }
-        return config.getBoolean("trample.affect-mobs", true);
-    }
-
-    private boolean isOnCooldown(Entity entity, long currentTick) {
-        Long cooldownUntil = targetCooldowns.get(entity.getUniqueId());
-        return cooldownUntil != null && cooldownUntil > currentTick;
-    }
-
-    private boolean isInsideHitCone(Location horseLocation, Vector horseForward, Entity target, double hitAngleDegrees, double minimumDot) {
-        if (hitAngleDegrees >= 360.0) {
-            return true;
-        }
-
-        Vector toTarget = target.getLocation().toVector().subtract(horseLocation.toVector());
-        if (toTarget.lengthSquared() == 0.0) {
-            return true;
-        }
-
-        double dot = horseForward.dot(toTarget.normalize());
-        return dot >= minimumDot;
-    }
-
-    private void applyTrample(Player rider, Location horseLocation, LivingEntity target, FileConfiguration config, long currentTick) {
-        double damage = Math.max(0.0, config.getDouble("trample.damage", 4.0));
-        double knockbackStrength = Math.max(0.0, config.getDouble("trample.knockback", 1.2));
-
-        int cooldownTicks = Math.max(0, config.getInt("trample.cooldown-ticks", 20));
-        targetCooldowns.put(target.getUniqueId(), currentTick + cooldownTicks);
-
-        if (damage > 0.0) {
-            target.damage(damage, rider);
-        }
-
-        if (knockbackStrength > 0.0) {
-            Vector knockback = target.getLocation().toVector().subtract(horseLocation.toVector());
-            if (knockback.lengthSquared() > 0.0) {
-                knockback.normalize().multiply(knockbackStrength);
-                knockback.setY(Math.max(0.2, knockback.getY() + 0.2));
-                target.setVelocity(knockback);
-            }
+    private void apply(Player rider, LivingEntity target, Location origin, Vector forward, double minDot,
+                       double damage, double knockback) {
+        if (!target.isValid() || target.getWorld() != origin.getWorld()) return;
+        Vector delta = target.getLocation().toVector().subtract(origin.toVector());
+        if (delta.lengthSquared() > 0 && forward.dot(delta.clone().normalize()) < minDot) return;
+        if (damage > 0 && rider.isOnline()) target.damage(damage, rider);
+        if (knockback > 0 && delta.lengthSquared() > 0) {
+            delta.normalize().multiply(knockback).setY(.2);
+            target.setVelocity(delta);
         }
     }
 
-    private void cleanupCooldowns(long currentTick) {
-        Iterator<Map.Entry<UUID, Long>> iterator = targetCooldowns.entrySet().iterator();
-        while (iterator.hasNext()) {
-            if (iterator.next().getValue() <= currentTick) {
-                iterator.remove();
-            }
-        }
+    @Override public void shutdown() { riders.keySet().forEach(this::stop); targetCooldowns.clear(); }
+
+    private record RiderState(UUID horse, Location previous, ScheduledTaskHandle task) {
+        RiderState withTask(ScheduledTaskHandle value) { return new RiderState(horse, previous, value); }
+        RiderState withPrevious(Location value) { return new RiderState(horse, value, task); }
     }
 }
