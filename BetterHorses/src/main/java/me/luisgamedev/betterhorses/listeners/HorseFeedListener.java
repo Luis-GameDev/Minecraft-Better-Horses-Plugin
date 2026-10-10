@@ -7,7 +7,8 @@ import me.luisgamedev.betterhorses.utils.PermissionUtils;
 import org.bukkit.Material;
 import org.bukkit.Particle;
 import org.bukkit.configuration.file.FileConfiguration;
-import org.bukkit.entity.Horse;
+import org.bukkit.entity.AbstractHorse;
+import me.luisgamedev.betterhorses.utils.SupportedMountType;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -20,7 +21,7 @@ public class HorseFeedListener implements Listener {
 
     @EventHandler
     public void onHorseFeed(PlayerInteractEntityEvent event) {
-        if (!(event.getRightClicked() instanceof Horse horse)) return;
+        if (!(event.getRightClicked() instanceof AbstractHorse horse)) return;
 
         final Player player = event.getPlayer();
         final ItemStack item = player.getInventory().getItem(event.getHand());
@@ -46,6 +47,8 @@ public class HorseFeedListener implements Listener {
 
         final double feedingTrainingValue = TrainingManager.getFoodTrainingValue(type);
         final FileConfiguration config = BetterHorses.getInstance().getConfig();
+        SupportedMountType mountType = SupportedMountType.fromEntity(horse).orElse(null);
+        if (mountType == null || !mountType.isEnabled(config)) return;
 
         if (!horse.isAdult() && config.getBoolean("horse-growth-settings.enabled", false)) {
             event.setCancelled(true);
@@ -90,7 +93,7 @@ public class HorseFeedListener implements Listener {
         }
     }
 
-    private void tryAddFeedingTraining(Horse horse, PersistentDataContainer data, FileConfiguration config, double feedingTrainingValue, long now) {
+    private void tryAddFeedingTraining(AbstractHorse horse, PersistentDataContainer data, FileConfiguration config, double feedingTrainingValue, long now) {
         if (feedingTrainingValue <= 0) {
             return;
         }
@@ -100,11 +103,11 @@ public class HorseFeedListener implements Listener {
                     config.getLong("training.categories.feeding.cooldown-seconds", 0L) * 1000L);
             final long lastFeedTraining = data.getOrDefault(BetterHorseKeys.TRAINING_FEED_COOLDOWN, PersistentDataType.LONG, 0L);
 
-            if (trainingCooldownMillis == 0L || lastFeedTraining + trainingCooldownMillis > now) {
+            if (trainingCooldownMillis > 0L && lastFeedTraining + trainingCooldownMillis > now) {
                 return;
             }
 
-            data.set(BetterHorseKeys.TRAINING_FEED_COOLDOWN, PersistentDataType.LONG, now);
+            if (trainingCooldownMillis > 0L) data.set(BetterHorseKeys.TRAINING_FEED_COOLDOWN, PersistentDataType.LONG, now);
         }
 
         TrainingManager.addFeedingUnits(horse, feedingTrainingValue);

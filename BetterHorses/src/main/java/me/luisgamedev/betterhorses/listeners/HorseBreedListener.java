@@ -74,9 +74,6 @@ public class HorseBreedListener implements Listener {
             return;
         }
 
-        father.setAge(0);
-        mother.setAge(0);
-
         long now = System.currentTimeMillis();
 
         PersistentDataContainer dataFather = father.getPersistentDataContainer();
@@ -201,7 +198,9 @@ public class HorseBreedListener implements Listener {
 
     private double mutate(double base, double factor, double max) {
         double mutation = (Math.random() * 2 - 1) * factor;
-        return Math.min(base + mutation, max);
+        double result = base + mutation;
+        if (!Double.isFinite(result)) return Math.max(0.001, Math.min(base, max));
+        return Math.max(0.001, Math.min(result, max));
     }
 
     private double getHealth(AbstractHorse horse) {

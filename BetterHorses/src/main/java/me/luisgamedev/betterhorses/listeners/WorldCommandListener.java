@@ -18,14 +18,14 @@ public final class WorldCommandListener implements Listener {
     public void onCommandsSent(PlayerCommandSendEvent event) {
         if (WorldAccessPolicy.isEnabled(event.getPlayer().getWorld())) return;
         Set<String> names = commandNames();
-        event.getCommands().removeIf(command -> names.contains(unqualified(command)));
+        event.getCommands().removeIf(command -> isOurs(command, names));
     }
 
     @EventHandler
     public void onCommand(PlayerCommandPreprocessEvent event) {
         if (WorldAccessPolicy.isEnabled(event.getPlayer().getWorld())) return;
         String command = event.getMessage().substring(1).split(" ", 2)[0].toLowerCase(Locale.ROOT);
-        if (commandNames().contains(unqualified(command))) event.setCancelled(true);
+        if (isOurs(command, commandNames())) event.setCancelled(true);
     }
 
     @EventHandler
@@ -41,8 +41,12 @@ public final class WorldCommandListener implements Listener {
         return normalizedNames;
     }
 
-    private String unqualified(String command) {
+    private boolean isOurs(String command, Set<String> names) {
+        command = command.toLowerCase(Locale.ROOT);
         int namespace = command.indexOf(':');
-        return namespace >= 0 ? command.substring(namespace + 1) : command;
+        if (namespace < 0) return names.contains(command);
+        String owner = command.substring(0, namespace);
+        return (owner.equals("betterhorses") || owner.equals("betterhorses".toLowerCase(Locale.ROOT)))
+                && names.contains(command.substring(namespace + 1));
     }
 }

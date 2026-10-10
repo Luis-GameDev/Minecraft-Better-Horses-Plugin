@@ -49,12 +49,11 @@ public class HorseSpawnListener implements Listener {
         boolean growthEnabled = MountConfig.isGrowthEnabled(BetterHorses.getInstance().getConfig(), mountType);
         if (growthEnabled) {
             // Set random growth stage
-            stage = random.nextInt(11); // 0–10
+            stage = 1 + random.nextInt(10);
 
             // Set scale
-            double minScale = 0.7;
             double maxScale = BetterHorses.getInstance().getConfig().getDouble("horse-growth-settings.max-size", 1.3);
-            double scale = minScale + ((maxScale - minScale) / 10.0) * stage;
+            double scale = me.luisgamedev.betterhorses.growing.GrowthScale.forStage(stage, maxScale);
 
             try {
                 AttributeInstance attr = horse.getAttribute(Attribute.valueOf("SCALE"));
@@ -81,7 +80,10 @@ public class HorseSpawnListener implements Listener {
         data.set(growthKey, PersistentDataType.INTEGER, stage);
         TrainingManager.ensureBaseStats(horse);
         TrainingManager.recalculateAndApplyBonuses(horse);
-        BetterHorsesAPI.callSpawnEvent(horse, null, BetterHorseSpawnEvent.SpawnCause.NATURAL);
+        if (BetterHorsesAPI.callCancellableSpawnEvent(horse, null, BetterHorseSpawnEvent.SpawnCause.NATURAL)) {
+            event.setCancelled(true);
+            return;
+        }
         plugin.debugLog("HORSE_SPAWN", "COMPLETE", true, "Initialized natural mount " + horse.getUniqueId() + " stage=" + stage + ".");
     }
 

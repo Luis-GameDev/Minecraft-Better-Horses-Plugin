@@ -26,7 +26,7 @@ public class RespawnCommand {
         Material expectedMaterial = Material.getMaterial(configuredItem.toUpperCase());
         if (expectedMaterial == null || !expectedMaterial.isItem()) expectedMaterial = Material.SADDLE;
 
-        if (item == null || item.getType() != expectedMaterial || !item.hasItemMeta()) {
+        if (item == null || item.getType() != expectedMaterial || !item.hasItemMeta() || !BetterHorsesAPI.isHorseItem(item)) {
             lang.send(player, "messages.invalid-item");
             plugin.debugLog("HORSE_RESPAWN", "VALIDATION", false, "Invalid item used by " + player.getName() + ".");
             return true;
@@ -59,8 +59,13 @@ public class RespawnCommand {
             return true;
         }
 
+        ItemStack snapshot = item.clone();
+        snapshot.setAmount(1);
+        if (BetterHorsesAPI.callCancellableSpawnEvent(horse, snapshot, BetterHorseSpawnEvent.SpawnCause.ITEM)) {
+            horse.remove();
+            return true;
+        }
         item.setAmount(hasStoredChest && item.getAmount() > 1 ? 0 : item.getAmount() - 1);
-        BetterHorsesAPI.callSpawnEvent(horse, item, BetterHorseSpawnEvent.SpawnCause.ITEM);
         lang.sendFormatted(player, "messages.horse-respawned", "%mount%", mountName);
         plugin.debugLog("HORSE_RESPAWN", "COMPLETE", true, "Player " + player.getName() + " spawned " + mountName + ".");
         return true;

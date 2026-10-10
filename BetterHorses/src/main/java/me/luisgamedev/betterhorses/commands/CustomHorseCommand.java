@@ -5,6 +5,7 @@ import me.luisgamedev.betterhorses.utils.WorldAccessPolicy;
 import me.luisgamedev.betterhorses.api.BetterHorsesAPI;
 import me.luisgamedev.betterhorses.language.LanguageManager;
 import me.luisgamedev.betterhorses.utils.SupportedMountType;
+import me.luisgamedev.betterhorses.utils.HorseDataValidator;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -55,6 +56,11 @@ public class CustomHorseCommand implements CommandExecutor {
             String mountTypeArg = args.length >= 8 ? args[7] : null;
             boolean isNeutered = args.length >= 9 ? Boolean.parseBoolean(args[8]) : false;
 
+            if (!HorseDataValidator.isValid(health, health, speed, jump, gender, growthStage)) {
+                lang.send(player, "messages.invalid-number-format");
+                return true;
+            }
+
             FileConfiguration config = BetterHorses.getInstance().getConfig();
 
             SupportedMountType mountType = mountTypeArg == null ? SupportedMountType.HORSE : SupportedMountType.fromUserInput(mountTypeArg).orElse(null);
@@ -94,7 +100,7 @@ public class CustomHorseCommand implements CommandExecutor {
             plugin.debugLog("HORSE_CREATE", "COMPLETE", true, "Created item for " + player.getName() + " with mount=" + mountType.getEntityType() + ", trait=" + validatedTrait + ".");
             return true;
 
-        } catch (NumberFormatException e) {
+        } catch (IllegalArgumentException e) {
             lang.send(player, "messages.invalid-number-format");
             plugin.debugLog("HORSE_CREATE", "PARSE", false, "Invalid numeric argument from " + player.getName() + ": " + e.getMessage());
             return true;

@@ -45,7 +45,13 @@ public class HorseGrowthManager {
         }
 
         int minutes = config.getInt("horse-growth-settings.time-until-adult", 60);
-        long intervalTicks = (minutes * 60L * 20L) / maxStage;
+        if (minutes <= 0) {
+            plugin.getLogger().warning("horse-growth-settings.time-until-adult must be positive; using 60 minutes");
+            minutes = 60;
+        }
+        long intervalTicks;
+        try { intervalTicks = Math.max(1L, Math.multiplyExact((long) minutes, 1200L) / maxStage); }
+        catch (ArithmeticException exception) { intervalTicks = 7200L; }
         float maxScale = (float) config.getDouble("horse-growth-settings.max-size", 1.3f);
         int threshold = config.getInt("horse-growth-settings.ride-and-breed-threshhold", 7);
 
@@ -94,7 +100,7 @@ public class HorseGrowthManager {
                             horse.setAgeLock(false);
                         }
 
-                        double scaledSize = getScaledSizeForStage(stage, horse.isAdult(), maxScale, threshold);
+                        double scaledSize = GrowthScale.forStage(stage, maxScale);
                         setScaleSafe(horse, scaledSize);
                     }
                 }
@@ -107,6 +113,7 @@ public class HorseGrowthManager {
             horse.setAgeLock(false);
         }
         setScaleSafe(horse, 1.0);
+        horse.getPersistentDataContainer().remove(growthKey);
     }
 
     private void setScaleSafe(AbstractHorse horse, double scale) {
@@ -121,14 +128,4 @@ public class HorseGrowthManager {
         }
     }
 
-    private double getScaledSizeForStage(int stage, boolean isAdult, float maxScale, int threshold) {
-        if (!isAdult) {
-            return 1.0 + ((2.0 - 1.0) / threshold) * stage; // Baby: scale 1.0 → 2.0
-        } else {
-            int remaining = maxStage - threshold;
-            if (remaining <= 0) return maxScale;
-            int progress = stage - threshold;
-            return 1.0 + ((maxScale - 1.0) / remaining) * progress; // Adult: scale 1.0 → 1.3
-        }
-    }
 }
