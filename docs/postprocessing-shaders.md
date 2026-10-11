@@ -9,7 +9,6 @@ Enable the feature in `config.yml` and apply changes with `/horse reload`:
 ```yaml
 postprocessing-shaders:
   enabled: true
-  update-interval-ticks: 10
   default-namespace: betterhorses
   rules:
     Mounted:
@@ -32,7 +31,9 @@ postprocessing-shaders:
 
 `Frosthooves` uses a nested `default` because a YAML value cannot be both a scalar string and a section with children. Quote placeholder keys beginning with `%`.
 
-The update interval is measured in server ticks: `10` checks twice per second at 20 TPS. Changes in riding, traits, placeholders and other conditions are picked up at that interval. The plugin's world filter still applies.
+Conditions refresh from events rather than a repeating polling task. Mounting, dismounting, player state and location changes, weather changes, respawning, reloading, and BetterHorses mount metadata changes request an update. Multiple requests for a player are combined into one check on the next tick, running on that player's owning thread. The plugin's world filter still applies. An existing `update-interval-ticks` setting from an older configuration is ignored.
+
+Timed state changes may use one-shot checks scheduled from relevant events, such as when fire expires or a freezing boundary is reached. These checks do not run as a repeating polling loop.
 
 ## How rules combine
 
@@ -136,3 +137,21 @@ rules:
 ```
 
 Explicit result checks compare the placeholder's text, rather than interpreting a number or expression. Use an expansion that returns the desired boolean when you need thresholds or more complex conditions.
+
+## Updating integration state
+
+Bukkit and PlaceholderAPI do not provide a general event for every placeholder result or permission change. Direct API changes such as `setFireTicks` or `setFreezeTicks` can also happen without an event. If an integration changes that state without a supported player or world event, it must request a refresh after the change:
+
+```java
+BetterHorsesAPI.refreshShaders(player);
+```
+
+`refreshShaders(Player)` can be called from an asynchronous thread. It schedules evaluation on the player's owning thread and combines repeated requests into one update. It safely does nothing while shaders are disabled or unsupported. For example, a combat integration should call it when entering or leaving combat if it changes the result of `%inCombat%`.
+
+An integration that directly changes a mount's BetterHorses persistent data can refresh its riders after the mutation:
+
+```java
+BetterHorsesAPI.refreshMountShaders(mount);
+```
+
+`refreshMountShaders(Entity)` must be called on the mount's owning thread: the main server thread on standard Paper, or the mount's entity/region thread on Folia. Keep the persistent data mutation on that same thread. BetterHorses already requests updates for its own metadata changes.

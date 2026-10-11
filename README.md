@@ -535,4 +535,4 @@ ItemStack horse = BetterHorsesAPI.createHorseItem(
 );
 ```
 
-Minecraft 26.3 servers with the supported Paper/Folia API can also enable configurable client postprocessing shaders. All matching nested conditions contribute effects, with order-independent matching. See the [postprocessing shader configuration guide](docs/postprocessing-shaders.md) for compatibility, resource pack requirements, conditions, and examples.
+Minecraft 26.3 servers with the supported Paper/Folia API can also enable configurable client postprocessing shaders. All matching nested conditions contribute effects, with order-independent matching. Updates follow player and world events; integrations can request a refresh after changing placeholders or permissions. See the [postprocessing shader configuration guide](docs/postprocessing-shaders.md) for compatibility, resource pack requirements, conditions, examples, and API hooks.

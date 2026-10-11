@@ -41,9 +41,15 @@ public final class ShaderRuleEngine {
             "neutered", Set.of("yes", "no", "true", "false"));
 
     private final List<Rule> rules;
+    private final Set<String> conditions;
 
     private ShaderRuleEngine(List<Rule> rules) {
         this.rules = List.copyOf(rules);
+        TreeSet<String> dependencies = new TreeSet<>();
+        for (Rule rule : rules) {
+            for (Condition condition : rule.conditions) dependencies.add(condition.name);
+        }
+        conditions = Collections.unmodifiableSet(dependencies);
     }
 
     public static ShaderRuleEngine compile(ConfigurationSection configuration, String namespace,
@@ -58,13 +64,16 @@ public final class ShaderRuleEngine {
 
     public boolean isEmpty() { return rules.isEmpty(); }
 
+    /** Normalized condition names used by valid compiled shader rules. */
+    public Set<String> conditions() { return conditions; }
+
     /** Sorted output makes evaluation independent of configuration nesting and sibling order. */
     public Set<String> evaluate(ShaderContext context) {
         TreeSet<String> shaders = new TreeSet<>();
         for (Rule rule : rules) {
             boolean matches = true;
-            for (Predicate<ShaderContext> condition : rule.conditions) {
-                if (!condition.test(context)) {
+            for (Condition condition : rule.conditions) {
+                if (!condition.predicate.test(context)) {
                     matches = false;
                     break;
                 }
@@ -74,7 +83,8 @@ public final class ShaderRuleEngine {
         return Collections.unmodifiableSet(shaders);
     }
 
-    private record Rule(List<Predicate<ShaderContext>> conditions, String shader) { }
+    private record Condition(String name, Predicate<ShaderContext> predicate) { }
+    private record Rule(List<Condition> conditions, String shader) { }
 
     private static final class Compiler {
         private final String namespace;
@@ -91,7 +101,7 @@ public final class ShaderRuleEngine {
             if (!validNamespace) warn("default-namespace", "must be a lowercase resource namespace");
         }
 
-        private void body(Object value, List<Predicate<ShaderContext>> conditions, String path, int depth) {
+        private void body(Object value, List<Condition> conditions, String path, int depth) {
             if (!visit(path, depth)) return;
             if (value instanceof String shader) {
                 shader(shader, conditions, path);
@@ -115,11 +125,11 @@ public final class ShaderRuleEngine {
             }
         }
 
-        private void condition(String condition, Object value, List<Predicate<ShaderContext>> ancestors,
+        private void condition(String condition, Object value, List<Condition> ancestors,
                                String path, int depth) {
             if (!visit(path, depth)) return;
             if (STATES.contains(condition)) {
-                body(value, append(ancestors, context -> context.matches(condition, "true")), path, depth);
+                body(value, append(ancestors, condition, context -> context.matches(condition, "true")), path, depth);
                 return;
             }
             if (!GROUPS.contains(condition)) {
@@ -127,7 +137,7 @@ public final class ShaderRuleEngine {
                 return;
             }
             if (condition.equals("traited")) {
-                traited(value, append(ancestors, context -> context.matches("traited", "default")), path, depth);
+                traited(value, append(ancestors, "traited", context -> context.matches("traited", "default")), path, depth);
                 return;
             }
             Map<String, Object> selectors = mapping(value);
@@ -145,13 +155,13 @@ public final class ShaderRuleEngine {
                 } else if (validValue(condition, selector)) {
                     String expected = condition.equals("neutered") && normalize(selector).equals("true") ? "yes"
                             : condition.equals("neutered") && normalize(selector).equals("false") ? "no" : selector;
-                    body(entry.getValue(), append(ancestors, context -> context.matches(condition, expected)),
+                    body(entry.getValue(), append(ancestors, condition, context -> context.matches(condition, expected)),
                             childPath, depth + 1);
                 } else warn(childPath, "unsupported value for " + condition);
             }
         }
 
-        private void traited(Object value, List<Predicate<ShaderContext>> ancestors, String path, int depth) {
+        private void traited(Object value, List<Condition> ancestors, String path, int depth) {
             Map<String, Object> map = mapping(value);
             if (map == null) {
                 body(value, ancestors, path, depth + 1);
@@ -166,13 +176,13 @@ public final class ShaderRuleEngine {
                 else if (STATES.contains(name) || GROUPS.contains(name)) {
                     condition(name, entry.getValue(), ancestors, childPath, depth + 1);
                 } else if (!entry.getKey().isBlank() && !name.equals("none")) {
-                    body(entry.getValue(), append(ancestors, context -> context.matches("traited", entry.getKey())),
+                    body(entry.getValue(), append(ancestors, "traited", context -> context.matches("traited", entry.getKey())),
                             childPath, depth + 1);
                 } else warn(childPath, "expected a trait name or nested condition");
             }
         }
 
-        private void placeholder(String expression, Object value, List<Predicate<ShaderContext>> ancestors,
+        private void placeholder(String expression, Object value, List<Condition> ancestors,
                                  String path, int depth) {
             if (!visit(path, depth)) return;
             if (expression.length() < 3 || !expression.startsWith("%") || !expression.endsWith("%")) {
@@ -182,7 +192,7 @@ public final class ShaderRuleEngine {
             Predicate<ShaderContext> truthy = context -> truthy(context.placeholder(expression), expression);
             Map<String, Object> map = mapping(value);
             if (map == null) {
-                body(value, append(ancestors, truthy), path, depth + 1);
+                body(value, append(ancestors, "placeholder", truthy), path, depth + 1);
                 return;
             }
             for (Map.Entry<String, Object> entry : map.entrySet()) {
@@ -191,16 +201,16 @@ public final class ShaderRuleEngine {
                 String childPath = path + "/" + entry.getKey();
                 if (!visit(childPath, depth + 1)) continue;
                 if (name.equals("default")) {
-                    body(entry.getValue(), append(ancestors, truthy), childPath, depth + 1);
+                    body(entry.getValue(), append(ancestors, "placeholder", truthy), childPath, depth + 1);
                 } else if (STATES.contains(name) || GROUPS.contains(name)) {
-                    condition(name, entry.getValue(), append(ancestors, truthy), childPath, depth + 1);
+                    condition(name, entry.getValue(), append(ancestors, "placeholder", truthy), childPath, depth + 1);
                 } else {
                     String expected = entry.getKey().trim();
                     if (expected.isEmpty()) {
                         warn(childPath, "placeholder comparisons cannot use an empty value");
                         continue;
                     }
-                    body(entry.getValue(), append(ancestors, context -> {
+                    body(entry.getValue(), append(ancestors, "placeholder", context -> {
                         String actual = resolved(context.placeholder(expression), expression);
                         return !actual.isEmpty() && actual.equalsIgnoreCase(expected);
                     }), childPath, depth + 1);
@@ -208,7 +218,7 @@ public final class ShaderRuleEngine {
             }
         }
 
-        private void shader(String value, List<Predicate<ShaderContext>> conditions, String path) {
+        private void shader(String value, List<Condition> conditions, String path) {
             String shader = value.trim();
             if (!shader.contains(":")) shader = namespace + ":" + shader;
             if (!SHADER_KEY.matcher(shader).matches()) {
@@ -259,10 +269,10 @@ public final class ShaderRuleEngine {
         }
     }
 
-    private static List<Predicate<ShaderContext>> append(List<Predicate<ShaderContext>> conditions,
-                                                        Predicate<ShaderContext> next) {
-        List<Predicate<ShaderContext>> copy = new ArrayList<>(conditions);
-        copy.add(next);
+    private static List<Condition> append(List<Condition> conditions, String name,
+                                          Predicate<ShaderContext> next) {
+        List<Condition> copy = new ArrayList<>(conditions);
+        copy.add(new Condition(name, next));
         return copy;
     }
 

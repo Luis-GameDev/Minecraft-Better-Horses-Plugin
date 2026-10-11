@@ -13,9 +13,51 @@ import java.util.TreeSet;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ShaderRuleEngineTest {
+    @Test void dependenciesContainOnlyConditionsOfValidRulesAndAreImmutable() throws Exception {
+        List<String> warnings = new ArrayList<>();
+        ShaderRuleEngine engine = compile("""
+                Mounted:
+                  default: mounted
+                  Mounttype:
+                    Skeleton_Horse:
+                      Traited:
+                        Frosthooves:
+                          Placeholder:
+                            '%isCold%':
+                              'true': cold
+                Sneaking: sneaking
+                On_Fire: burning
+                World:
+                  world: INVALID_RESOURCE_KEY
+                Gender:
+                  Robot: invalidgender
+                Flying: []
+                Placeholder:
+                  '%empty%': {}
+                default: unconditional
+                """, "minecraft", warnings);
+        assertEquals(Set.of("mounted", "mounttype", "traited", "placeholder", "sneaking", "onfire"),
+                engine.conditions());
+        assertThrows(UnsupportedOperationException.class, () -> engine.conditions().add("world"));
+        assertThrows(UnsupportedOperationException.class, () -> engine.conditions().remove("mounted"));
+        assertEquals(Set.of(), compile("default: unconditional").conditions());
+        assertEquals(Set.of(), ShaderRuleEngine.compile(null, "minecraft", warnings::add).conditions());
+        assertEquals(Set.of(), compile("World: {world: INVALID}", "minecraft", warnings).conditions());
+    }
+
+    @Test void dependencyMetadataDoesNotDependOnAncestorOrder() throws Exception {
+        ShaderRuleEngine one = compile(nested(List.of("Mounted", "Traited|Hellmare", "Weather|Rain",
+                "Placeholder|%combat%"), "matched"));
+        ShaderRuleEngine two = compile(nested(List.of("Placeholder|%combat%", "Weather|Rain",
+                "Traited|Hellmare", "Mounted"), "matched"));
+        assertEquals(Set.of("mounted", "traited", "weather", "placeholder"), one.conditions());
+        assertEquals(one.conditions(), two.conditions());
+    }
+
     @Test void matchesAllExampleShadersIncludingConditionalFrosthooves() throws Exception {
         ShaderRuleEngine engine = compile("""
                 Mounted:

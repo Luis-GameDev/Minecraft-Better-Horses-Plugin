@@ -109,22 +109,28 @@ public final class HorseGrowthManager implements Listener {
         GrowthProgress progress = GrowthProgress.advance(stored == null ? (horse.isAdult() ? MAX_STAGE : 1) : stored,
                 data.get(growthUpdatedKey, PersistentDataType.LONG), now, stageMillis, !horse.getPassengers().isEmpty());
         int stage = progress.stage();
+        boolean stageChanged = stored == null || stored != stage;
         data.set(growthKey, PersistentDataType.INTEGER, stage);
         data.set(growthUpdatedKey, PersistentDataType.LONG, progress.updatedAt());
         if (!horse.getPassengers().isEmpty()) {
+            if (stageChanged) plugin.refreshMountShaders(horse);
             return;
         }
         int threshold = GrowthScale.normalize(config.getInt("horse-growth-settings.ride-and-breed-threshhold", 7));
         if (stage >= threshold && !horse.isAdult()) horse.setAdult();
         horse.setAgeLock(!horse.isAdult());
         setScale(horse, GrowthScale.forStage(stage, config.getDouble("horse-growth-settings.max-size", 1.3)));
+        if (stageChanged) plugin.refreshMountShaders(horse);
     }
 
     private void reset(AbstractHorse horse) {
+        PersistentDataContainer data = horse.getPersistentDataContainer();
+        boolean hadGrowth = data.has(growthKey) || data.has(growthUpdatedKey);
         horse.setAgeLock(false);
         setScale(horse, 1.0);
-        horse.getPersistentDataContainer().remove(growthKey);
-        horse.getPersistentDataContainer().remove(growthUpdatedKey);
+        data.remove(growthKey);
+        data.remove(growthUpdatedKey);
+        if (hadGrowth) plugin.refreshMountShaders(horse);
     }
 
     private void setScale(AbstractHorse horse, double scale) {
