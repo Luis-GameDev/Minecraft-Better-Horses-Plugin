@@ -106,6 +106,16 @@ public class BetterHorses extends JavaPlugin {
         return audiences;
     }
 
+    /** Request a coalesced shader update; safe to call from any thread. */
+    public void refreshShaders(org.bukkit.entity.Player player) {
+        if (postProcessingManager != null) postProcessingManager.requestUpdate(player);
+    }
+
+    /** Call on the mount's owning thread after a metadata change. */
+    public void refreshMountShaders(org.bukkit.entity.Entity mount) {
+        if (postProcessingManager != null) postProcessingManager.requestMountUpdate(mount);
+    }
+
     private void initializeConfigurationFiles() {
         saveDefaultConfig();
         reloadConfig();

@@ -1,5 +1,6 @@
 package me.luisgamedev.betterhorses.api;
 
+import me.luisgamedev.betterhorses.BetterHorses;
 import me.luisgamedev.betterhorses.utils.AttributeResolver;
 import org.bukkit.NamespacedKey;
 import org.bukkit.attribute.Attribute;
@@ -9,6 +10,7 @@ import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
 
 import java.util.Optional;
+import java.util.Objects;
 
 /**
  * Wrapper around an in-world BetterHorses mount to simplify reading and
@@ -60,11 +62,14 @@ public final class BetterHorse {
 
     public void setTrait(String trait) {
         PersistentDataContainer data = handle.getPersistentDataContainer();
+        String previous = data.get(BetterHorseKeys.TRAIT, PersistentDataType.STRING);
+        String normalized = trait == null || trait.isBlank() ? null : trait.toLowerCase();
         if (trait == null || trait.isBlank()) {
             data.remove(BetterHorseKeys.TRAIT);
         } else {
-            data.set(BetterHorseKeys.TRAIT, PersistentDataType.STRING, trait.toLowerCase());
+            data.set(BetterHorseKeys.TRAIT, PersistentDataType.STRING, normalized);
         }
+        if (!Objects.equals(previous, normalized)) refreshShaders();
     }
 
     public Optional<Integer> getGrowthStage() {
@@ -73,7 +78,15 @@ public final class BetterHorse {
     }
 
     public void setGrowthStage(int stage) {
-        handle.getPersistentDataContainer().set(BetterHorseKeys.GROWTH_STAGE, PersistentDataType.INTEGER, stage);
+        PersistentDataContainer data = handle.getPersistentDataContainer();
+        Integer previous = data.get(BetterHorseKeys.GROWTH_STAGE, PersistentDataType.INTEGER);
+        data.set(BetterHorseKeys.GROWTH_STAGE, PersistentDataType.INTEGER, stage);
+        if (previous == null || previous != stage) refreshShaders();
+    }
+
+    private void refreshShaders() {
+        BetterHorses plugin = BetterHorses.getInstance();
+        if (plugin != null) plugin.refreshMountShaders(handle);
     }
 
     public HorseItemTextureData getTextureData() {

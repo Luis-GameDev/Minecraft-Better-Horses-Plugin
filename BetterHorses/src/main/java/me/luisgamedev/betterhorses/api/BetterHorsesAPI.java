@@ -57,6 +57,18 @@ import me.luisgamedev.betterhorses.growing.GrowthScale;
 
 public class BetterHorsesAPI {
 
+    /** Refresh after a silent placeholder, permission, or player-state change. Safe from any thread. */
+    public static void refreshShaders(Player player) {
+        BetterHorses plugin = BetterHorses.getInstance();
+        if (plugin != null) plugin.refreshShaders(player);
+    }
+
+    /** Refresh mounted players after a PDC change; call on the mount's owning thread. */
+    public static void refreshMountShaders(Entity mount) {
+        BetterHorses plugin = BetterHorses.getInstance();
+        if (plugin != null) plugin.refreshMountShaders(mount);
+    }
+
     @Description("Creates a horseitem and either returns the ItemStack or directly puts it into the provided Inventory")
     public static ItemStack createHorseItem(@Nonnull double health, @Nonnull double speed, @Nonnull double jump, @Nonnull String gender, @Nullable String name, @Nullable Player owner, @Nullable Inventory targetInventory, @Nullable boolean dropIfFull, @Nullable String traitOverride, @Nonnull boolean isNeutered, @Nonnull Integer growthStage, @Nullable SupportedMountType mountType) {
         return createHorseItem(health, speed, jump, gender, name, owner, targetInventory, dropIfFull, traitOverride, isNeutered, growthStage, mountType, getConfiguredTextureData());
@@ -374,6 +386,7 @@ public class BetterHorsesAPI {
         if (!data.has(genderKey, PersistentDataType.STRING)) {
             gender = Math.random() < 0.5 ? "male" : "female";
             data.set(genderKey, PersistentDataType.STRING, gender);
+            plugin.refreshMountShaders(horse);
         } else {
             gender = data.getOrDefault(genderKey, PersistentDataType.STRING, "unknown");
         }

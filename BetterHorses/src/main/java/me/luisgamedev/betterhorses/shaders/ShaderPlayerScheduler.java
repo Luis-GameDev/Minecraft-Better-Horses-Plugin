@@ -5,20 +5,14 @@ import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitTask;
 
-/** Standard Paper implementation: context reads and effect mutations run on the server thread. */
+/** Standard implementation: all context reads and effect mutations run on the server thread. */
 final class ShaderPlayerScheduler {
     private final BetterHorses plugin;
-
     ShaderPlayerScheduler(BetterHorses plugin) { this.plugin = plugin; }
-
-    Runnable repeat(Player player, long period, Runnable action, Runnable retired) {
-        BukkitTask task = Bukkit.getScheduler().runTaskTimer(plugin, action, 1L, period);
+    Runnable schedule(Player player, long delay, Runnable action, Runnable retired) {
+        BukkitTask task = Bukkit.getScheduler().runTaskLater(plugin, action, Math.max(1L, delay));
         return task::cancel;
     }
-
-    void execute(Player player, Runnable action, Runnable retired) {
-        Bukkit.getScheduler().runTask(plugin, action);
-    }
-
+    void execute(Player player, Runnable action, Runnable retired) { schedule(player, 1L, action, retired); }
     void cleanupOnShutdown(Player player, Runnable action) { action.run(); }
 }

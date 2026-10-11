@@ -182,6 +182,7 @@ public class HorseBreedListener implements Listener {
         if (!data.has(BetterHorseKeys.GENDER, PersistentDataType.STRING)) {
             String gender = Math.random() < 0.5 ? "male" : "female";
             data.set(BetterHorseKeys.GENDER, PersistentDataType.STRING, gender);
+            BetterHorses.getInstance().refreshMountShaders(horse);
             return gender;
         }
         return data.getOrDefault(BetterHorseKeys.GENDER, PersistentDataType.STRING, "unknown");

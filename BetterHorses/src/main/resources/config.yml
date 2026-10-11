@@ -35,7 +35,8 @@ debug:
 # docs/postprocessing-shaders.md for all conditions and examples.
 postprocessing-shaders:
   enabled: false
-  update-interval-ticks: 10
+  # Conditions refresh from events; no repeating polling task is used.
+  # An old update-interval-ticks setting is ignored if present after an upgrade.
   # Unqualified effect keys such as "mounted" become "minecraft:mounted".
   default-namespace: minecraft
   # Matching branches add effects together; nested conditions are all required.
