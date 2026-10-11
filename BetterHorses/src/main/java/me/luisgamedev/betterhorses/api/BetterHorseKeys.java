@@ -20,6 +20,7 @@ public final class BetterHorseKeys {
     public static final NamespacedKey STYLE = key("style");
     public static final NamespacedKey COLOR = key("color");
     public static final NamespacedKey GROWTH_STAGE = key("growth_stage");
+    public static final NamespacedKey VANILLA_AGE = key("vanilla_age");
     public static final NamespacedKey MOUNT_TYPE = key("mount_type");
     public static final NamespacedKey CAMEL_HUSK = key("camel_husk");
     public static final NamespacedKey TRAIT = key("trait");

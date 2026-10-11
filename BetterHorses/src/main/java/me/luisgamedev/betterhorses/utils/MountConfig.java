@@ -31,6 +31,10 @@ public final class MountConfig {
         if (mountType == SupportedMountType.HORSE) {
             return true;
         }
-        return config.getBoolean("horse-growth-settings.mount-types." + mountType.getConfigKey() + ".enabled", true);
+        String overridePath = "horse-growth-settings.mount-types." + mountType.getConfigKey();
+        if (config.isBoolean(overridePath)) {
+            return config.getBoolean(overridePath);
+        }
+        return config.getBoolean(overridePath + ".enabled", true);
     }
 }

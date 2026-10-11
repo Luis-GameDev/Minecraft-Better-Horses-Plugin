@@ -9,6 +9,9 @@ import me.luisgamedev.betterhorses.utils.AttributeResolver;
 import me.luisgamedev.betterhorses.utils.MountConfig;
 import me.luisgamedev.betterhorses.utils.SupportedMountType;
 import me.luisgamedev.betterhorses.utils.WorldAccessPolicy;
+import org.bukkit.Bukkit;
+import org.bukkit.Chunk;
+import org.bukkit.Location;
 import org.bukkit.NamespacedKey;
 import org.bukkit.Particle;
 import org.bukkit.attribute.AttributeInstance;
@@ -42,7 +45,18 @@ public final class HorseGrowthManager implements Listener {
         traitKey = new NamespacedKey(plugin, "trait");
     }
 
-    public void start() { plugin.getServer().getPluginManager().registerEvents(this, plugin); }
+    public void start() {
+        plugin.getServer().getPluginManager().registerEvents(this, plugin);
+        // Discover existing entities without reading or mutating them outside their owning region.
+        plugin.scheduler().global(ignored -> Bukkit.getWorlds().forEach(world -> {
+            for (Chunk chunk : world.getLoadedChunks()) {
+                plugin.scheduler().region(new Location(world, chunk.getX() << 4, 0, chunk.getZ() << 4), 1L, task -> {
+                    if (!chunk.isLoaded() || !chunk.isEntitiesLoaded()) return;
+                    for (org.bukkit.entity.Entity entity : chunk.getEntities()) track(entity);
+                });
+            }
+        }));
+    }
 
     public void shutdown() {
         tasks.values().forEach(ScheduledTaskHandle::cancel);
@@ -85,40 +99,29 @@ public final class HorseGrowthManager implements Listener {
     private void processGrowth(AbstractHorse horse, SupportedMountType type, FileConfiguration config) {
         PersistentDataContainer data = horse.getPersistentDataContainer();
         if (!config.getBoolean("horse-growth-settings.enabled") || !MountConfig.isGrowthEnabled(config, type)) {
-            if (data.has(growthKey)) reset(horse);
+            if (data.has(growthKey) || data.has(growthUpdatedKey)) reset(horse);
             return;
         }
         int minutes = Math.max(1, config.getInt("horse-growth-settings.time-until-adult", 60));
-        long stageMillis = Math.max(1L, minutes * 60_000L / MAX_STAGE);
+        long stageMillis = GrowthProgress.intervalMillis(minutes);
         long now = System.currentTimeMillis();
         Integer stored = data.get(growthKey, PersistentDataType.INTEGER);
-        if (stored == null) {
-            data.set(growthKey, PersistentDataType.INTEGER, MAX_STAGE);
-            data.set(growthUpdatedKey, PersistentDataType.LONG, now);
-            horse.setAdult();
-            setScale(horse, config.getDouble("horse-growth-settings.max-size", 1.3));
-            return;
-        }
-        int stage = Math.max(0, Math.min(MAX_STAGE, stored));
-        long updated = data.getOrDefault(growthUpdatedKey, PersistentDataType.LONG, now);
+        GrowthProgress progress = GrowthProgress.advance(stored == null ? (horse.isAdult() ? MAX_STAGE : 1) : stored,
+                data.get(growthUpdatedKey, PersistentDataType.LONG), now, stageMillis, !horse.getPassengers().isEmpty());
+        int stage = progress.stage();
+        data.set(growthKey, PersistentDataType.INTEGER, stage);
+        data.set(growthUpdatedKey, PersistentDataType.LONG, progress.updatedAt());
         if (!horse.getPassengers().isEmpty()) {
-            data.set(growthUpdatedKey, PersistentDataType.LONG, now);
             return;
         }
-        long advances = Math.min(MAX_STAGE - stage, Math.max(0L, (now - updated) / stageMillis));
-        if (advances > 0) {
-            stage += (int) advances;
-            data.set(growthKey, PersistentDataType.INTEGER, stage);
-            data.set(growthUpdatedKey, PersistentDataType.LONG, updated + advances * stageMillis);
-        }
-        int threshold = config.getInt("horse-growth-settings.ride-and-breed-threshhold", 7);
+        int threshold = GrowthScale.normalize(config.getInt("horse-growth-settings.ride-and-breed-threshhold", 7));
         if (stage >= threshold && !horse.isAdult()) horse.setAdult();
         horse.setAgeLock(!horse.isAdult());
         setScale(horse, GrowthScale.forStage(stage, config.getDouble("horse-growth-settings.max-size", 1.3)));
     }
 
     private void reset(AbstractHorse horse) {
-        if (!horse.isAdult()) horse.setAgeLock(false);
+        horse.setAgeLock(false);
         setScale(horse, 1.0);
         horse.getPersistentDataContainer().remove(growthKey);
         horse.getPersistentDataContainer().remove(growthUpdatedKey);

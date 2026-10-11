@@ -45,7 +45,6 @@ public class HorseSpawnListener implements Listener {
 
         int stage = 10;
 
-        //if (BetterHorses.getInstance().getConfig().getBoolean("horse-growth-settings.enabled")) {
         boolean growthEnabled = MountConfig.isGrowthEnabled(BetterHorses.getInstance().getConfig(), mountType);
         if (growthEnabled) {
             // Set random growth stage
@@ -65,7 +64,8 @@ public class HorseSpawnListener implements Listener {
             }
 
             // Set to adult if threshold met
-            int threshold = 7; // percentage of max growth (70%)
+            int threshold = Math.max(1, Math.min(10,
+                    plugin.getConfig().getInt("horse-growth-settings.ride-and-breed-threshhold", 7)));
             if (stage >= threshold && !horse.isAdult()) {
                 horse.setAdult();
                 horse.setAgeLock(false);
@@ -75,9 +75,9 @@ public class HorseSpawnListener implements Listener {
             } else {
                 horse.setAgeLock(false);
             }
+            data.set(growthKey, PersistentDataType.INTEGER, stage);
         }
 
-        data.set(growthKey, PersistentDataType.INTEGER, stage);
         TrainingManager.ensureBaseStats(horse);
         TrainingManager.recalculateAndApplyBonuses(horse);
         if (BetterHorsesAPI.callCancellableSpawnEvent(horse, null, BetterHorseSpawnEvent.SpawnCause.NATURAL)) {
