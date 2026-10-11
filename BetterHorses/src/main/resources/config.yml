@@ -29,6 +29,29 @@ debug:
   # and the /horse info command becomes available.
   enabled: false
 
+# Optional client postprocessing effects. Requires Minecraft 26.3 and a supported
+# Paper/Folia shader API; inactive on unsupported versions/server software.
+# Custom effects must exist in the player's resource pack. See
+# docs/postprocessing-shaders.md for all conditions and examples.
+postprocessing-shaders:
+  enabled: false
+  update-interval-ticks: 10
+  # Unqualified effect keys such as "mounted" become "minecraft:mounted".
+  default-namespace: minecraft
+  # Matching branches add effects together; nested conditions are all required.
+  # Use a nested default when one condition has both an effect and children:
+  # rules:
+  #   Mounted:
+  #     default: "mounted"
+  #     Mounttype:
+  #       Skeleton_Horse:
+  #         Traited:
+  #           Frosthooves:
+  #             default: "testshader"
+  #             Placeholder:
+  #               "%isCold%": "coldonfrosthoovesshader"
+  rules: {}
+
 # Customizes how big the maximum positive or negative mutation effect is (e.g. 0.05 = ±0.05)
 # e.g. health-factor 3 means the health of the child can be up to 3 HP higher or lower than the average HP of both parents
 mutation-factor:

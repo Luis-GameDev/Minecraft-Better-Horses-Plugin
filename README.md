@@ -520,3 +520,5 @@ ItemStack horse = BetterHorsesAPI.createHorseItem(
     String trait        // optional trait name, or null
 );
 ```
+
+Minecraft 26.3 servers with the supported Paper/Folia API can also enable configurable client postprocessing shaders. All matching nested conditions contribute effects, with order-independent matching. See the [postprocessing shader configuration guide](docs/postprocessing-shaders.md) for compatibility, resource pack requirements, conditions, and examples.

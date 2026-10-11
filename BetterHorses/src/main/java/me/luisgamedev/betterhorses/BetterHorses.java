@@ -9,12 +9,15 @@ import me.luisgamedev.betterhorses.language.LanguageManager;
 import me.luisgamedev.betterhorses.listeners.HorseMountListener;
 import me.luisgamedev.betterhorses.listeners.*;
 import me.luisgamedev.betterhorses.tasks.TraitParticleTask;
+import me.luisgamedev.betterhorses.shaders.PostProcessingManager;
+import me.luisgamedev.betterhorses.shaders.ShaderConfiguration;
 import me.luisgamedev.betterhorses.utils.WorldAccessPolicy;
 import net.kyori.adventure.platform.bukkit.BukkitAudiences;
 import org.bukkit.Bukkit;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.command.SimpleCommandMap;
 import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.PluginManager;
@@ -46,10 +49,12 @@ public class BetterHorses extends JavaPlugin {
     private LanguageManager languageManager;
     private BukkitAudiences audiences;
     private ListenerRegistrationManager listenerRegistrationManager;
+    private PostProcessingManager postProcessingManager;
 
 
     @Override
     public void onDisable() {
+        if (postProcessingManager != null) postProcessingManager.shutdown();
         me.luisgamedev.betterhorses.traits.TraitRegistry.cleanupAll();
         if (listenerRegistrationManager != null) listenerRegistrationManager.shutdown();
         if(audiences != null) audiences.close();
@@ -77,6 +82,8 @@ public class BetterHorses extends JavaPlugin {
         getCommand("horsecreate").setTabCompleter(new HorseCreateTabCompleter());
 
         new HorseGrowthManager(this).start();
+        postProcessingManager = new PostProcessingManager(this);
+        postProcessingManager.start();
 
         Bukkit.getScheduler().runTaskTimer(
                 this,
@@ -116,6 +123,7 @@ public class BetterHorses extends JavaPlugin {
         WorldAccessPolicy.reload(this);
         listenerRegistrationManager.synchronize();
         languageManager.reload();
+        if (postProcessingManager != null) postProcessingManager.reload();
         applyHorseCommandAliases();
         Bukkit.getOnlinePlayers().forEach(org.bukkit.entity.Player::updateCommands);
         debugLog("PLUGIN", "RELOAD", true, "Configuration and language files were reloaded.");
@@ -130,7 +138,13 @@ public class BetterHorses extends JavaPlugin {
             saveResource(fileName, false);
         }
 
-        YamlConfiguration currentConfig = YamlConfiguration.loadConfiguration(file);
+        YamlConfiguration currentConfig = new YamlConfiguration();
+        try {
+            currentConfig.load(file);
+        } catch (IOException | InvalidConfigurationException exception) {
+            getLogger().log(Level.WARNING, "Failed to read " + fileName + " while updating file.", exception);
+            return;
+        }
         currentConfig.options().parseComments(true);
         YamlConfiguration defaultConfig;
 
@@ -156,11 +170,12 @@ public class BetterHorses extends JavaPlugin {
         }
 
         try {
+            if (fileName.equals("config.yml")) ShaderConfiguration.preserveRules(currentConfig, file);
             currentConfig.save(file);
             reloadConfig();
             getLogger().info("Updated " + fileName + " with newly added default values.");
             debugLog("CONFIG", "UPDATE", true, "Added missing entries from default " + fileName + ".");
-        } catch (IOException exception) {
+        } catch (IOException | InvalidConfigurationException exception) {
             getLogger().log(Level.WARNING, "Failed to save updated " + fileName + ".", exception);
             debugLog("CONFIG", "UPDATE", false, "Failed to save updated " + fileName + ": " + exception.getMessage());
         }
