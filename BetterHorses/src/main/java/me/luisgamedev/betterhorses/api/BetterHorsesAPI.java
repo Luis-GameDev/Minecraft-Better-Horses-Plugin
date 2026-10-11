@@ -198,6 +198,7 @@ public class BetterHorsesAPI {
         String trait = data.get(BetterHorseKeys.TRAIT, PersistentDataType.STRING);
         Byte neutered = data.get(BetterHorseKeys.NEUTERED, PersistentDataType.BYTE);
         Integer storedStage = data.get(BetterHorseKeys.GROWTH_STAGE, PersistentDataType.INTEGER);
+        Integer vanillaAge = data.get(BetterHorseKeys.VANILLA_AGE, PersistentDataType.INTEGER);
         String mountTypeName = data.get(BetterHorseKeys.MOUNT_TYPE, PersistentDataType.STRING);
         boolean camelHusk = data.has(BetterHorseKeys.CAMEL_HUSK, PersistentDataType.BYTE)
                 && data.getOrDefault(BetterHorseKeys.CAMEL_HUSK, PersistentDataType.BYTE, (byte) 0) == (byte) 1;
@@ -208,6 +209,10 @@ public class BetterHorsesAPI {
                 : null;
 
         int growthStage = storedStage != null ? storedStage : 10;
+        // Vanilla babies saved while custom growth was disabled have no custom progress.
+        if (vanillaAge != null && vanillaAge < 0 && growthStage == GrowthScale.MAX_STAGE) {
+            growthStage = 1;
+        }
         boolean undeadSkeleton = data.has(BetterHorseKeys.UNDEAD_SKELETON, PersistentDataType.BYTE);
         SupportedMountType mountType = undeadSkeleton ? SupportedMountType.SKELETON_HORSE : SupportedMountType.fromNameOrDefault(mountTypeName);
 
@@ -247,7 +252,7 @@ public class BetterHorsesAPI {
         try {
 
         double maxScale = BetterHorses.getInstance().getConfig().getDouble("horse-growth-settings.max-size", 1.3);
-        int threshold = BetterHorses.getInstance().getConfig().getInt("horse-growth-settings.ride-and-breed-threshhold", 7);
+        int threshold = GrowthScale.normalize(BetterHorses.getInstance().getConfig().getInt("horse-growth-settings.ride-and-breed-threshhold", 7));
         double scale = GrowthScale.forStage(growthStage, maxScale);
 
         if (MountConfig.isGrowthEnabled(BetterHorses.getInstance().getConfig(), mountType)) {
@@ -259,9 +264,11 @@ public class BetterHorsesAPI {
                 horse.setBaby();
                 horse.setAgeLock(true);
             }
+            horse.getPersistentDataContainer().set(BetterHorseKeys.GROWTH_STAGE, PersistentDataType.INTEGER, growthStage);
+        } else if (vanillaAge != null) {
+            horse.setAge(vanillaAge);
+            horse.setAgeLock(false);
         }
-
-        horse.getPersistentDataContainer().set(BetterHorseKeys.GROWTH_STAGE, PersistentDataType.INTEGER, growthStage);
 
         setAttribute(horse, AttributeResolver.generic("MAX_HEALTH"), health);
         setAttribute(horse, AttributeResolver.generic("MOVEMENT_SPEED"), speed);
@@ -454,6 +461,7 @@ public class BetterHorsesAPI {
         itemData.set(BetterHorseKeys.STYLE, PersistentDataType.STRING, style.name());
         itemData.set(BetterHorseKeys.COLOR, PersistentDataType.STRING, color.name());
         itemData.set(BetterHorseKeys.GROWTH_STAGE, PersistentDataType.INTEGER, growthStage);
+        itemData.set(BetterHorseKeys.VANILLA_AGE, PersistentDataType.INTEGER, horse.getAge());
         itemData.set(BetterHorseKeys.MOUNT_TYPE, PersistentDataType.STRING, mountType.getEntityType().name());
         if (horse.getType().name().equals("CAMEL_HUSK")
                 || data.getOrDefault(BetterHorseKeys.CAMEL_HUSK, PersistentDataType.BYTE, (byte) 0) == (byte) 1) {

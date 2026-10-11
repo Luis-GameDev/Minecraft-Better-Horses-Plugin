@@ -142,9 +142,9 @@ public class HorseBreedListener implements Listener {
         setJump(child, childJump);
 
         child.getPersistentDataContainer().set(BetterHorseKeys.GENDER, PersistentDataType.STRING, gender);
-        child.getPersistentDataContainer().set(BetterHorseKeys.GROWTH_STAGE, PersistentDataType.INTEGER, 1);
 
         if (MountConfig.isGrowthEnabled(config, childType)) {
+            child.getPersistentDataContainer().set(BetterHorseKeys.GROWTH_STAGE, PersistentDataType.INTEGER, 1);
             child.setAgeLock(true);
         }
 

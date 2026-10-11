@@ -3,6 +3,7 @@ package me.luisgamedev.betterhorses.listeners;
 import me.luisgamedev.betterhorses.BetterHorses;
 import me.luisgamedev.betterhorses.api.BetterHorseKeys;
 import me.luisgamedev.betterhorses.training.TrainingManager;
+import me.luisgamedev.betterhorses.utils.MountConfig;
 import me.luisgamedev.betterhorses.utils.PermissionUtils;
 import org.bukkit.Material;
 import org.bukkit.Particle;
@@ -50,7 +51,7 @@ public class HorseFeedListener implements Listener {
         SupportedMountType mountType = SupportedMountType.fromEntity(horse).orElse(null);
         if (mountType == null || !mountType.isEnabled(config)) return;
 
-        if (!horse.isAdult() && config.getBoolean("horse-growth-settings.enabled", false)) {
+        if (!horse.isAdult() && MountConfig.isGrowthEnabled(config, mountType)) {
             event.setCancelled(true);
             return;
         }
@@ -61,7 +62,7 @@ public class HorseFeedListener implements Listener {
         final PersistentDataContainer data = horse.getPersistentDataContainer();
 
         final long cooldownSeconds = config.getLong("settings.breeding-cooldown", 0L);
-        if (cooldownSeconds > 0L && !player.hasPermission(PermissionUtils.COOLDOWN_BYPASS)) {
+        if (horse.isAdult() && cooldownSeconds > 0L && !player.hasPermission(PermissionUtils.COOLDOWN_BYPASS)) {
             final long cooldownMillis = cooldownSeconds * 1000L;
 
             if (config.getBoolean("settings.male-ignore-cooldown", false)) {

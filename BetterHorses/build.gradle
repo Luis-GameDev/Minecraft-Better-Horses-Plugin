@@ -27,6 +27,7 @@ dependencies {
     implementation 'net.kyori:adventure-api:4.17.0'
     implementation 'net.kyori:adventure-text-minimessage:4.17.0'
     implementation 'net.kyori:adventure-platform-bukkit:4.3.4'
+    testImplementation 'io.papermc.paper:paper-api:1.20.6-R0.1-SNAPSHOT'
     testImplementation platform('org.junit:junit-bom:5.11.3')
     testImplementation 'org.junit.jupiter:junit-jupiter'
 }

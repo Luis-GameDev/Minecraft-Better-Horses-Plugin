@@ -93,7 +93,8 @@ max-stats:
 # Settings that determine horse growth
 horse-growth-settings:
 
-  # If false, horses will remain their Vanilla size, this feature only works for Paper 1.20.6 & Java 21 or above
+  # If false, baby horses use vanilla aging, feeding, and size.
+  # Custom growth requires Paper 1.20.6 & Java 21 or above.
   enabled: true
   mount-types:
     skeleton-horses: true
@@ -105,6 +106,9 @@ horse-growth-settings:
 
   # The time in minutes that needs to pass until a horse is fully grown
   time-until-adult: 3
+
+  # Growth stage (1-10) at which a horse can be ridden and bred.
+  ride-and-breed-threshhold: 7
 
   # The maximum size a horse can reach, this is the scale applied to a vanilla sized horse
   # If the value remains 1, an adult horse will be vanilla sized
