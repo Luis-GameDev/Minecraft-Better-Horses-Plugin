@@ -212,6 +212,9 @@ public class BetterHorsesAPI {
         SupportedMountType mountType = undeadSkeleton ? SupportedMountType.SKELETON_HORSE : SupportedMountType.fromNameOrDefault(mountTypeName);
 
         double restoredHealth = currentHealth == null ? (health == null ? Double.NaN : health) : currentHealth;
+        if (health != null) {
+            restoredHealth = HorseDataValidator.normalizeCurrentHealth(health, restoredHealth);
+        }
         if (health == null || speed == null || jump == null || gender == null
                 || !HorseDataValidator.isValid(health, restoredHealth, speed, jump, gender, growthStage)) {
             return null;
@@ -263,7 +266,7 @@ public class BetterHorsesAPI {
         setAttribute(horse, AttributeResolver.generic("MAX_HEALTH"), health);
         setAttribute(horse, AttributeResolver.generic("MOVEMENT_SPEED"), speed);
         setAttribute(horse, Attribute.valueOf("HORSE_JUMP_STRENGTH"), jump);
-        horse.setHealth(currentHealth != null ? currentHealth : health);
+        horse.setHealth(restoredHealth);
         horse.setTamed(true);
         AnimalTamer restoredOwner = player;
         if (ownerUUID != null) {
@@ -385,7 +388,7 @@ public class BetterHorsesAPI {
         TrainingManager.ensureBaseStats(horse);
 
         double maxHealth = horse.getAttribute(AttributeResolver.generic("MAX_HEALTH")).getBaseValue();
-        double currentHealth = horse.getHealth();
+        double currentHealth = HorseDataValidator.normalizeCurrentHealth(maxHealth, horse.getHealth());
         double speed = horse.getAttribute(AttributeResolver.generic("MOVEMENT_SPEED")).getBaseValue();
         AttributeInstance jumpAttr = horse.getAttribute(Attribute.valueOf("HORSE_JUMP_STRENGTH"));
         double jump = jumpAttr != null ? jumpAttr.getBaseValue() : 0.0;

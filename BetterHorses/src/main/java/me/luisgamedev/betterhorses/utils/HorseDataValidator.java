@@ -17,4 +17,14 @@ public final class HorseDataValidator {
     public static boolean finitePositive(double value) {
         return Double.isFinite(value) && value > 0.0;
     }
+
+    /** Correct only the overflow caused by Minecraft storing health as a float. */
+    public static double normalizeCurrentHealth(double maxHealth, double currentHealth) {
+        double roundedMaxHealth = (double) (float) maxHealth;
+        if (finitePositive(maxHealth) && Double.isFinite(roundedMaxHealth)
+                && currentHealth > maxHealth && currentHealth <= roundedMaxHealth) {
+            return maxHealth;
+        }
+        return currentHealth;
+    }
 }
