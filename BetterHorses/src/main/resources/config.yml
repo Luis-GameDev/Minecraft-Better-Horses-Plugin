@@ -132,12 +132,13 @@ horse-growth-settings:
   time-until-adult: 3
 
   # Growth stage (1-10) at which a horse can be ridden and bred.
-  # Becoming rideable preserves its visual size; growth continues to stage 10.
+  # Becoming rideable adds one normal size step; growth continues to stage 10.
+  # Baby model compensation follows the mount type and Minecraft version.
   ride-and-breed-threshhold: 7
 
   # The maximum size a horse can reach, this is the scale applied to a vanilla sized horse
   # If the value remains 1, an adult horse will be vanilla sized
-  # Visible size at stages 1-10 is 10%, 20%, ..., 100% of this value.
+  # Newborns start at 50% of this value, then grow in nine equal steps to 100%.
   max-size: 1.3 # 30% bigger than vanilla
 
 # General settings

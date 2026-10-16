@@ -152,7 +152,8 @@ public class HorseBreedListener implements Listener {
             try {
                 AttributeInstance scale = child.getAttribute(AttributeResolver.generic("SCALE"));
                 if (scale != null) scale.setBaseValue(GrowthScale.forStage(1,
-                        config.getDouble("horse-growth-settings.max-size", 1.3), child.isAdult()));
+                        config.getDouble("horse-growth-settings.max-size", 1.3), child.isAdult(),
+                        GrowthScale.babyScale(childType.name(), Bukkit.getBukkitVersion())));
             } catch (IllegalArgumentException | NoSuchFieldError ignored) {
                 // Servers without SCALE keep their vanilla size.
             }

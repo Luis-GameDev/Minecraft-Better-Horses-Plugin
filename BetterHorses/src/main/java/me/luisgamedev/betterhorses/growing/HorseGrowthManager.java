@@ -64,8 +64,9 @@ public class HorseGrowthManager {
         int threshold = GrowthScale.normalize(config.getInt("horse-growth-settings.ride-and-breed-threshhold", 7));
         if (progress.stage() >= threshold && !horse.isAdult()) horse.setAdult();
         horse.setAgeLock(!horse.isAdult());
-        // Compensate vanilla baby scaling after any age transition.
-        setScaleSafe(horse, GrowthScale.forStage(progress.stage(), config.getDouble("horse-growth-settings.max-size", 1.3), horse.isAdult()));
+        // Normalize the version's baby model after choosing its age.
+        setScaleSafe(horse, GrowthScale.forStage(progress.stage(), config.getDouble("horse-growth-settings.max-size", 1.3),
+                horse.isAdult(), GrowthScale.babyScale(type.name(), Bukkit.getBukkitVersion())));
         if (stageChanged) plugin.refreshMountShaders(horse);
     }
 
