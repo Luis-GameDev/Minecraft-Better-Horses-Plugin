@@ -127,14 +127,16 @@ horse-growth-settings:
     mules: true
     donkeys: true
 
-  # The time in minutes that needs to pass until a horse is fully grown
+  # Minutes from newborn stage 1 to fully grown stage 10 (nine equal time intervals).
   time-until-adult: 3
 
   # Growth stage (1-10) at which a horse can be ridden and bred.
+  # Becoming rideable preserves its visual size; growth continues to stage 10.
   ride-and-breed-threshhold: 7
 
   # The maximum size a horse can reach, this is the scale applied to a vanilla sized horse
   # If the value remains 1, an adult horse will be vanilla sized
+  # Visible size at stages 1-10 is 10%, 20%, ..., 100% of this value.
   max-size: 1.3 # 30% bigger than vanilla
 
 # General settings
