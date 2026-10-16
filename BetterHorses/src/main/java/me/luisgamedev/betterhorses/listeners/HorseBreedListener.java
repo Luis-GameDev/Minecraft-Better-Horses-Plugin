@@ -163,10 +163,9 @@ public class HorseBreedListener implements Listener {
             child.getPersistentDataContainer().set(BetterHorseKeys.TRAIT, PersistentDataType.STRING, selectedTrait.toLowerCase());
         }
 
-        // Apply cooldown to both parents
-        if (!config.getBoolean("settings.male-ignore-cooldown", true)) {
-            dataFather.set(BetterHorseKeys.COOLDOWN, PersistentDataType.LONG, now);
-        }
+        // Bukkit's parent roles do not identify the stored genders. Record both
+        // timestamps so item conversion preserves them; cooldown checks apply exemptions.
+        dataFather.set(BetterHorseKeys.COOLDOWN, PersistentDataType.LONG, now);
         dataMother.set(BetterHorseKeys.COOLDOWN, PersistentDataType.LONG, now);
 
         father.setAge(0);
