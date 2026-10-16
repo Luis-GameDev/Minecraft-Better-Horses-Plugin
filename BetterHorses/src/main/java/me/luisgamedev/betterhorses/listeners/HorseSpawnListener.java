@@ -8,6 +8,7 @@ import me.luisgamedev.betterhorses.training.TrainingManager;
 import me.luisgamedev.betterhorses.utils.AttributeResolver;
 import me.luisgamedev.betterhorses.utils.MountConfig;
 import me.luisgamedev.betterhorses.utils.SupportedMountType;
+import org.bukkit.Bukkit;
 import org.bukkit.NamespacedKey;
 import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.entity.AbstractHorse;
@@ -68,7 +69,8 @@ public class HorseSpawnListener implements Listener {
             double maxScale = plugin.getConfig().getDouble("horse-growth-settings.max-size", 1.3);
             try {
                 AttributeInstance attr = horse.getAttribute(AttributeResolver.generic("SCALE"));
-                if (attr != null) attr.setBaseValue(GrowthScale.forStage(stage, maxScale, horse.isAdult()));
+                if (attr != null) attr.setBaseValue(GrowthScale.forStage(stage, maxScale, horse.isAdult(),
+                        GrowthScale.babyScale(mountType.name(), Bukkit.getBukkitVersion())));
             } catch (IllegalArgumentException | NoSuchFieldError ignored) {
                 // SCALE not supported – fallback for older Paper versions.
             }

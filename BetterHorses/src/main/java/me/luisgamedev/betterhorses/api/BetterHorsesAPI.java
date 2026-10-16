@@ -275,7 +275,8 @@ public class BetterHorsesAPI {
                 horse.setBaby();
                 horse.setAgeLock(true);
             }
-            setAttribute(horse, AttributeResolver.generic("SCALE"), GrowthScale.forStage(growthStage, maxScale, horse.isAdult()));
+            setAttribute(horse, AttributeResolver.generic("SCALE"), GrowthScale.forStage(growthStage, maxScale,
+                    horse.isAdult(), GrowthScale.babyScale(mountType.name(), Bukkit.getBukkitVersion())));
             horse.getPersistentDataContainer().set(BetterHorseKeys.GROWTH_STAGE, PersistentDataType.INTEGER, growthStage);
         } else if (vanillaAge != null) {
             horse.setAge(vanillaAge);
