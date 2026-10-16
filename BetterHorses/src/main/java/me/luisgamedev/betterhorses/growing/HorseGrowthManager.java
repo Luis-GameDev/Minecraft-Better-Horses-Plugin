@@ -119,7 +119,9 @@ public final class HorseGrowthManager implements Listener {
         int threshold = GrowthScale.normalize(config.getInt("horse-growth-settings.ride-and-breed-threshhold", 7));
         if (stage >= threshold && !horse.isAdult()) horse.setAdult();
         horse.setAgeLock(!horse.isAdult());
-        setScale(horse, GrowthScale.forStage(stage, config.getDouble("horse-growth-settings.max-size", 1.3)));
+        // Vanilla also halves a baby's size. Compensate after changing its age,
+        // so reaching the riding threshold adds only the next visual growth step.
+        setScale(horse, GrowthScale.forStage(stage, config.getDouble("horse-growth-settings.max-size", 1.3), horse.isAdult()));
         if (stageChanged) plugin.refreshMountShaders(horse);
     }
 

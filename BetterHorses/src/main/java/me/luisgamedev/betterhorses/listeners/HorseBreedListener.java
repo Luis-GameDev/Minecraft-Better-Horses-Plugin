@@ -3,6 +3,7 @@ package me.luisgamedev.betterhorses.listeners;
 import me.luisgamedev.betterhorses.BetterHorses;
 import me.luisgamedev.betterhorses.api.BetterHorseKeys;
 import me.luisgamedev.betterhorses.api.events.BetterHorseBreedEvent;
+import me.luisgamedev.betterhorses.growing.GrowthScale;
 import me.luisgamedev.betterhorses.utils.MountConfig;
 import me.luisgamedev.betterhorses.utils.PermissionUtils;
 import me.luisgamedev.betterhorses.utils.SupportedMountType;
@@ -145,7 +146,16 @@ public class HorseBreedListener implements Listener {
 
         if (MountConfig.isGrowthEnabled(config, childType)) {
             child.getPersistentDataContainer().set(BetterHorseKeys.GROWTH_STAGE, PersistentDataType.INTEGER, 1);
-            child.setAgeLock(true);
+            int threshold = GrowthScale.normalize(config.getInt("horse-growth-settings.ride-and-breed-threshhold", 7));
+            if (threshold == 1) child.setAdult(); else child.setBaby();
+            child.setAgeLock(!child.isAdult());
+            try {
+                AttributeInstance scale = child.getAttribute(AttributeResolver.generic("SCALE"));
+                if (scale != null) scale.setBaseValue(GrowthScale.forStage(1,
+                        config.getDouble("horse-growth-settings.max-size", 1.3), child.isAdult()));
+            } catch (IllegalArgumentException | NoSuchFieldError ignored) {
+                // Servers without SCALE keep their vanilla size.
+            }
         }
 
         if (selectedTrait != null && !selectedTrait.isBlank()) {
