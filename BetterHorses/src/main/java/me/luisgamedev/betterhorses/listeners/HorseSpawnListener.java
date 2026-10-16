@@ -3,11 +3,12 @@ package me.luisgamedev.betterhorses.listeners;
 import me.luisgamedev.betterhorses.BetterHorses;
 import me.luisgamedev.betterhorses.api.BetterHorsesAPI;
 import me.luisgamedev.betterhorses.api.events.BetterHorseSpawnEvent;
+import me.luisgamedev.betterhorses.growing.GrowthScale;
 import me.luisgamedev.betterhorses.training.TrainingManager;
+import me.luisgamedev.betterhorses.utils.AttributeResolver;
 import me.luisgamedev.betterhorses.utils.MountConfig;
 import me.luisgamedev.betterhorses.utils.SupportedMountType;
 import org.bukkit.NamespacedKey;
-import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.entity.AbstractHorse;
 import org.bukkit.entity.SkeletonHorse;
@@ -50,19 +51,6 @@ public class HorseSpawnListener implements Listener {
             // Set random growth stage
             stage = 1 + random.nextInt(10);
 
-            // Set scale
-            double maxScale = BetterHorses.getInstance().getConfig().getDouble("horse-growth-settings.max-size", 1.3);
-            double scale = me.luisgamedev.betterhorses.growing.GrowthScale.forStage(stage, maxScale);
-
-            try {
-                AttributeInstance attr = horse.getAttribute(Attribute.valueOf("SCALE"));
-                if (attr != null) {
-                    attr.setBaseValue(scale);
-                }
-            } catch (Exception ignored) {
-                // SCALE not supported – fallback for older Paper versions
-            }
-
             // Set to adult if threshold met
             int threshold = Math.max(1, Math.min(10,
                     plugin.getConfig().getInt("horse-growth-settings.ride-and-breed-threshhold", 7)));
@@ -74,6 +62,15 @@ public class HorseSpawnListener implements Listener {
                 horse.setAgeLock(true);
             } else {
                 horse.setAgeLock(false);
+            }
+
+            // Apply after the age transition to account for vanilla baby scaling.
+            double maxScale = plugin.getConfig().getDouble("horse-growth-settings.max-size", 1.3);
+            try {
+                AttributeInstance attr = horse.getAttribute(AttributeResolver.generic("SCALE"));
+                if (attr != null) attr.setBaseValue(GrowthScale.forStage(stage, maxScale, horse.isAdult()));
+            } catch (IllegalArgumentException | NoSuchFieldError ignored) {
+                // SCALE not supported – fallback for older Paper versions.
             }
             data.set(growthKey, PersistentDataType.INTEGER, stage);
         }

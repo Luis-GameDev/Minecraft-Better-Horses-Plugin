@@ -265,10 +265,8 @@ public class BetterHorsesAPI {
 
         double maxScale = BetterHorses.getInstance().getConfig().getDouble("horse-growth-settings.max-size", 1.3);
         int threshold = GrowthScale.normalize(BetterHorses.getInstance().getConfig().getInt("horse-growth-settings.ride-and-breed-threshhold", 7));
-        double scale = GrowthScale.forStage(growthStage, maxScale);
 
         if (MountConfig.isGrowthEnabled(BetterHorses.getInstance().getConfig(), mountType)) {
-            setAttribute(horse, Attribute.valueOf("SCALE"), scale);
             if (growthStage >= threshold) {
                 horse.setAdult();
                 horse.setAgeLock(false);
@@ -276,6 +274,7 @@ public class BetterHorsesAPI {
                 horse.setBaby();
                 horse.setAgeLock(true);
             }
+            setAttribute(horse, AttributeResolver.generic("SCALE"), GrowthScale.forStage(growthStage, maxScale, horse.isAdult()));
             horse.getPersistentDataContainer().set(BetterHorseKeys.GROWTH_STAGE, PersistentDataType.INTEGER, growthStage);
         } else if (vanillaAge != null) {
             horse.setAge(vanillaAge);

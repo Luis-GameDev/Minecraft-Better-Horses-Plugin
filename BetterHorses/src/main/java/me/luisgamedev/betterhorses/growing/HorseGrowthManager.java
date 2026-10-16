@@ -2,12 +2,12 @@ package me.luisgamedev.betterhorses.growing;
 
 import me.luisgamedev.betterhorses.BetterHorses;
 import me.luisgamedev.betterhorses.utils.MountConfig;
+import me.luisgamedev.betterhorses.utils.AttributeResolver;
 import me.luisgamedev.betterhorses.utils.SupportedMountType;
 import me.luisgamedev.betterhorses.utils.WorldAccessPolicy;
 import org.bukkit.Bukkit;
 import org.bukkit.NamespacedKey;
 import org.bukkit.World;
-import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.AbstractHorse;
@@ -64,7 +64,8 @@ public class HorseGrowthManager {
         int threshold = GrowthScale.normalize(config.getInt("horse-growth-settings.ride-and-breed-threshhold", 7));
         if (progress.stage() >= threshold && !horse.isAdult()) horse.setAdult();
         horse.setAgeLock(!horse.isAdult());
-        setScaleSafe(horse, GrowthScale.forStage(progress.stage(), config.getDouble("horse-growth-settings.max-size", 1.3)));
+        // Compensate vanilla baby scaling after any age transition.
+        setScaleSafe(horse, GrowthScale.forStage(progress.stage(), config.getDouble("horse-growth-settings.max-size", 1.3), horse.isAdult()));
         if (stageChanged) plugin.refreshMountShaders(horse);
     }
 
@@ -80,7 +81,7 @@ public class HorseGrowthManager {
 
     private void setScaleSafe(AbstractHorse horse, double scale) {
         try {
-            AttributeInstance attribute = horse.getAttribute(Attribute.valueOf("SCALE"));
+            AttributeInstance attribute = horse.getAttribute(AttributeResolver.generic("SCALE"));
             if (attribute != null) attribute.setBaseValue(scale);
         } catch (IllegalArgumentException | NoSuchFieldError exception) {
             plugin.debugLog("GROWTH_MANAGER", "SET_SCALE", false, exception.getMessage());
