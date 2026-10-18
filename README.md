@@ -498,7 +498,7 @@ Version 7.0 and above:
 
 ### 🚀 Installation
 
-1. Download the `BetterHorses-6.5.jar` from this my discord or via [SpigotMC](https://www.spigotmc.org/resources/better-horses.124223/).
+1. Download the `BetterHorses-7.0.jar` from this my discord or via [SpigotMC](https://www.spigotmc.org/resources/better-horses.124223/).
 
 2. Place it into your server’s `plugins/` folder and restart the server to generate the config file.
 
