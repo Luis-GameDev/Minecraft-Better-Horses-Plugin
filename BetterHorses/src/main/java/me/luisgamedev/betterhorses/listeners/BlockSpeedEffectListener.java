@@ -16,7 +16,7 @@ import java.util.EnumMap;
 import java.util.Locale;
 import java.util.Map;
 
-public class BlockSpeedEffectListener implements Listener {
+public class BlockSpeedEffectListener implements Listener, ListenerLifecycle {
 
     private static final int EFFECT_DURATION_TICKS = 40;
 
@@ -46,6 +46,7 @@ public class BlockSpeedEffectListener implements Listener {
     }
 
     private void loadEffects(FileConfiguration config) {
+        effectsByBlock.clear();
         int entryNumber = 0;
         for (Map<?, ?> entry : config.getMapList("settings.block-speed-effects.entries")) {
             entryNumber++;
@@ -71,6 +72,11 @@ public class BlockSpeedEffectListener implements Listener {
             effectsByBlock.computeIfAbsent(block, ignored -> new EnumMap<>(SupportedMountType.class))
                     .put(mountType, effect);
         }
+    }
+
+    @Override
+    public void onConfigurationReload() {
+        loadEffects(plugin.getConfig());
     }
 
     private Material parseBlock(Object value) {

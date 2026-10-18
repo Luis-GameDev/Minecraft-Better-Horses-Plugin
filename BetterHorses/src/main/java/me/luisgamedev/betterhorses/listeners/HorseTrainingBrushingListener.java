@@ -15,6 +15,8 @@ import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
+import me.luisgamedev.betterhorses.utils.SupportedMountType;
+import me.luisgamedev.betterhorses.utils.WorldAccessPolicy;
 
 public class HorseTrainingBrushingListener implements Listener {
 
@@ -23,6 +25,8 @@ public class HorseTrainingBrushingListener implements Listener {
         if (!(event.getRightClicked() instanceof AbstractHorse horse)) return;
 
         FileConfiguration config = BetterHorses.getInstance().getConfig();
+        SupportedMountType mountType = SupportedMountType.fromEntity(horse).orElse(null);
+        if (mountType == null || !mountType.isEnabled(config) || !WorldAccessPolicy.isEnabled(horse.getWorld())) return;
         if (!TrainingManager.isTrainingEnabled(config) || !TrainingManager.isCategoryEnabled(config, "brushing")) return;
 
         Player player = event.getPlayer();
@@ -41,12 +45,12 @@ public class HorseTrainingBrushingListener implements Listener {
         long now = System.currentTimeMillis();
         long lastBrush = data.getOrDefault(BetterHorseKeys.TRAINING_BRUSH_COOLDOWN, PersistentDataType.LONG, 0L);
 
-        if (cooldownMillis == 0L || lastBrush + cooldownMillis > now) {
+        if (cooldownMillis > 0L && lastBrush + cooldownMillis > now) {
             return;
         }
         horse.getWorld().spawnParticle(Particle.COMPOSTER, horse.getEyeLocation(), 5);
 
-        data.set(BetterHorseKeys.TRAINING_BRUSH_COOLDOWN, PersistentDataType.LONG, now);
+        if (cooldownMillis > 0L) data.set(BetterHorseKeys.TRAINING_BRUSH_COOLDOWN, PersistentDataType.LONG, now);
         double units = config.getDouble("training.categories.brushing.units-per-use", 1.0);
         TrainingManager.addBrushingUnits(horse, units);
     }

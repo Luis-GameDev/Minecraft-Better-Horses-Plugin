@@ -5,7 +5,8 @@
 # WHITELIST enables only listed worlds. Commands are also hidden and blocked there.
 world-filter:
   mode: BLACKLIST
-  worlds: []
+  worlds:
+    - PlaceholderWorld
   # worlds:
   #   - world_disabled
   #   - 00000000-0000-0000-0000-000000000000
@@ -27,6 +28,31 @@ debug:
   # When enabled, detailed BetterHorses debug logs are written to console
   # and the /horse info command becomes available.
   enabled: false
+
+# Optional client postprocessing effects. Requires Minecraft 26.3 and a supported
+# Paper/Folia shader API; inactive on unsupported versions/server software.
+# Custom effects must exist in the player's resource pack. See
+# docs/postprocessing-shaders.md for all conditions and examples.
+postprocessing-shaders:
+  enabled: false
+  # Conditions refresh from events; no repeating polling task is used.
+  # An old update-interval-ticks setting is ignored if present after an upgrade.
+  # Unqualified effect keys such as "mounted" become "minecraft:mounted".
+  default-namespace: minecraft
+  # Matching branches add effects together; nested conditions are all required.
+  # Put braces around every nested map and commas between sibling entries.
+  # A nested default adds an effect while allowing more conditions below it.
+  # rules: {
+  #   Mounted: {
+  #     default: "blur",
+  #     Mounttype: {
+  #       Horse: {
+  #         default: "mytextures:mounted"
+  #       }
+  #     }
+  #   }
+  # }
+  rules: {}
 
 # Customizes how big the maximum positive or negative mutation effect is (e.g. 0.05 = ±0.05)
 # e.g. health-factor 3 means the health of the child can be up to 3 HP higher or lower than the average HP of both parents
@@ -92,7 +118,8 @@ max-stats:
 # Settings that determine horse growth
 horse-growth-settings:
 
-  # If false, horses will remain their Vanilla size, this feature only works for Paper 1.20.6 & Java 21 or above
+  # If false, baby horses use vanilla aging, feeding, and size.
+  # Custom growth requires Paper 1.20.6 & Java 21 or above.
   enabled: true
   mount-types:
     skeleton-horses: true
@@ -102,11 +129,17 @@ horse-growth-settings:
     mules: true
     donkeys: true
 
-  # The time in minutes that needs to pass until a horse is fully grown
+  # Minutes from newborn stage 1 to fully grown stage 10 (nine equal time intervals).
   time-until-adult: 3
+
+  # Growth stage (1-10) at which a horse can be ridden and bred.
+  # Becoming rideable adds one normal size step; growth continues to stage 10.
+  # Baby model compensation follows the mount type and Minecraft version.
+  ride-and-breed-threshhold: 7
 
   # The maximum size a horse can reach, this is the scale applied to a vanilla sized horse
   # If the value remains 1, an adult horse will be vanilla sized
+  # Newborns start at 50% of this value, then grow in nine equal steps to 100%.
   max-size: 1.3 # 30% bigger than vanilla
 
 # General settings
@@ -162,7 +195,7 @@ settings:
   # Allows two horses of the same gender to breed
   allow-same-gender-breeding: false
 
-  # Restricts mounting a tamed horse to its respective owner
+  # Restricts mounting and despawning a tamed horse to its respective owner
   restrict-mounting-to-owner: false
 
   # Makes every skeleton horse mountable like a vanilla horse, including skeleton horses spawned from spawn eggs

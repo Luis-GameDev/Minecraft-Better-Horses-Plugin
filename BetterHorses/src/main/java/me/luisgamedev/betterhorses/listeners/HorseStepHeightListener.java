@@ -11,8 +11,12 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityMountEvent;
 import org.bukkit.event.entity.EntityDismountEvent;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
-public class HorseStepHeightListener implements Listener {
+public class HorseStepHeightListener implements Listener, ListenerLifecycle {
+    private static final Map<UUID, Double> ORIGINAL = new ConcurrentHashMap<>();
 
     @EventHandler
     public void onMount(EntityMountEvent event) {
@@ -22,7 +26,11 @@ public class HorseStepHeightListener implements Listener {
         FileConfiguration config = BetterHorses.getInstance().getConfig();
         if (!config.getBoolean("settings.fix-step-height", false)) return;
 
-        setStepHeightSafe(horse, 1.1);
+        AttributeInstance instance = getStepHeight(horse);
+        if (instance != null) {
+            ORIGINAL.putIfAbsent(horse.getUniqueId(), instance.getBaseValue());
+            instance.setBaseValue(1.1);
+        }
     }
 
     @EventHandler
@@ -33,7 +41,7 @@ public class HorseStepHeightListener implements Listener {
         FileConfiguration config = BetterHorses.getInstance().getConfig();
         if (!config.getBoolean("settings.fix-step-height", false)) return;
 
-        setStepHeightSafe(horse, 1);
+        restore(horse);
     }
 
     private void setStepHeightSafe(AbstractHorse horse, double stepHeight) {
@@ -45,5 +53,27 @@ public class HorseStepHeightListener implements Listener {
             }
         } catch (IllegalArgumentException | NoSuchFieldError ignored) {
         }
+    }
+
+    private static AttributeInstance getStepHeight(AbstractHorse horse) {
+        try { return horse.getAttribute(AttributeResolver.generic("STEP_HEIGHT")); }
+        catch (IllegalArgumentException | NoSuchFieldError ignored) { return null; }
+    }
+
+    private static void restore(AbstractHorse horse) {
+        Double original = ORIGINAL.remove(horse.getUniqueId());
+        AttributeInstance instance = getStepHeight(horse);
+        if (original != null && instance != null && horse.isValid()) instance.setBaseValue(original);
+    }
+
+    public static void cleanupAll() {
+        for (org.bukkit.World world : org.bukkit.Bukkit.getWorlds())
+            for (AbstractHorse horse : world.getEntitiesByClass(AbstractHorse.class)) restore(horse);
+        ORIGINAL.clear();
+    }
+
+    @Override
+    public void shutdown() {
+        cleanupAll();
     }
 }

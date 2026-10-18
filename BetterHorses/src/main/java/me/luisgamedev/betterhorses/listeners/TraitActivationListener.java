@@ -24,6 +24,7 @@ public class TraitActivationListener implements Listener {
     public void onTraitKeyPressed(PlayerSwapHandItemsEvent event) {
         Player player = event.getPlayer();
         BetterHorses plugin = BetterHorses.getInstance();
+        if (!plugin.getConfig().getBoolean("traits.enabled", true)) return;
         plugin.debugLog("TRAIT_ACTIVATION", "EVENT", true, "Trait key pressed.");
         Entity vehicle = player.getVehicle();
 

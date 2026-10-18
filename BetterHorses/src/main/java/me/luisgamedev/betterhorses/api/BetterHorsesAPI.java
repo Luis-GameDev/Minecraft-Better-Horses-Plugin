@@ -26,6 +26,9 @@ import org.bukkit.entity.Horse;
 import org.bukkit.entity.ChestedHorse;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.SkeletonHorse;
+import org.bukkit.entity.Llama;
+import org.bukkit.inventory.LlamaInventory;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.inventory.AbstractHorseInventory;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
@@ -48,8 +51,23 @@ import java.util.Base64;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
+import me.luisgamedev.betterhorses.utils.HorseDataValidator;
+import me.luisgamedev.betterhorses.growing.GrowthScale;
 
 public class BetterHorsesAPI {
+
+    /** Refresh after a silent placeholder, permission, or player-state change. Safe from any thread. */
+    public static void refreshShaders(Player player) {
+        BetterHorses plugin = BetterHorses.getInstance();
+        if (plugin != null) plugin.refreshShaders(player);
+    }
+
+    /** Refresh mounted players after a PDC change; call on the mount's owning thread. */
+    public static void refreshMountShaders(Entity mount) {
+        BetterHorses plugin = BetterHorses.getInstance();
+        if (plugin != null) plugin.refreshMountShaders(mount);
+    }
 
     @Description("Creates a horseitem and either returns the ItemStack or directly puts it into the provided Inventory")
     public static ItemStack createHorseItem(@Nonnull double health, @Nonnull double speed, @Nonnull double jump, @Nonnull String gender, @Nullable String name, @Nullable Player owner, @Nullable Inventory targetInventory, @Nullable boolean dropIfFull, @Nullable String traitOverride, @Nonnull boolean isNeutered, @Nonnull Integer growthStage, @Nullable SupportedMountType mountType) {
@@ -73,7 +91,10 @@ public class BetterHorsesAPI {
 
         ItemStack item = new ItemStack(material);
         ItemMeta meta = item.getItemMeta();
-        int growth = growthStage > 10 || growthStage < 1 ? 10 : growthStage;
+        int growth = growthStage == null ? 10 : growthStage;
+        if (!HorseDataValidator.isValid(health, health, speed, jump, gender, growth)) {
+            throw new IllegalArgumentException("Invalid horse stats, gender, or growth stage");
+        }
 
         PersistentDataContainer data = meta.getPersistentDataContainer();
         data.set(BetterHorseKeys.GENDER, PersistentDataType.STRING, gender);
@@ -176,10 +197,11 @@ public class BetterHorsesAPI {
         Double speed = data.get(BetterHorseKeys.SPEED, PersistentDataType.DOUBLE);
         Double jump = data.get(BetterHorseKeys.JUMP, PersistentDataType.DOUBLE);
         String gender = data.get(BetterHorseKeys.GENDER, PersistentDataType.STRING);
-        String ownerUUID = player.getUniqueId().toString();
+        String ownerUUID = data.get(BetterHorseKeys.OWNER, PersistentDataType.STRING);
         String styleStr = data.get(BetterHorseKeys.STYLE, PersistentDataType.STRING);
         String colorStr = data.get(BetterHorseKeys.COLOR, PersistentDataType.STRING);
         String saddleStr = data.get(BetterHorseKeys.SADDLE, PersistentDataType.STRING);
+        String saddleData = data.get(BetterHorseKeys.SADDLE_DATA, PersistentDataType.STRING);
         String armorStr = data.get(BetterHorseKeys.ARMOR, PersistentDataType.STRING);
         String armorData = data.get(BetterHorseKeys.ARMOR_DATA, PersistentDataType.STRING);
         Byte chested = data.get(BetterHorseKeys.CHESTED, PersistentDataType.BYTE);
@@ -188,6 +210,7 @@ public class BetterHorsesAPI {
         String trait = data.get(BetterHorseKeys.TRAIT, PersistentDataType.STRING);
         Byte neutered = data.get(BetterHorseKeys.NEUTERED, PersistentDataType.BYTE);
         Integer storedStage = data.get(BetterHorseKeys.GROWTH_STAGE, PersistentDataType.INTEGER);
+        Integer vanillaAge = data.get(BetterHorseKeys.VANILLA_AGE, PersistentDataType.INTEGER);
         String mountTypeName = data.get(BetterHorseKeys.MOUNT_TYPE, PersistentDataType.STRING);
         boolean camelHusk = data.has(BetterHorseKeys.CAMEL_HUSK, PersistentDataType.BYTE)
                 && data.getOrDefault(BetterHorseKeys.CAMEL_HUSK, PersistentDataType.BYTE, (byte) 0) == (byte) 1;
@@ -198,10 +221,19 @@ public class BetterHorsesAPI {
                 : null;
 
         int growthStage = storedStage != null ? storedStage : 10;
+        // Vanilla babies saved while custom growth was disabled have no custom progress.
+        if (vanillaAge != null && vanillaAge < 0 && growthStage == GrowthScale.MAX_STAGE) {
+            growthStage = 1;
+        }
         boolean undeadSkeleton = data.has(BetterHorseKeys.UNDEAD_SKELETON, PersistentDataType.BYTE);
         SupportedMountType mountType = undeadSkeleton ? SupportedMountType.SKELETON_HORSE : SupportedMountType.fromNameOrDefault(mountTypeName);
 
-        if (health == null || speed == null || jump == null || gender == null) {
+        double restoredHealth = currentHealth == null ? (health == null ? Double.NaN : health) : currentHealth;
+        if (health != null) {
+            restoredHealth = HorseDataValidator.normalizeCurrentHealth(health, restoredHealth);
+        }
+        if (health == null || speed == null || jump == null || gender == null
+                || !HorseDataValidator.isValid(health, restoredHealth, speed, jump, gender, growthStage)) {
             return null;
         }
 
@@ -229,13 +261,12 @@ public class BetterHorsesAPI {
             return null;
         }
 
+        try {
+
         double maxScale = BetterHorses.getInstance().getConfig().getDouble("horse-growth-settings.max-size", 1.3);
-        int threshold = BetterHorses.getInstance().getConfig().getInt("horse-growth-settings.ride-and-breed-threshhold", 7);
-        float minScale = (growthStage >= threshold) ? 0.85f : 0.7f;
-        double scale = minScale + ((maxScale - minScale) / 10.0) * growthStage;
+        int threshold = GrowthScale.normalize(BetterHorses.getInstance().getConfig().getInt("horse-growth-settings.ride-and-breed-threshhold", 7));
 
         if (MountConfig.isGrowthEnabled(BetterHorses.getInstance().getConfig(), mountType)) {
-            setAttribute(horse, Attribute.valueOf("SCALE"), scale);
             if (growthStage >= threshold) {
                 horse.setAdult();
                 horse.setAgeLock(false);
@@ -243,16 +274,25 @@ public class BetterHorsesAPI {
                 horse.setBaby();
                 horse.setAgeLock(true);
             }
+            setAttribute(horse, AttributeResolver.generic("SCALE"), GrowthScale.forStage(growthStage, maxScale,
+                    horse.isAdult(), GrowthScale.babyScale(mountType.name(), Bukkit.getBukkitVersion())));
+            horse.getPersistentDataContainer().set(BetterHorseKeys.GROWTH_STAGE, PersistentDataType.INTEGER, growthStage);
+        } else if (vanillaAge != null) {
+            horse.setAge(vanillaAge);
+            horse.setAgeLock(false);
         }
-
-        horse.getPersistentDataContainer().set(BetterHorseKeys.GROWTH_STAGE, PersistentDataType.INTEGER, growthStage);
 
         setAttribute(horse, AttributeResolver.generic("MAX_HEALTH"), health);
         setAttribute(horse, AttributeResolver.generic("MOVEMENT_SPEED"), speed);
         setAttribute(horse, Attribute.valueOf("HORSE_JUMP_STRENGTH"), jump);
-        horse.setHealth(currentHealth != null ? currentHealth : health);
+        horse.setHealth(restoredHealth);
         horse.setTamed(true);
-        horse.setOwner((AnimalTamer) player);
+        AnimalTamer restoredOwner = player;
+        if (ownerUUID != null) {
+            try { restoredOwner = Bukkit.getOfflinePlayer(UUID.fromString(ownerUUID)); }
+            catch (IllegalArgumentException ignored) { ownerUUID = null; }
+        }
+        horse.setOwner(restoredOwner);
 
         PersistentDataContainer horseData = horse.getPersistentDataContainer();
         horseData.set(BetterHorseKeys.BASE_HEALTH, PersistentDataType.DOUBLE,
@@ -270,7 +310,7 @@ public class BetterHorsesAPI {
         horseData.set(BetterHorseKeys.TRAINING_BRUSH_COOLDOWN, PersistentDataType.LONG, brushTrainingCooldown);
         horseData.set(BetterHorseKeys.TRAINING_FEED_COOLDOWN, PersistentDataType.LONG, feedTrainingCooldown);
 
-        horseData.set(BetterHorseKeys.OWNER, PersistentDataType.STRING, ownerUUID);
+        horseData.set(BetterHorseKeys.OWNER, PersistentDataType.STRING, restoredOwner.getUniqueId().toString());
         horseData.set(BetterHorseKeys.GENDER, PersistentDataType.STRING, gender);
         horseData.set(BetterHorseKeys.MOUNT_TYPE, PersistentDataType.STRING, mountType.getEntityType().name());
         if (camelHusk) {
@@ -302,8 +342,11 @@ public class BetterHorsesAPI {
         }
 
         if (saddleStr != null) {
-            horse.getInventory().setSaddle(new ItemStack(Material.valueOf(saddleStr)));
+            ItemStack restoredSaddle = restoreEquipment(saddleData, saddleStr);
+            if (restoredSaddle == null) throw new IllegalArgumentException("Invalid saddle data");
+            horse.getInventory().setSaddle(restoredSaddle);
         }
+        if (horse instanceof Llama llama) restoreLlama(llama, data);
         restoreChestContents(horse, chested != null && chested == (byte) 1, chestContents);
         if (!undeadSkeleton && armorStr != null) {
             ItemStack armorItem = restoreArmorItem(armorStr, armorData);
@@ -313,6 +356,11 @@ public class BetterHorsesAPI {
         }
 
         return horse;
+        } catch (RuntimeException exception) {
+            BetterHorses.getInstance().getLogger().warning("Could not restore mount: " + exception.getMessage());
+            horse.remove();
+            return null;
+        }
     }
 
     public static @Nullable ItemStack toItem(@Nonnull AbstractHorse horse, @Nullable Player ownerOverride) {
@@ -338,6 +386,7 @@ public class BetterHorsesAPI {
         if (!data.has(genderKey, PersistentDataType.STRING)) {
             gender = Math.random() < 0.5 ? "male" : "female";
             data.set(genderKey, PersistentDataType.STRING, gender);
+            plugin.refreshMountShaders(horse);
         } else {
             gender = data.getOrDefault(genderKey, PersistentDataType.STRING, "unknown");
         }
@@ -359,7 +408,7 @@ public class BetterHorsesAPI {
         TrainingManager.ensureBaseStats(horse);
 
         double maxHealth = horse.getAttribute(AttributeResolver.generic("MAX_HEALTH")).getBaseValue();
-        double currentHealth = horse.getHealth();
+        double currentHealth = HorseDataValidator.normalizeCurrentHealth(maxHealth, horse.getHealth());
         double speed = horse.getAttribute(AttributeResolver.generic("MOVEMENT_SPEED")).getBaseValue();
         AttributeInstance jumpAttr = horse.getAttribute(Attribute.valueOf("HORSE_JUMP_STRENGTH"));
         double jump = jumpAttr != null ? jumpAttr.getBaseValue() : 0.0;
@@ -416,9 +465,8 @@ public class BetterHorsesAPI {
         itemData.set(BetterHorseKeys.TRAINING_BRUSH_COOLDOWN, PersistentDataType.LONG, data.getOrDefault(BetterHorseKeys.TRAINING_BRUSH_COOLDOWN, PersistentDataType.LONG, 0L));
         itemData.set(BetterHorseKeys.TRAINING_FEED_COOLDOWN, PersistentDataType.LONG, data.getOrDefault(BetterHorseKeys.TRAINING_FEED_COOLDOWN, PersistentDataType.LONG, 0L));
 
-        String ownerUUID = ownerOverride != null
-                ? ownerOverride.getUniqueId().toString()
-                : Optional.ofNullable(horse.getOwner()).map(AnimalTamer::getUniqueId).map(Object::toString).orElse(null);
+        String ownerUUID = Optional.ofNullable(horse.getOwner()).map(AnimalTamer::getUniqueId).map(Object::toString)
+                .orElse(ownerOverride == null ? null : ownerOverride.getUniqueId().toString());
         if (ownerUUID != null) {
             itemData.set(BetterHorseKeys.OWNER, PersistentDataType.STRING, ownerUUID);
         }
@@ -426,6 +474,7 @@ public class BetterHorsesAPI {
         itemData.set(BetterHorseKeys.STYLE, PersistentDataType.STRING, style.name());
         itemData.set(BetterHorseKeys.COLOR, PersistentDataType.STRING, color.name());
         itemData.set(BetterHorseKeys.GROWTH_STAGE, PersistentDataType.INTEGER, growthStage);
+        itemData.set(BetterHorseKeys.VANILLA_AGE, PersistentDataType.INTEGER, horse.getAge());
         itemData.set(BetterHorseKeys.MOUNT_TYPE, PersistentDataType.STRING, mountType.getEntityType().name());
         if (horse.getType().name().equals("CAMEL_HUSK")
                 || data.getOrDefault(BetterHorseKeys.CAMEL_HUSK, PersistentDataType.BYTE, (byte) 0) == (byte) 1) {
@@ -435,7 +484,10 @@ public class BetterHorsesAPI {
         if (trait != null) itemData.set(traitKey, PersistentDataType.STRING, trait.toLowerCase());
         if (isNeutered) itemData.set(neuterKey, PersistentDataType.BYTE, (byte) 1);
         if (cooldown != null) itemData.set(BetterHorseKeys.COOLDOWN, PersistentDataType.LONG, cooldown);
-        if (saddle != null) itemData.set(BetterHorseKeys.SADDLE, PersistentDataType.STRING, saddle.getType().name());
+        if (saddle != null) {
+            itemData.set(BetterHorseKeys.SADDLE, PersistentDataType.STRING, saddle.getType().name());
+            itemData.set(BetterHorseKeys.SADDLE_DATA, PersistentDataType.STRING, Base64.getEncoder().encodeToString(saddle.serializeAsBytes()));
+        }
         if (armor != null) {
             itemData.set(BetterHorseKeys.ARMOR, PersistentDataType.STRING, armor.getType().name());
             itemData.set(BetterHorseKeys.ARMOR_DATA, PersistentDataType.STRING, Base64.getEncoder().encodeToString(armor.serializeAsBytes()));
@@ -445,6 +497,13 @@ public class BetterHorsesAPI {
             if (serializedChestContents != null) {
                 itemData.set(BetterHorseKeys.CHEST_CONTENTS, PersistentDataType.STRING, serializedChestContents);
             }
+        }
+        if (horse instanceof Llama llama) {
+            itemData.set(BetterHorseKeys.LLAMA_STRENGTH, PersistentDataType.INTEGER, llama.getStrength());
+            itemData.set(BetterHorseKeys.LLAMA_COLOR, PersistentDataType.STRING, llama.getColor().name());
+            ItemStack decor = llama.getInventory().getDecor();
+            if (decor != null) itemData.set(BetterHorseKeys.LLAMA_DECOR, PersistentDataType.STRING,
+                    Base64.getEncoder().encodeToString(decor.serializeAsBytes()));
         }
         applyResolvedTextureData(meta, readTextureData(data));
 
@@ -467,7 +526,35 @@ public class BetterHorsesAPI {
         }
         ItemStack[] contents = deserializeStorageContents(serializedContents);
         if (contents != null) {
+            if (contents.length > horse.getInventory().getStorageContents().length) {
+                throw new IllegalArgumentException("Stored chest exceeds mount capacity");
+            }
             horse.getInventory().setStorageContents(contents);
+        }
+    }
+
+    private static @Nullable ItemStack restoreEquipment(@Nullable String encoded, String legacyMaterial) {
+        if (encoded != null && !encoded.isBlank()) {
+            try { return ItemStack.deserializeBytes(Base64.getDecoder().decode(encoded)); }
+            catch (IllegalArgumentException exception) { return null; }
+        }
+        Material material = Material.matchMaterial(legacyMaterial);
+        return material == null ? null : new ItemStack(material);
+    }
+
+    private static void restoreLlama(Llama llama, PersistentDataContainer data) {
+        Integer strength = data.get(BetterHorseKeys.LLAMA_STRENGTH, PersistentDataType.INTEGER);
+        if (strength != null) {
+            if (strength < 1 || strength > 5) throw new IllegalArgumentException("Invalid llama strength");
+            llama.setStrength(strength);
+        }
+        String color = data.get(BetterHorseKeys.LLAMA_COLOR, PersistentDataType.STRING);
+        if (color != null) llama.setColor(Llama.Color.valueOf(color));
+        String decor = data.get(BetterHorseKeys.LLAMA_DECOR, PersistentDataType.STRING);
+        if (decor != null) {
+            ItemStack item = restoreEquipment(decor, Material.WHITE_CARPET.name());
+            if (item == null) throw new IllegalArgumentException("Invalid llama decor");
+            llama.getInventory().setDecor(item);
         }
     }
 
@@ -844,15 +931,24 @@ public class BetterHorsesAPI {
     public static boolean isHorseItem(ItemStack itemStack) {
         if (itemStack == null || !itemStack.hasItemMeta()) return false;
         PersistentDataContainer data = itemStack.getItemMeta().getPersistentDataContainer();
-        return data.has(BetterHorseKeys.MOUNT_TYPE, PersistentDataType.STRING)
+        return data.has(BetterHorseKeys.GENDER, PersistentDataType.STRING)
+                && (data.has(BetterHorseKeys.MOUNT_TYPE, PersistentDataType.STRING)
                 || (data.has(BetterHorseKeys.HEALTH, PersistentDataType.DOUBLE)
                 && data.has(BetterHorseKeys.SPEED, PersistentDataType.DOUBLE)
-                && data.has(BetterHorseKeys.JUMP, PersistentDataType.DOUBLE));
+                && data.has(BetterHorseKeys.JUMP, PersistentDataType.DOUBLE)));
     }
 
     public static void callSpawnEvent(AbstractHorse horse, ItemStack sourceItem, BetterHorseSpawnEvent.SpawnCause cause) {
         BetterHorses.getInstance().debugLog("API_EVENT", "SPAWN", true, "Calling BetterHorseSpawnEvent for " + horse.getUniqueId() + " cause=" + cause + ".");
         Bukkit.getPluginManager().callEvent(new BetterHorseSpawnEvent(horse, sourceItem, cause));
+    }
+
+    /** Dispatches the spawn event and returns true when a listener rejects it. */
+    public static boolean callCancellableSpawnEvent(AbstractHorse horse, @Nullable ItemStack sourceItem, BetterHorseSpawnEvent.SpawnCause cause) {
+        ItemStack snapshot = sourceItem == null ? null : sourceItem.clone();
+        BetterHorseSpawnEvent event = new BetterHorseSpawnEvent(horse, snapshot, cause);
+        Bukkit.getPluginManager().callEvent(event);
+        return event.isCancelled();
     }
 
     public static boolean callDespawnEvent(AbstractHorse horse, ItemStack resultItem) {

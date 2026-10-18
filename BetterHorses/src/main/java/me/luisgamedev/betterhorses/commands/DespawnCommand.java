@@ -47,7 +47,8 @@ public class DespawnCommand {
             ownerUUID = owner == null ? null : owner.getUniqueId().toString();
         }
 
-        if (ownerUUID != null && !ownerUUID.equals(player.getUniqueId().toString())) {
+        if (plugin.getConfig().getBoolean("settings.restrict-mounting-to-owner", false)
+                && ownerUUID != null && !ownerUUID.equals(player.getUniqueId().toString())) {
             lang.sendFormatted(player, "messages.not-horse-owner", "%mount%", mountName);
             plugin.debugLog("HORSE_DESPAWN", "OWNERSHIP", false, "Player " + player.getName() + " is not owner of " + horse.getUniqueId() + ".");
             return true;

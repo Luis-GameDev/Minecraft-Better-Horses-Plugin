@@ -1,7 +1,5 @@
 package me.luisgamedev.betterhorses;
 
-import com.comphenix.protocol.ProtocolLibrary;
-import com.comphenix.protocol.ProtocolManager;
 import me.luisgamedev.betterhorses.commands.CustomHorseCommand;
 import me.luisgamedev.betterhorses.commands.HorseCommand;
 import me.luisgamedev.betterhorses.commands.HorseCommandCompleter;
@@ -11,16 +9,19 @@ import me.luisgamedev.betterhorses.language.LanguageManager;
 import me.luisgamedev.betterhorses.listeners.HorseMountListener;
 import me.luisgamedev.betterhorses.listeners.*;
 import me.luisgamedev.betterhorses.tasks.TraitParticleTask;
+import me.luisgamedev.betterhorses.shaders.PostProcessingManager;
+import me.luisgamedev.betterhorses.shaders.ShaderConfiguration;
 import me.luisgamedev.betterhorses.utils.WorldAccessPolicy;
 import net.kyori.adventure.platform.bukkit.BukkitAudiences;
 import org.bukkit.Bukkit;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.command.SimpleCommandMap;
 import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
-import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.plugin.PluginManager;
+import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.event.Event;
 import org.bukkit.event.EventException;
 import org.bukkit.event.EventHandler;
@@ -46,13 +47,16 @@ public class BetterHorses extends JavaPlugin {
 
     private static BetterHorses instance;
     private LanguageManager languageManager;
-    private boolean protocolLibAvailable = false;
-    private ProtocolManager protocolManager;
     private BukkitAudiences audiences;
+    private ListenerRegistrationManager listenerRegistrationManager;
+    private PostProcessingManager postProcessingManager;
 
 
     @Override
     public void onDisable() {
+        if (postProcessingManager != null) postProcessingManager.shutdown();
+        me.luisgamedev.betterhorses.traits.TraitRegistry.cleanupAll();
+        if (listenerRegistrationManager != null) listenerRegistrationManager.shutdown();
         if(audiences != null) audiences.close();
     }
 
@@ -63,20 +67,10 @@ public class BetterHorses extends JavaPlugin {
         WorldAccessPolicy.reload(this);
         audiences = BukkitAudiences.create(this);
         debugLog("PLUGIN", "ENABLE_START", true, "Starting BetterHorses plugin bootstrap.");
-        if (getServer().getPluginManager().getPlugin("ProtocolLib") != null) {
-            protocolLibAvailable = true;
-            protocolManager = ProtocolLibrary.getProtocolManager();
-            getLogger().info("Successfully connected to ProtocolLib.");
-        } else {
-            getLogger().info(
-                    "Please install ProtocolLib Version 5.3 for all features to work properly. " +
-                    "Running BetterHorses without ProtocolLib is no problem, but will result in some features being disabled."
-            );
-        }
         languageManager = new LanguageManager(this, audiences);
 
-        registerListeners();
-        getServer().getPluginManager().registerEvents(new WorldCommandListener(), this);
+        configureListeners();
+        listenerRegistrationManager.synchronize();
 
         PluginCommand horseCommand = getCommand("horse");
         if (horseCommand != null) {
@@ -88,6 +82,8 @@ public class BetterHorses extends JavaPlugin {
         getCommand("horsecreate").setTabCompleter(new HorseCreateTabCompleter());
 
         new HorseGrowthManager(this).start();
+        postProcessingManager = new PostProcessingManager(this);
+        postProcessingManager.start();
 
         Bukkit.getScheduler().runTaskTimer(
                 this,
@@ -110,6 +106,16 @@ public class BetterHorses extends JavaPlugin {
         return audiences;
     }
 
+    /** Request a coalesced shader update; safe to call from any thread. */
+    public void refreshShaders(org.bukkit.entity.Player player) {
+        if (postProcessingManager != null) postProcessingManager.requestUpdate(player);
+    }
+
+    /** Call on the mount's owning thread after a metadata change. */
+    public void refreshMountShaders(org.bukkit.entity.Entity mount) {
+        if (postProcessingManager != null) postProcessingManager.requestMountUpdate(mount);
+    }
+
     private void initializeConfigurationFiles() {
         saveDefaultConfig();
         reloadConfig();
@@ -119,11 +125,15 @@ public class BetterHorses extends JavaPlugin {
     }
 
     public void reloadPluginConfiguration() {
+        me.luisgamedev.betterhorses.traits.TraitRegistry.cleanupAll();
+        HorseStepHeightListener.cleanupAll();
         updateYamlWithMissingSections("config.yml", false);
         updateYamlWithMissingSections("language.yml", true);
         reloadConfig();
         WorldAccessPolicy.reload(this);
+        listenerRegistrationManager.synchronize();
         languageManager.reload();
+        if (postProcessingManager != null) postProcessingManager.reload();
         applyHorseCommandAliases();
         Bukkit.getOnlinePlayers().forEach(org.bukkit.entity.Player::updateCommands);
         debugLog("PLUGIN", "RELOAD", true, "Configuration and language files were reloaded.");
@@ -138,7 +148,13 @@ public class BetterHorses extends JavaPlugin {
             saveResource(fileName, false);
         }
 
-        YamlConfiguration currentConfig = YamlConfiguration.loadConfiguration(file);
+        YamlConfiguration currentConfig = new YamlConfiguration();
+        try {
+            currentConfig.load(file);
+        } catch (IOException | InvalidConfigurationException exception) {
+            getLogger().log(Level.WARNING, "Failed to read " + fileName + " while updating file.", exception);
+            return;
+        }
         currentConfig.options().parseComments(true);
         YamlConfiguration defaultConfig;
 
@@ -164,11 +180,16 @@ public class BetterHorses extends JavaPlugin {
         }
 
         try {
-            currentConfig.save(file);
+            if (fileName.equals("config.yml")) {
+                ShaderConfiguration.preserveRules(currentConfig, file);
+                ShaderConfiguration.saveWithBraces(currentConfig, file);
+            } else {
+                currentConfig.save(file);
+            }
             reloadConfig();
             getLogger().info("Updated " + fileName + " with newly added default values.");
             debugLog("CONFIG", "UPDATE", true, "Added missing entries from default " + fileName + ".");
-        } catch (IOException exception) {
+        } catch (IOException | InvalidConfigurationException exception) {
             getLogger().log(Level.WARNING, "Failed to save updated " + fileName + ".", exception);
             debugLog("CONFIG", "UPDATE", false, "Failed to save updated " + fileName + ": " + exception.getMessage());
         }
@@ -179,6 +200,8 @@ public class BetterHorses extends JavaPlugin {
 
         for (String key : defaults.getKeys(false)) {
             String fullPath = parentPath.isEmpty() ? key : parentPath + "." + key;
+            // Shader rules are user actions, not defaults to merge into existing rules.
+            if (fullPath.equals("postprocessing-shaders.rules") && target.contains(key)) continue;
             Object defaultValue = defaults.get(key);
 
             if (defaultValue instanceof ConfigurationSection defaultSection) {
@@ -201,10 +224,6 @@ public class BetterHorses extends JavaPlugin {
         }
 
         return changed;
-    }
-
-    public boolean isProtocolLibAvailable() {
-        return protocolLibAvailable;
     }
 
     public boolean isDebugModeEnabled() {
@@ -251,94 +270,64 @@ public class BetterHorses extends JavaPlugin {
         debugLog("PLUGIN", "COMMAND_ALIAS", true, "Applied /horse aliases: " + aliases);
     }
 
-    private void registerListeners() {
-        PluginManager pluginManager = getServer().getPluginManager();
-        FileConfiguration config = getConfig();
+    private void configureListeners() {
+        listenerRegistrationManager = new ListenerRegistrationManager(this::registerWorldFilteredEvents);
 
-        registerWorldFilteredEvents(new HorseSpawnListener());
-        registerWorldFilteredEvents(new HorseBreedListener());
-        registerWorldFilteredEvents(new HorseFeedListener());
-        registerWorldFilteredEvents(new HorseItemBlockerListener());
-        registerWorldFilteredEvents(new HorseMountListener());
-        registerWorldFilteredEvents(new HorsePermissionListener());
+        defineCore("horse-spawn", HorseSpawnListener::new);
+        defineCore("horse-breed", HorseBreedListener::new);
+        defineCore("horse-feed", HorseFeedListener::new);
+        defineCore("horse-item-blocker", HorseItemBlockerListener::new);
+        // Mount permission enforcement is always active; owner restriction is an optional
+        // second responsibility inside this same listener.
+        defineCore("horse-mount", HorseMountListener::new);
+        defineCore("horse-permission", HorsePermissionListener::new);
+        listenerRegistrationManager.define("world-command", WorldCommandListener::new, () -> true,
+                listener -> getServer().getPluginManager().registerEvents(listener, this));
 
-        debugLog("LISTENER", "REGISTER_BASE", true, "Registered core horse listeners.");
+        listenerRegistrationManager.define("right-click-spawn", RightClickListener::new,
+                () -> getConfig().getBoolean("settings.allow-rightclick-spawn", true));
+        listenerRegistrationManager.define("training-riding", HorseTrainingRidingListener::new,
+                () -> trainingCategoryEnabled("riding"));
+        listenerRegistrationManager.define("training-brushing", HorseTrainingBrushingListener::new,
+                () -> trainingCategoryEnabled("brushing"));
+        listenerRegistrationManager.define("rider-invulnerable", RiderInvulnerableListener::new,
+                () -> getConfig().getBoolean("settings.rider-invulnerable", false));
+        listenerRegistrationManager.define("step-height", HorseStepHeightListener::new,
+                () -> getConfig().getBoolean("settings.fix-step-height", true));
+        listenerRegistrationManager.define("mounted-damage-boost", MountedDamageBoostListener::new,
+                () -> getConfig().getBoolean("settings.mounted-damage-boost.enabled", false));
+        listenerRegistrationManager.define("block-speed-effects", () -> new BlockSpeedEffectListener(this),
+                () -> getConfig().getBoolean("settings.block-speed-effects.enabled", false));
+        listenerRegistrationManager.define("trample", () -> new TrampleListener(this),
+                () -> getConfig().getBoolean("trample.enabled", false));
 
-        if (config.getBoolean("training.enabled", true) && config.getBoolean("training.categories.riding.enabled", true)) {
-            registerWorldFilteredEvents(new HorseTrainingRidingListener());
-            debugLog("LISTENER", "REGISTER", true, "Registered HorseTrainingRidingListener.");
-        }
+        listenerRegistrationManager.define("trait-activation", TraitActivationListener::new,
+                () -> traitsEnabled("hellmare", "dashboost", "kickback", "ghosthorse", "revenantcurse"));
+        listenerRegistrationManager.define("trait-cleanup", TraitCleanupListener::new,
+                () -> traitsEnabled("dashboost", "ghosthorse"));
+        listenerRegistrationManager.define("trait-undead", UndeadTraitListener::new,
+                () -> traitsEnabled("undead"));
+        listenerRegistrationManager.define("trait-passive", PassiveTraitListener::new,
+                () -> traitsEnabled("frosthooves", "featherhooves", "fireheart"));
+        listenerRegistrationManager.define("trait-revenant-curse", RevenantCurseListener::new,
+                () -> traitsEnabled("revenantcurse"));
+        listenerRegistrationManager.define("trait-jump", HorseJumpListener::new,
+                () -> traitsEnabled("skyburst", "heavenhooves"));
 
-        if (config.getBoolean("training.enabled", true) && config.getBoolean("training.categories.brushing.enabled", true)) {
-            registerWorldFilteredEvents(new HorseTrainingBrushingListener());
-            debugLog("LISTENER", "REGISTER", true, "Registered HorseTrainingBrushingListener.");
-        }
+        debugLog("LISTENER", "DEFINE", true, "Configured centralized listener registrations.");
+    }
 
-        if (config.getBoolean("settings.allow-rightclick-spawn", true)) {
-            registerWorldFilteredEvents(new RightClickListener());
-            debugLog("LISTENER", "REGISTER", true, "Registered RightClickListener.");
-        }
+    private void defineCore(String key, java.util.function.Supplier<? extends Listener> factory) {
+        listenerRegistrationManager.define(key, factory, () -> true);
+    }
 
-        if (config.getBoolean("settings.rider-invulnerable", false)) {
-            registerWorldFilteredEvents(new RiderInvulnerableListener());
-            debugLog("LISTENER", "REGISTER", true, "Registered RiderInvulnerableListener.");
-        }
+    private boolean trainingCategoryEnabled(String category) {
+        return getConfig().getBoolean("training.enabled", false)
+                && getConfig().getBoolean("training.categories." + category + ".enabled", true);
+    }
 
-        if (config.getBoolean("settings.fix-step-height", true)) {
-            registerWorldFilteredEvents(new HorseStepHeightListener());
-            debugLog("LISTENER", "REGISTER", true, "Registered HorseStepHeightListener.");
-        }
-
-        if (config.getBoolean("settings.mounted-damage-boost.enabled", false)) {
-            registerWorldFilteredEvents(new MountedDamageBoostListener());
-            debugLog("LISTENER", "REGISTER", true, "Registered MountedDamageBoostListener.");
-        }
-
-        if (config.getBoolean("settings.block-speed-effects.enabled", false)) {
-            registerWorldFilteredEvents(new BlockSpeedEffectListener(this));
-            debugLog("LISTENER", "REGISTER", true, "Registered BlockSpeedEffectListener.");
-        }
-
-        if (config.getBoolean("trample.enabled", true)) {
-            registerWorldFilteredEvents(new TrampleListener(this));
-            debugLog("LISTENER", "REGISTER", true, "Registered TrampleListener.");
-        }
-
-        if (!config.getBoolean("traits.enabled", true)) {
-            debugLog("LISTENER", "REGISTER_TRAITS", false, "Trait listeners were skipped because traits are disabled.");
-            return;
-        }
-
-        if (isAnyTraitEnabled("hellmare", "dashboost", "kickback", "ghosthorse", "revenantcurse")) {
-            registerWorldFilteredEvents(new TraitActivationListener());
-            debugLog("LISTENER", "REGISTER", true, "Registered TraitActivationListener.");
-        }
-
-        if (isAnyTraitEnabled("dashboost", "ghosthorse")) {
-            registerWorldFilteredEvents(new TraitCleanupListener());
-            debugLog("LISTENER", "REGISTER", true, "Registered TraitCleanupListener.");
-        }
-
-        if (isAnyTraitEnabled("undead")) {
-            registerWorldFilteredEvents(new UndeadTraitListener());
-            debugLog("LISTENER", "REGISTER", true, "Registered UndeadTraitListener.");
-        }
-
-        if (isAnyTraitEnabled("frosthooves", "featherhooves", "fireheart")) {
-            registerWorldFilteredEvents(new PassiveTraitListener());
-            debugLog("LISTENER", "REGISTER", true, "Registered PassiveTraitListener.");
-        }
-
-        if (config.getBoolean("traits.revenantcurse.enabled", false)) {
-            registerWorldFilteredEvents(new RevenantCurseListener());
-            debugLog("LISTENER", "REGISTER", true, "Registered RevenantCurseListener.");
-        }
-
-        if (config.getBoolean("traits.skyburst.enabled", false)
-                || config.getBoolean("traits.heavenhooves.enabled", false)) {
-            registerWorldFilteredEvents(new HorseJumpListener());
-            debugLog("LISTENER", "REGISTER", true, "Registered HorseJumpListener.");
-        }
+    private boolean traitsEnabled(String... traits) {
+        return getConfig().getBoolean("traits.enabled", true) && isAnyTraitEnabled(traits);
     }
 
     @SuppressWarnings("unchecked")
@@ -374,15 +363,6 @@ public class BetterHorses extends JavaPlugin {
             return WorldAccessPolicy.isEnabled(entity.getWorld());
         }
         return true;
-    }
-
-    private boolean isHorseTrampleEnabled(FileConfiguration config) {
-        for (me.luisgamedev.betterhorses.utils.SupportedMountType mountType : me.luisgamedev.betterhorses.utils.SupportedMountType.values()) {
-            if (config.getBoolean("settings.horse-trample.mount-types." + mountType.getConfigKey() + ".enabled", false)) {
-                return true;
-            }
-        }
-        return false;
     }
 
     private boolean isAnyTraitEnabled(String... traits) {

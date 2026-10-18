@@ -3,6 +3,7 @@ package me.luisgamedev.betterhorses.listeners;
 import me.luisgamedev.betterhorses.BetterHorses;
 import me.luisgamedev.betterhorses.api.BetterHorseKeys;
 import me.luisgamedev.betterhorses.api.events.BetterHorseBreedEvent;
+import me.luisgamedev.betterhorses.growing.GrowthScale;
 import me.luisgamedev.betterhorses.utils.MountConfig;
 import me.luisgamedev.betterhorses.utils.PermissionUtils;
 import me.luisgamedev.betterhorses.utils.SupportedMountType;
@@ -74,9 +75,6 @@ public class HorseBreedListener implements Listener {
             return;
         }
 
-        father.setAge(0);
-        mother.setAge(0);
-
         long now = System.currentTimeMillis();
 
         PersistentDataContainer dataFather = father.getPersistentDataContainer();
@@ -145,20 +143,29 @@ public class HorseBreedListener implements Listener {
         setJump(child, childJump);
 
         child.getPersistentDataContainer().set(BetterHorseKeys.GENDER, PersistentDataType.STRING, gender);
-        child.getPersistentDataContainer().set(BetterHorseKeys.GROWTH_STAGE, PersistentDataType.INTEGER, 1);
 
         if (MountConfig.isGrowthEnabled(config, childType)) {
-            child.setAgeLock(true);
+            child.getPersistentDataContainer().set(BetterHorseKeys.GROWTH_STAGE, PersistentDataType.INTEGER, 1);
+            int threshold = GrowthScale.normalize(config.getInt("horse-growth-settings.ride-and-breed-threshhold", 7));
+            if (threshold == 1) child.setAdult(); else child.setBaby();
+            child.setAgeLock(!child.isAdult());
+            try {
+                AttributeInstance scale = child.getAttribute(AttributeResolver.generic("SCALE"));
+                if (scale != null) scale.setBaseValue(GrowthScale.forStage(1,
+                        config.getDouble("horse-growth-settings.max-size", 1.3), child.isAdult(),
+                        GrowthScale.babyScale(childType.name(), Bukkit.getBukkitVersion())));
+            } catch (IllegalArgumentException | NoSuchFieldError ignored) {
+                // Servers without SCALE keep their vanilla size.
+            }
         }
 
         if (selectedTrait != null && !selectedTrait.isBlank()) {
             child.getPersistentDataContainer().set(BetterHorseKeys.TRAIT, PersistentDataType.STRING, selectedTrait.toLowerCase());
         }
 
-        // Apply cooldown to both parents
-        if (!config.getBoolean("settings.male-ignore-cooldown", true)) {
-            dataFather.set(BetterHorseKeys.COOLDOWN, PersistentDataType.LONG, now);
-        }
+        // Bukkit's parent roles do not identify the stored genders. Record both
+        // timestamps so item conversion preserves them; cooldown checks apply exemptions.
+        dataFather.set(BetterHorseKeys.COOLDOWN, PersistentDataType.LONG, now);
         dataMother.set(BetterHorseKeys.COOLDOWN, PersistentDataType.LONG, now);
 
         father.setAge(0);
@@ -185,6 +192,7 @@ public class HorseBreedListener implements Listener {
         if (!data.has(BetterHorseKeys.GENDER, PersistentDataType.STRING)) {
             String gender = Math.random() < 0.5 ? "male" : "female";
             data.set(BetterHorseKeys.GENDER, PersistentDataType.STRING, gender);
+            BetterHorses.getInstance().refreshMountShaders(horse);
             return gender;
         }
         return data.getOrDefault(BetterHorseKeys.GENDER, PersistentDataType.STRING, "unknown");
@@ -201,7 +209,9 @@ public class HorseBreedListener implements Listener {
 
     private double mutate(double base, double factor, double max) {
         double mutation = (Math.random() * 2 - 1) * factor;
-        return Math.min(base + mutation, max);
+        double result = base + mutation;
+        if (!Double.isFinite(result)) return Math.max(0.001, Math.min(base, max));
+        return Math.max(0.001, Math.min(result, max));
     }
 
     private double getHealth(AbstractHorse horse) {

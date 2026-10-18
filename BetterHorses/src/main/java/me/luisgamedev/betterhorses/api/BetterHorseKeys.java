@@ -20,6 +20,7 @@ public final class BetterHorseKeys {
     public static final NamespacedKey STYLE = key("style");
     public static final NamespacedKey COLOR = key("color");
     public static final NamespacedKey GROWTH_STAGE = key("growth_stage");
+    public static final NamespacedKey VANILLA_AGE = key("vanilla_age");
     public static final NamespacedKey MOUNT_TYPE = key("mount_type");
     public static final NamespacedKey CAMEL_HUSK = key("camel_husk");
     public static final NamespacedKey TRAIT = key("trait");
@@ -27,11 +28,15 @@ public final class BetterHorseKeys {
     public static final NamespacedKey COOLDOWN = key("cooldown");
 
     public static final NamespacedKey SADDLE = key("saddle");
+    public static final NamespacedKey SADDLE_DATA = key("saddle_data");
     public static final NamespacedKey ARMOR = key("armor");
     public static final NamespacedKey ARMOR_DATA = key("armor_data");
 
     public static final NamespacedKey CHESTED = key("chested");
     public static final NamespacedKey CHEST_CONTENTS = key("chest_contents");
+    public static final NamespacedKey LLAMA_STRENGTH = key("llama_strength");
+    public static final NamespacedKey LLAMA_COLOR = key("llama_color");
+    public static final NamespacedKey LLAMA_DECOR = key("llama_decor");
 
     public static final NamespacedKey BASE_HEALTH = key("base_health");
     public static final NamespacedKey BASE_SPEED = key("base_speed");

@@ -201,11 +201,16 @@ horse-growth-settings:
     mules: true
     donkeys: true
 
-  # The time in minutes that needs to pass until a horse is fully grown
+  # Minutes from newborn stage 1 to fully grown stage 10 (nine equal time intervals).
   time-until-adult: 3
+
+  # Becomes rideable and breedable at this stage, without a sudden size jump.
+  # Baby model compensation follows the mount type and Minecraft version.
+  ride-and-breed-threshhold: 7
 
   # The maximum size a horse can reach, this is the scale applied to a vanilla sized horse
   # If the value remains 1, an adult horse will be vanilla sized
+  # Newborns start at 50% of this value, then grow in nine equal steps to 100%.
   max-size: 1.3 # 30% bigger than vanilla
 
 # General settings
@@ -524,4 +529,21 @@ ItemStack horse = BetterHorsesAPI.createHorseItem(
     boolean dropIfFull, // drop if inventory is full
     String trait        // optional trait name, or null
 );
+```
+
+Minecraft 26.3 servers with the supported Paper/Folia API can also enable configurable client postprocessing shaders. All matching nested conditions contribute effects, with order-independent matching. Updates follow player and world events; integrations can request a refresh after changing placeholders or permissions. See the [postprocessing shader configuration guide](docs/postprocessing-shaders.md) for compatibility, resource pack requirements, conditions, examples, and API hooks.
+
+For example, this YAML flow mapping applies blur while mounted. Every nested section has braces, and commas separate entries:
+
+```yaml
+postprocessing-shaders: {
+  enabled: true,
+  default-namespace: minecraft,
+  rules: {
+    Mounted: {
+      default: "blur",
+      Mounttype: { Horse: { default: "blur" } }
+    }
+  }
+}
 ```

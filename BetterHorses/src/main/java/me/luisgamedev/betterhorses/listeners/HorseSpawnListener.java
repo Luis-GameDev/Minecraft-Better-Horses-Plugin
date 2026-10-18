@@ -3,11 +3,13 @@ package me.luisgamedev.betterhorses.listeners;
 import me.luisgamedev.betterhorses.BetterHorses;
 import me.luisgamedev.betterhorses.api.BetterHorsesAPI;
 import me.luisgamedev.betterhorses.api.events.BetterHorseSpawnEvent;
+import me.luisgamedev.betterhorses.growing.GrowthScale;
 import me.luisgamedev.betterhorses.training.TrainingManager;
+import me.luisgamedev.betterhorses.utils.AttributeResolver;
 import me.luisgamedev.betterhorses.utils.MountConfig;
 import me.luisgamedev.betterhorses.utils.SupportedMountType;
+import org.bukkit.Bukkit;
 import org.bukkit.NamespacedKey;
-import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.entity.AbstractHorse;
 import org.bukkit.entity.SkeletonHorse;
@@ -45,28 +47,14 @@ public class HorseSpawnListener implements Listener {
 
         int stage = 10;
 
-        //if (BetterHorses.getInstance().getConfig().getBoolean("horse-growth-settings.enabled")) {
         boolean growthEnabled = MountConfig.isGrowthEnabled(BetterHorses.getInstance().getConfig(), mountType);
         if (growthEnabled) {
             // Set random growth stage
-            stage = random.nextInt(11); // 0–10
-
-            // Set scale
-            double minScale = 0.7;
-            double maxScale = BetterHorses.getInstance().getConfig().getDouble("horse-growth-settings.max-size", 1.3);
-            double scale = minScale + ((maxScale - minScale) / 10.0) * stage;
-
-            try {
-                AttributeInstance attr = horse.getAttribute(Attribute.valueOf("SCALE"));
-                if (attr != null) {
-                    attr.setBaseValue(scale);
-                }
-            } catch (Exception ignored) {
-                // SCALE not supported – fallback for older Paper versions
-            }
+            stage = 1 + random.nextInt(10);
 
             // Set to adult if threshold met
-            int threshold = 7; // percentage of max growth (70%)
+            int threshold = Math.max(1, Math.min(10,
+                    plugin.getConfig().getInt("horse-growth-settings.ride-and-breed-threshhold", 7)));
             if (stage >= threshold && !horse.isAdult()) {
                 horse.setAdult();
                 horse.setAgeLock(false);
@@ -76,12 +64,25 @@ public class HorseSpawnListener implements Listener {
             } else {
                 horse.setAgeLock(false);
             }
+
+            // Apply after the age transition to account for vanilla baby scaling.
+            double maxScale = plugin.getConfig().getDouble("horse-growth-settings.max-size", 1.3);
+            try {
+                AttributeInstance attr = horse.getAttribute(AttributeResolver.generic("SCALE"));
+                if (attr != null) attr.setBaseValue(GrowthScale.forStage(stage, maxScale, horse.isAdult(),
+                        GrowthScale.babyScale(mountType.name(), Bukkit.getBukkitVersion())));
+            } catch (IllegalArgumentException | NoSuchFieldError ignored) {
+                // SCALE not supported – fallback for older Paper versions.
+            }
+            data.set(growthKey, PersistentDataType.INTEGER, stage);
         }
 
-        data.set(growthKey, PersistentDataType.INTEGER, stage);
         TrainingManager.ensureBaseStats(horse);
         TrainingManager.recalculateAndApplyBonuses(horse);
-        BetterHorsesAPI.callSpawnEvent(horse, null, BetterHorseSpawnEvent.SpawnCause.NATURAL);
+        if (BetterHorsesAPI.callCancellableSpawnEvent(horse, null, BetterHorseSpawnEvent.SpawnCause.NATURAL)) {
+            event.setCancelled(true);
+            return;
+        }
         plugin.debugLog("HORSE_SPAWN", "COMPLETE", true, "Initialized natural mount " + horse.getUniqueId() + " stage=" + stage + ".");
     }
 
