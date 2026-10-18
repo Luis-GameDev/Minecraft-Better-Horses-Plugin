@@ -489,6 +489,11 @@ Version 5.0 and above:
 - Minecraft (Spigot) `1.20.4` - `latest`
 - Java `21+`
 
+# Folia #
+Version 7.0 and above:
+- Minecraft (Folia) `1.20.4` - `latest`
+- Java `21+`
+
 ---
 
 ### 🚀 Installation
