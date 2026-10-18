@@ -42,17 +42,17 @@ postprocessing-shaders:
   # Matching branches add effects together; nested conditions are all required.
   # Put braces around every nested map and commas between sibling entries.
   # A nested default adds an effect while allowing more conditions below it.
-  # Quote shader values and placeholder keys. Use rules: {} for no rules.
-  rules: {
-    Mounted: {
-      default: "blur",
-      Mounttype: {
-        Horse: {
-          default: "blur"
-        }
-      }
-    }
-  }
+  # rules: {
+  #   Mounted: {
+  #     default: "blur",
+  #     Mounttype: {
+  #       Horse: {
+  #         default: "mytextures:mounted"
+  #       }
+  #     }
+  #   }
+  # }
+  rules: {}
 
 # Customizes how big the maximum positive or negative mutation effect is (e.g. 0.05 = ±0.05)
 # e.g. health-factor 3 means the health of the child can be up to 3 HP higher or lower than the average HP of both parents
