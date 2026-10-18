@@ -185,8 +185,12 @@ public class BetterHorses extends JavaPlugin {
         }
 
         try {
-            if (fileName.equals("config.yml")) ShaderConfiguration.preserveRules(currentConfig, file);
-            currentConfig.save(file);
+            if (fileName.equals("config.yml")) {
+                ShaderConfiguration.preserveRules(currentConfig, file);
+                ShaderConfiguration.saveWithBraces(currentConfig, file);
+            } else {
+                currentConfig.save(file);
+            }
             reloadConfig();
             getLogger().info("Updated " + fileName + " with newly added default values.");
             debugLog("CONFIG", "UPDATE", true, "Added missing entries from default " + fileName + ".");
@@ -201,6 +205,8 @@ public class BetterHorses extends JavaPlugin {
 
         for (String key : defaults.getKeys(false)) {
             String fullPath = parentPath.isEmpty() ? key : parentPath + "." + key;
+            // Shader rules are user actions, not defaults to merge into existing rules.
+            if (fullPath.equals("postprocessing-shaders.rules") && target.contains(key)) continue;
             Object defaultValue = defaults.get(key);
 
             if (defaultValue instanceof ConfigurationSection defaultSection) {

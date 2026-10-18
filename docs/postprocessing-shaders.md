@@ -7,29 +7,62 @@ Shader keys identify client resources. A custom key such as `betterhorses:mounte
 Enable the feature in `config.yml` and apply changes with `/horse reload`:
 
 ```yaml
-postprocessing-shaders:
-  enabled: true
-  default-namespace: betterhorses
-  rules:
-    Mounted:
-      default: "mounted"
-      Gender:
-        Male: "maleshader"
+postprocessing-shaders: {
+  enabled: true,
+  default-namespace: betterhorses,
+  rules: {
+    Mounted: {
+      default: "mounted",
+      Gender: {
+        Male: "maleshader",
         Female: "femaleshader"
-      Mounttype:
-        Skeleton_Horse:
-          Traited:
-            default: "shadertraited"
-            Hellmare: "fireshader"
-            Frosthooves:
-              default: "testshader"
-              Placeholder:
+      },
+      Mounttype: {
+        Skeleton_Horse: {
+          Traited: {
+            default: "shadertraited",
+            Hellmare: "fireshader",
+            Frosthooves: {
+              default: "testshader",
+              Placeholder: {
                 "%isCold%": "coldonfrosthoovesshader"
-      Placeholder:
+              }
+            }
+          }
+        }
+      },
+      Placeholder: {
         "%inCombat%": "mountedandincombatshader"
+      }
+    }
+  }
+}
 ```
 
-`Frosthooves` uses a nested `default` because a YAML value cannot be both a scalar string and a section with children. Quote placeholder keys beginning with `%`.
+These braces use YAML's flow mapping syntax; the file remains YAML. Separate entries with commas, put a space after each key's colon, and give every nested section its own `{ ... }`. Indented block entries cannot be placed inside an open flow mapping without their own braces. Quote placeholder selectors beginning with `%` and keys containing literal dots, such as `"betterhorses.shaders.special"` or `"world.rpg"`.
+
+`Frosthooves` uses a nested `default` because a YAML value cannot be both a scalar string and a section with children.
+
+For a smaller example using the vanilla `minecraft:blur` effect:
+
+```yaml
+postprocessing-shaders: {
+  enabled: true,
+  default-namespace: minecraft,
+  rules: {
+    Mounted: {
+      default: "blur",
+      Mounttype: {
+        Horse: { default: "blur" }
+      }
+    }
+  }
+}
+```
+
+This applies blur while riding any supported, enabled mount. The nested horse rule also matches regular horses; the repeated shader key is enabled once.
+
+If the server reports `expected ',' or '}'`, replace the complete malformed `rules` block with the brace example above, then run `/horse reload`. The updater leaves malformed YAML unchanged. Valid existing rules remain supported; config updates may retain block style for commented rule sections to preserve their comments.
 
 Conditions refresh from events rather than a repeating polling task. Mounting, dismounting, player state and location changes, weather changes, respawning, reloading, and BetterHorses mount metadata changes request an update. Multiple requests for a player are combined into one check on the next tick, running on that player's owning thread. The plugin's world filter still applies. An existing `update-interval-ticks` setting from an older configuration is ignored.
 
@@ -44,27 +77,32 @@ In the example, a player riding a male skeleton horse with Frosthooves receives 
 Nesting order does not affect matching. These rules express the same conditions and apply the same effect:
 
 ```yaml
-Mounted:
-  Mounttype:
-    Skeleton_Horse:
-      Traited:
-        Frosthooves: "coldmount"
+Mounted: {
+  Mounttype: {
+    Skeleton_Horse: {
+      Traited: { Frosthooves: "coldmount" }
+    }
+  }
+}
 ```
 
 ```yaml
-Traited:
-  Frosthooves:
-    Mounted:
-      Mounttype:
-        Skeleton_Horse: "coldmount"
+Traited: {
+  Frosthooves: {
+    Mounted: {
+      Mounttype: { Skeleton_Horse: "coldmount" }
+    }
+  }
+}
 ```
 
 Effects can be strings or lists:
 
 ```yaml
-Mounted:
-  default: ["mounted", "betterhorses:colour_tint"]
+Mounted: {
+  default: ["mounted", "betterhorses:colour_tint"],
   Sneaking: "steady_view"
+}
 ```
 
 Unqualified keys use `default-namespace`; fully qualified keys such as `betterhorses:colour_tint` keep their namespace. Repeated references to one key enable that effect once. Effects added by BetterHorses are ordered lexicographically for consistent composition, regardless of YAML nesting or insertion order. Pre-existing effects keep their order. Visual effects can influence one another when combined, so design and test the resource pack with those combinations in mind.
@@ -104,18 +142,21 @@ State names and the built-in condition values are case-insensitive. Spaces, hyph
 For example, apply effects to players in rainy weather, to baby-mount owners, or to players with a permission:
 
 ```yaml
-rules:
-  Weather:
-    Rain:
-      World:
-        world: "rain_view"
-  Owner:
-    Self:
-      Growth:
-        Baby: "young_mount"
-  Permission:
-    betterhorses.shaders.special:
-      Flying: "flight_view"
+rules: {
+  Weather: {
+    Rain: {
+      World: { world: "rain_view" }
+    }
+  },
+  Owner: {
+    Self: {
+      Growth: { Baby: "young_mount" }
+    }
+  },
+  Permission: {
+    "betterhorses.shaders.special": { Flying: "flight_view" }
+  }
+}
 ```
 
 ## PlaceholderAPI
@@ -125,15 +166,16 @@ Placeholder conditions require PlaceholderAPI and the expansion providing each p
 A string or list directly below a placeholder matches when its result is `true`, `yes`, `on`, or `1`, ignoring case and surrounding whitespace. A nested `default` has the same truthy behavior. For other values, use explicit result keys:
 
 ```yaml
-rules:
-  Placeholder:
-    "%isCold%": "cold_view"
-    "%player_health%":
-      "5": "low_health_view"
-    "%some_state%":
-      default: "state_active"
-      "warning":
-        Mounted: "mounted_warning"
+rules: {
+  Placeholder: {
+    "%isCold%": "cold_view",
+    "%player_health%": { "5": "low_health_view" },
+    "%some_state%": {
+      default: "state_active",
+      "warning": { Mounted: "mounted_warning" }
+    }
+  }
+}
 ```
 
 Explicit result checks compare the placeholder's text, rather than interpreting a number or expression. Use an expansion that returns the desired boolean when you need thresholds or more complex conditions.
