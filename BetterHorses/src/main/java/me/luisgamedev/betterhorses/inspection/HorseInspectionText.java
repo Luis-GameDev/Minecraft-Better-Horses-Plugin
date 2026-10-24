@@ -4,8 +4,7 @@ import me.luisgamedev.betterhorses.BetterHorses;
 import me.luisgamedev.betterhorses.api.BetterHorseKeys;
 import me.luisgamedev.betterhorses.growing.GrowthScale;
 import me.luisgamedev.betterhorses.language.LanguageManager;
-import me.luisgamedev.betterhorses.utils.AttributeResolver;
-import me.luisgamedev.betterhorses.utils.HorseDataValidator;
+import me.luisgamedev.betterhorses.utils.HorseStats;
 import me.luisgamedev.betterhorses.utils.MountConfig;
 import me.luisgamedev.betterhorses.utils.SupportedMountType;
 import net.kyori.adventure.text.Component;
@@ -13,8 +12,6 @@ import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.ChatColor;
 import org.bukkit.NamespacedKey;
-import org.bukkit.attribute.Attribute;
-import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.AbstractHorse;
 import org.bukkit.entity.Horse;
@@ -88,10 +85,10 @@ public final class HorseInspectionText {
         values.put("color", plain(horse instanceof Horse ordinary ? ordinary.getColor().name() : ""));
         values.put("style", plain(horse instanceof Horse ordinary ? ordinary.getStyle().name() : ""));
 
-        double maximum = attribute(horse, AttributeResolver.generic("MAX_HEALTH"));
-        double current = HorseDataValidator.normalizeCurrentHealth(maximum, finite(horse.getHealth()));
-        double speed = attribute(horse, AttributeResolver.generic("MOVEMENT_SPEED"));
-        double jump = attribute(horse, AttributeResolver.horseJumpStrength());
+        double maximum = HorseStats.maxHealth(horse);
+        double current = HorseStats.currentHealth(horse);
+        double speed = HorseStats.speed(horse);
+        double jump = HorseStats.jump(horse);
         values.put("current_health", number(current, 2));
         values.put("max_health", number(maximum, 2));
         values.put("health", number(maximum, 2));
@@ -266,11 +263,6 @@ public final class HorseInspectionText {
     static double jumpHeight(double strength) {
         return -0.1817584952 * Math.pow(strength, 3) + 3.689713992 * Math.pow(strength, 2)
                 + 2.128599134 * strength - 0.343930367;
-    }
-
-    private static double attribute(AbstractHorse horse, Attribute attribute) {
-        AttributeInstance instance = horse.getAttribute(attribute);
-        return instance == null ? 0.0 : finite(instance.getValue());
     }
 
     private static double finite(double value) { return Double.isFinite(value) ? value : 0.0; }

@@ -2,9 +2,11 @@ package me.luisgamedev.betterhorses.listeners;
 
 import me.luisgamedev.betterhorses.BetterHorses;
 import me.luisgamedev.betterhorses.api.BetterHorseKeys;
+import me.luisgamedev.betterhorses.training.TrainingManager;
 import me.luisgamedev.betterhorses.traits.TraitParticleResolver;
 import me.luisgamedev.betterhorses.utils.AttributeResolver;
 import me.luisgamedev.betterhorses.utils.HorseArmorUtils;
+import me.luisgamedev.betterhorses.utils.HorseStats;
 import me.luisgamedev.betterhorses.utils.PermissionUtils;
 import me.luisgamedev.betterhorses.utils.SupportedMountType;
 import org.bukkit.Bukkit;
@@ -103,9 +105,9 @@ public class UndeadTraitListener implements Listener {
         Location location = original.getLocation();
         List<Entity> passengers = List.copyOf(original.getPassengers());
         PersistentDataContainer oldData = original.getPersistentDataContainer();
-        double maxHealth = getAttribute(original, AttributeResolver.generic("MAX_HEALTH"), 20.0);
-        double speed = getAttribute(original, AttributeResolver.generic("MOVEMENT_SPEED"), 0.2);
-        double jump = getAttribute(original, AttributeResolver.horseJumpStrength(), 0.7);
+        double maxHealth = HorseStats.maxHealth(original);
+        double speed = HorseStats.speed(original);
+        double jump = HorseStats.jump(original);
         ItemStack armor = HorseArmorUtils.getArmor(original.getInventory());
         ItemStack saddle = original.getInventory().getSaddle();
         boolean carryingChest = original instanceof ChestedHorse chestedHorse && chestedHorse.isCarryingChest();
@@ -129,7 +131,6 @@ public class UndeadTraitListener implements Listener {
             if (chestContents != null) data.set(BetterHorseKeys.UNDEAD_CHEST_CONTENTS, PersistentDataType.STRING, chestContents);
         }
         applyStats(skeleton, maxHealth, speed, jump);
-        skeleton.setHealth(maxHealth);
         skeleton.setTamed(original.isTamed());
         skeleton.setOwner(original.getOwner());
         skeleton.getInventory().setSaddle(saddle == null ? null : saddle.clone());
@@ -150,11 +151,13 @@ public class UndeadTraitListener implements Listener {
         AbstractHorse restored = type.spawn(skeleton.getLocation());
         copyBetterHorsesData(data, restored.getPersistentDataContainer());
         cleanupUndeadKeys(restored.getPersistentDataContainer());
-        double maxHealth = data.getOrDefault(BetterHorseKeys.UNDEAD_ORIGINAL_HEALTH, PersistentDataType.DOUBLE, getAttribute(skeleton, AttributeResolver.generic("MAX_HEALTH"), 20.0));
+        Double storedHealth = HorseStats.stored(data, BetterHorseKeys.UNDEAD_ORIGINAL_HEALTH);
+        Double storedSpeed = HorseStats.stored(data, BetterHorseKeys.UNDEAD_ORIGINAL_SPEED);
+        Double storedJump = HorseStats.stored(data, BetterHorseKeys.UNDEAD_ORIGINAL_JUMP);
+        double maxHealth = storedHealth == null ? HorseStats.maxHealth(skeleton) : storedHealth;
         applyStats(restored, maxHealth,
-                data.getOrDefault(BetterHorseKeys.UNDEAD_ORIGINAL_SPEED, PersistentDataType.DOUBLE, getAttribute(skeleton, AttributeResolver.generic("MOVEMENT_SPEED"), 0.2)),
-                data.getOrDefault(BetterHorseKeys.UNDEAD_ORIGINAL_JUMP, PersistentDataType.DOUBLE, getAttribute(skeleton, AttributeResolver.horseJumpStrength(), 0.7)));
-        restored.setHealth(maxHealth);
+                storedSpeed == null ? HorseStats.speed(skeleton) : storedSpeed,
+                storedJump == null ? HorseStats.jump(skeleton) : storedJump);
         restored.setTamed(skeleton.isTamed());
         restored.setOwner(skeleton.getOwner());
         restored.getInventory().setSaddle(skeleton.getInventory().getSaddle());
@@ -191,8 +194,21 @@ public class UndeadTraitListener implements Listener {
         catch (IllegalArgumentException ignored) { return Material.ENCHANTED_GOLDEN_APPLE; }
     }
     private boolean isUndeadSkeleton(AbstractHorse horse) { return horse.getPersistentDataContainer().has(BetterHorseKeys.UNDEAD_SKELETON, PersistentDataType.BYTE); }
-    private void applyStats(AbstractHorse horse, double health, double speed, double jump) { setAttribute(horse, AttributeResolver.generic("MAX_HEALTH"), health); setAttribute(horse, AttributeResolver.generic("MOVEMENT_SPEED"), speed); setAttribute(horse, AttributeResolver.horseJumpStrength(), jump); }
-    private double getAttribute(AbstractHorse horse, Attribute attribute, double fallback) { AttributeInstance instance = horse.getAttribute(attribute); return instance == null ? fallback : instance.getValue(); }
+    private void applyStats(AbstractHorse horse, double health, double speed, double jump) {
+        PersistentDataContainer data = horse.getPersistentDataContainer();
+        data.set(BetterHorseKeys.HEALTH, PersistentDataType.DOUBLE, health);
+        data.set(BetterHorseKeys.BASE_HEALTH, PersistentDataType.DOUBLE, health);
+        data.set(BetterHorseKeys.SPEED, PersistentDataType.DOUBLE, speed);
+        data.set(BetterHorseKeys.BASE_SPEED, PersistentDataType.DOUBLE, speed);
+        data.set(BetterHorseKeys.JUMP, PersistentDataType.DOUBLE, jump);
+        data.set(BetterHorseKeys.BASE_JUMP, PersistentDataType.DOUBLE, jump);
+        setAttribute(horse, AttributeResolver.generic("MAX_HEALTH"), health);
+        setAttribute(horse, AttributeResolver.generic("MOVEMENT_SPEED"), speed);
+        setAttribute(horse, AttributeResolver.horseJumpStrength(), jump);
+        TrainingManager.recalculateAndApplyBonuses(horse);
+        AttributeInstance maximum = horse.getAttribute(AttributeResolver.generic("MAX_HEALTH"));
+        horse.setHealth(maximum == null ? health : maximum.getValue());
+    }
     private void setAttribute(AbstractHorse horse, Attribute attribute, double value) { AttributeInstance instance = horse.getAttribute(attribute); if (instance != null) instance.setBaseValue(value); }
     private void copyBetterHorsesData(PersistentDataContainer from, PersistentDataContainer to) {
         for (org.bukkit.NamespacedKey key : from.getKeys()) {

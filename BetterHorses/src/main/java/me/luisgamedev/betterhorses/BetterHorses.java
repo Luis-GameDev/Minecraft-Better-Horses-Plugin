@@ -293,6 +293,12 @@ public class BetterHorses extends JavaPlugin {
         listenerRegistrationManager.define("world-command", WorldCommandListener::new, () -> true,
                 listener -> getServer().getPluginManager().registerEvents(listener, this));
 
+        listenerRegistrationManager.define("training-data-lifecycle", () -> new TrainingDataLifecycleListener(this), () -> true,
+                listener -> {
+                    getServer().getPluginManager().registerEvents(listener, this);
+                    ((TrainingDataLifecycleListener) listener).start();
+                });
+
         listenerRegistrationManager.define("right-click-spawn", RightClickListener::new,
                 () -> getConfig().getBoolean("settings.allow-rightclick-spawn", true));
         listenerRegistrationManager.define("training-riding", HorseTrainingRidingListener::new,

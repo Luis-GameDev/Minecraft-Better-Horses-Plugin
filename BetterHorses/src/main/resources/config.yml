@@ -373,6 +373,8 @@ traits:
 
 # Horse training system
 training:
+  # Bonuses apply only during gameplay. Displayed/stored stats and breeding use
+  # the horse's original stats; training progress can still be shown separately.
   # Master toggle for all training categories
   enabled: true
 

@@ -1,5 +1,6 @@
 package me.luisgamedev.betterhorses.api;
 
+import me.luisgamedev.betterhorses.utils.HorseStats;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataContainer;
@@ -50,7 +51,8 @@ public final class BetterHorseItem {
 
     private Optional<Double> getDouble(org.bukkit.NamespacedKey key) {
         ItemMeta meta = itemStack.getItemMeta();
+        if (meta == null) return Optional.empty();
         PersistentDataContainer data = meta.getPersistentDataContainer();
-        return Optional.ofNullable(data.get(key, PersistentDataType.DOUBLE));
+        return Optional.ofNullable(HorseStats.stored(data, key));
     }
 }

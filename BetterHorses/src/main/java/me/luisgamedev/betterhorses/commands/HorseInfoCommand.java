@@ -2,9 +2,9 @@ package me.luisgamedev.betterhorses.commands;
 
 import me.luisgamedev.betterhorses.BetterHorses;
 import me.luisgamedev.betterhorses.api.BetterHorseKeys;
+import me.luisgamedev.betterhorses.api.BetterHorsesAPI;
+import me.luisgamedev.betterhorses.utils.HorseStats;
 import org.bukkit.NamespacedKey;
-import org.bukkit.attribute.Attribute;
-import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.AbstractHorse;
 import org.bukkit.entity.Entity;
@@ -37,6 +37,9 @@ public final class HorseInfoCommand {
 
         if (item != null && !item.getType().isAir() && item.hasItemMeta()) {
             inspectedItem = true;
+            if (BetterHorsesAPI.isHorseItem(item) && BetterHorsesAPI.normalizeStoredStats(item, player)) {
+                player.getInventory().setItemInMainHand(item);
+            }
             ItemMeta meta = item.getItemMeta();
             PersistentDataContainer container = meta.getPersistentDataContainer();
 
@@ -86,21 +89,27 @@ public final class HorseInfoCommand {
             return false;
         }
 
-        PersistentDataContainer data = horse.getPersistentDataContainer();
-        AttributeInstance maxHealth = horse.getAttribute(Attribute.GENERIC_MAX_HEALTH);
-        AttributeInstance speed = horse.getAttribute(Attribute.GENERIC_MOVEMENT_SPEED);
-        AttributeInstance jump = horse.getAttribute(Attribute.valueOf("HORSE_JUMP_STRENGTH"));
+        PersistentDataContainer data = horse.getPersistentDataContainer().getAdapterContext().newPersistentDataContainer();
+        horse.getPersistentDataContainer().copyTo(data, true);
+        double maxHealth = HorseStats.maxHealth(horse);
+        double currentHealth = HorseStats.currentHealth(horse);
+        double speed = HorseStats.speed(horse);
+        double jump = HorseStats.jump(horse);
+        data.set(BetterHorseKeys.HEALTH, PersistentDataType.DOUBLE, maxHealth);
+        data.set(BetterHorseKeys.CURRENT_HEALTH, PersistentDataType.DOUBLE, currentHealth);
+        data.set(BetterHorseKeys.SPEED, PersistentDataType.DOUBLE, speed);
+        data.set(BetterHorseKeys.JUMP, PersistentDataType.DOUBLE, jump);
 
         Map<String, String> placeholders = createCommonPlaceholders(data);
         placeholders.put("%entity_type%", String.valueOf(horse.getType()));
         placeholders.put("%entity_uuid%", String.valueOf(horse.getUniqueId()));
         placeholders.put("%tamed%", String.valueOf(horse.isTamed()));
         placeholders.put("%owner%", horse.getOwner() == null ? "<none>" : horse.getOwner().getUniqueId().toString());
-        placeholders.put("%current_health%", String.format("%.2f", horse.getHealth()));
-        placeholders.put("%max_health%", String.format("%.2f", maxHealth == null ? 0.0 : maxHealth.getBaseValue()));
-        placeholders.put("%health%", String.format("%.2f / %.2f", horse.getHealth(), maxHealth == null ? 0.0 : maxHealth.getBaseValue()));
-        placeholders.put("%speed%", speed == null ? "<none>" : String.format("%.4f", speed.getBaseValue()));
-        placeholders.put("%jump%", jump == null ? "<none>" : String.format("%.4f", jump.getBaseValue()));
+        placeholders.put("%current_health%", String.format("%.2f", currentHealth));
+        placeholders.put("%max_health%", String.format("%.2f", maxHealth));
+        placeholders.put("%health%", String.format("%.2f / %.2f", currentHealth, maxHealth));
+        placeholders.put("%speed%", String.format("%.4f", speed));
+        placeholders.put("%jump%", String.format("%.4f", jump));
         placeholders.put("%trait%", data.getOrDefault(BetterHorseKeys.TRAIT, PersistentDataType.STRING, "<none>"));
         placeholders.put("%gender%", data.getOrDefault(BetterHorseKeys.GENDER, PersistentDataType.STRING, "<none>"));
         placeholders.put("%growth_stage%", String.valueOf(data.getOrDefault(BetterHorseKeys.GROWTH_STAGE, PersistentDataType.INTEGER, -1)));
@@ -289,6 +298,9 @@ public final class HorseInfoCommand {
     }
 
     private static String resolveValue(PersistentDataContainer container, NamespacedKey key) {
+        Double stat = key.equals(BetterHorseKeys.CURRENT_HEALTH)
+                ? HorseStats.storedCurrentHealth(container) : HorseStats.stored(container, key);
+        if (stat != null) return String.valueOf(stat);
         if (container.has(key, PersistentDataType.STRING)) {
             return container.get(key, PersistentDataType.STRING);
         }
