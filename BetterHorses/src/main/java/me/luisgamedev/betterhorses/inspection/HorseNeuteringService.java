@@ -3,6 +3,7 @@ package me.luisgamedev.betterhorses.inspection;
 import me.luisgamedev.betterhorses.BetterHorses;
 import me.luisgamedev.betterhorses.api.BetterHorseKeys;
 import me.luisgamedev.betterhorses.api.events.BetterHorseEntityNeuterEvent;
+import me.luisgamedev.betterhorses.api.events.BetterHorseNeuterEvent;
 import me.luisgamedev.betterhorses.utils.SupportedMountType;
 import me.luisgamedev.betterhorses.utils.WorldAccessPolicy;
 import org.bukkit.Bukkit;
@@ -48,7 +49,9 @@ public final class HorseNeuteringService {
         try {
             ItemStack original = player.getInventory().getItemInMainHand().clone();
             GameMode gameMode = player.getGameMode();
-            BetterHorseEntityNeuterEvent event = new BetterHorseEntityNeuterEvent(player, horse, hand);
+            // The compatibility subtype shares the unified event's handlers and cancellation state.
+            // Dispatch once so both existing entity listeners and unified listeners see this attempt.
+            BetterHorseNeuterEvent event = new BetterHorseEntityNeuterEvent(player, horse, hand);
             Bukkit.getPluginManager().callEvent(event);
             if (event.isCancelled() || !unchanged(player, horse, hand, original, gameMode)) return false;
 
