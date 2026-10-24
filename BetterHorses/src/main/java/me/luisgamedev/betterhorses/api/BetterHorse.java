@@ -1,10 +1,10 @@
 package me.luisgamedev.betterhorses.api;
 
 import me.luisgamedev.betterhorses.BetterHorses;
+import me.luisgamedev.betterhorses.training.TrainingManager;
 import me.luisgamedev.betterhorses.utils.AttributeResolver;
+import me.luisgamedev.betterhorses.utils.HorseStats;
 import org.bukkit.NamespacedKey;
-import org.bukkit.attribute.Attribute;
-import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.entity.AbstractHorse;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
@@ -29,30 +29,30 @@ public final class BetterHorse {
     }
 
     public double getMaxHealth() {
-        AttributeInstance attr = handle.getAttribute(AttributeResolver.generic("MAX_HEALTH"));
-        return attr != null ? attr.getBaseValue() : 0.0;
+        return HorseStats.maxHealth(handle);
     }
 
     public void setMaxHealth(double value) {
-        setAttribute(AttributeResolver.generic("MAX_HEALTH"), BetterHorseKeys.HEALTH, value);
+        TrainingManager.setBaseStat(handle, AttributeResolver.generic("MAX_HEALTH"),
+                BetterHorseKeys.HEALTH, BetterHorseKeys.BASE_HEALTH, value);
     }
 
     public double getSpeed() {
-        AttributeInstance attr = handle.getAttribute(AttributeResolver.generic("MOVEMENT_SPEED"));
-        return attr != null ? attr.getBaseValue() : 0.0;
+        return HorseStats.speed(handle);
     }
 
     public void setSpeed(double value) {
-        setAttribute(AttributeResolver.generic("MOVEMENT_SPEED"), BetterHorseKeys.SPEED, value);
+        TrainingManager.setBaseStat(handle, AttributeResolver.generic("MOVEMENT_SPEED"),
+                BetterHorseKeys.SPEED, BetterHorseKeys.BASE_SPEED, value);
     }
 
     public double getJump() {
-        AttributeInstance attr = handle.getAttribute(Attribute.valueOf("HORSE_JUMP_STRENGTH"));
-        return attr != null ? attr.getBaseValue() : 0.0;
+        return HorseStats.jump(handle);
     }
 
     public void setJump(double value) {
-        setAttribute(Attribute.valueOf("HORSE_JUMP_STRENGTH"), BetterHorseKeys.JUMP, value);
+        TrainingManager.setBaseStat(handle, AttributeResolver.horseJumpStrength(),
+                BetterHorseKeys.JUMP, BetterHorseKeys.BASE_JUMP, value);
     }
 
     public Optional<String> getTrait() {
@@ -116,11 +116,4 @@ public final class BetterHorse {
         }
     }
 
-    private void setAttribute(Attribute attribute, NamespacedKey key, double value) {
-        AttributeInstance attr = handle.getAttribute(attribute);
-        if (attr != null) {
-            attr.setBaseValue(value);
-        }
-        handle.getPersistentDataContainer().set(key, PersistentDataType.DOUBLE, value);
-    }
 }

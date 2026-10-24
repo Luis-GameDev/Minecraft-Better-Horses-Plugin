@@ -4,12 +4,12 @@ import me.luisgamedev.betterhorses.BetterHorses;
 import me.luisgamedev.betterhorses.api.BetterHorseKeys;
 import me.luisgamedev.betterhorses.api.events.BetterHorseBreedEvent;
 import me.luisgamedev.betterhorses.growing.GrowthScale;
+import me.luisgamedev.betterhorses.utils.HorseStats;
 import me.luisgamedev.betterhorses.utils.MountConfig;
 import me.luisgamedev.betterhorses.utils.PermissionUtils;
 import me.luisgamedev.betterhorses.utils.SupportedMountType;
 import org.bukkit.Bukkit;
 import me.luisgamedev.betterhorses.utils.AttributeResolver;
-import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
@@ -215,18 +215,15 @@ public class HorseBreedListener implements Listener {
     }
 
     private double getHealth(AbstractHorse horse) {
-        AttributeInstance attribute = horse.getAttribute(AttributeResolver.generic("MAX_HEALTH"));
-        return attribute != null ? attribute.getBaseValue() : 0.0;
+        return HorseStats.maxHealth(horse);
     }
 
     private double getSpeed(AbstractHorse horse) {
-        AttributeInstance attribute = horse.getAttribute(AttributeResolver.generic("MOVEMENT_SPEED"));
-        return attribute != null ? attribute.getBaseValue() : 0.0;
+        return HorseStats.speed(horse);
     }
 
     private double getJump(AbstractHorse horse) {
-        AttributeInstance attribute = horse.getAttribute(Attribute.valueOf("HORSE_JUMP_STRENGTH"));
-        return attribute != null ? attribute.getBaseValue() : 0.0;
+        return HorseStats.jump(horse);
     }
 
     private void setHealth(AbstractHorse horse, double value) {
@@ -245,7 +242,7 @@ public class HorseBreedListener implements Listener {
     }
 
     private void setJump(AbstractHorse horse, double value) {
-        AttributeInstance attribute = horse.getAttribute(Attribute.valueOf("HORSE_JUMP_STRENGTH"));
+        AttributeInstance attribute = horse.getAttribute(AttributeResolver.horseJumpStrength());
         if (attribute != null) {
             attribute.setBaseValue(value);
         }

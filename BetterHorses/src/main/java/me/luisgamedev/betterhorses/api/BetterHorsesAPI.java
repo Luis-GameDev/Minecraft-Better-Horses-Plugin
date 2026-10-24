@@ -9,6 +9,7 @@ import me.luisgamedev.betterhorses.traits.TraitRegistry;
 import me.luisgamedev.betterhorses.training.TrainingManager;
 import me.luisgamedev.betterhorses.utils.AttributeResolver;
 import me.luisgamedev.betterhorses.utils.HorseArmorUtils;
+import me.luisgamedev.betterhorses.utils.HorseStats;
 import me.luisgamedev.betterhorses.utils.MountConfig;
 import me.luisgamedev.betterhorses.utils.SupportedMountType;
 import org.bukkit.Bukkit;
@@ -188,6 +189,7 @@ public class BetterHorsesAPI {
 
     public static @Nullable AbstractHorse toHorse(@Nonnull ItemStack item, @Nonnull Player player) {
         requireOwnedThread(player, "toHorse");
+        normalizeStoredStats(item, player);
         ItemMeta meta = item.getItemMeta();
         if (meta == null) return null;
 
@@ -285,7 +287,7 @@ public class BetterHorsesAPI {
 
         setAttribute(horse, AttributeResolver.generic("MAX_HEALTH"), health);
         setAttribute(horse, AttributeResolver.generic("MOVEMENT_SPEED"), speed);
-        setAttribute(horse, Attribute.valueOf("HORSE_JUMP_STRENGTH"), jump);
+        setAttribute(horse, AttributeResolver.horseJumpStrength(), jump);
         horse.setHealth(restoredHealth);
         horse.setTamed(true);
         AnimalTamer restoredOwner = player;
@@ -356,6 +358,9 @@ public class BetterHorsesAPI {
             }
         }
 
+        // Restore gameplay bonuses only after genetic stats, training, and current HP are loaded.
+        // Recalculation preserves the stored health fraction and replaces its own modifiers.
+        TrainingManager.recalculateAndApplyBonuses(horse);
         return horse;
         } catch (RuntimeException exception) {
             BetterHorses.getInstance().getLogger().warning("Could not restore mount: " + exception.getMessage());
@@ -409,11 +414,10 @@ public class BetterHorsesAPI {
         TraitRegistry.revertDashBoostIfActive(horse);
         TrainingManager.ensureBaseStats(horse);
 
-        double maxHealth = horse.getAttribute(AttributeResolver.generic("MAX_HEALTH")).getBaseValue();
-        double currentHealth = HorseDataValidator.normalizeCurrentHealth(maxHealth, horse.getHealth());
-        double speed = horse.getAttribute(AttributeResolver.generic("MOVEMENT_SPEED")).getBaseValue();
-        AttributeInstance jumpAttr = horse.getAttribute(Attribute.valueOf("HORSE_JUMP_STRENGTH"));
-        double jump = jumpAttr != null ? jumpAttr.getBaseValue() : 0.0;
+        double maxHealth = HorseStats.maxHealth(horse);
+        double currentHealth = HorseDataValidator.normalizeCurrentHealth(maxHealth, HorseStats.currentHealth(horse));
+        double speed = HorseStats.speed(horse);
+        double jump = HorseStats.jump(horse);
 
         Horse.Style style = horse instanceof Horse ? ((Horse) horse).getStyle() : Horse.Style.WHITE;
         Horse.Color color = horse instanceof Horse ? ((Horse) horse).getColor() : Horse.Color.WHITE;
@@ -647,14 +651,20 @@ public class BetterHorsesAPI {
     private static void copyUndeadData(PersistentDataContainer source, PersistentDataContainer target) {
         copyPdcKey(source, target, BetterHorseKeys.UNDEAD_SKELETON, PersistentDataType.BYTE);
         copyPdcKey(source, target, BetterHorseKeys.UNDEAD_ORIGINAL_TYPE, PersistentDataType.STRING);
-        copyPdcKey(source, target, BetterHorseKeys.UNDEAD_ORIGINAL_HEALTH, PersistentDataType.DOUBLE);
-        copyPdcKey(source, target, BetterHorseKeys.UNDEAD_ORIGINAL_SPEED, PersistentDataType.DOUBLE);
-        copyPdcKey(source, target, BetterHorseKeys.UNDEAD_ORIGINAL_JUMP, PersistentDataType.DOUBLE);
+        copyGeneticStat(source, target, BetterHorseKeys.UNDEAD_ORIGINAL_HEALTH);
+        copyGeneticStat(source, target, BetterHorseKeys.UNDEAD_ORIGINAL_SPEED);
+        copyGeneticStat(source, target, BetterHorseKeys.UNDEAD_ORIGINAL_JUMP);
         copyPdcKey(source, target, BetterHorseKeys.UNDEAD_ORIGINAL_COLOR, PersistentDataType.STRING);
         copyPdcKey(source, target, BetterHorseKeys.UNDEAD_ORIGINAL_STYLE, PersistentDataType.STRING);
         copyPdcKey(source, target, BetterHorseKeys.UNDEAD_ARMOR_DATA, PersistentDataType.BYTE_ARRAY);
         copyPdcKey(source, target, BetterHorseKeys.UNDEAD_CHESTED, PersistentDataType.BYTE);
         copyPdcKey(source, target, BetterHorseKeys.UNDEAD_CHEST_CONTENTS, PersistentDataType.STRING);
+    }
+
+    private static void copyGeneticStat(PersistentDataContainer source, PersistentDataContainer target, NamespacedKey key) {
+        if (!source.has(key, PersistentDataType.DOUBLE)) return;
+        Double value = HorseStats.stored(source, key);
+        if (value != null) target.set(key, PersistentDataType.DOUBLE, value);
     }
 
     private static <T, Z> void copyPdcKey(PersistentDataContainer source, PersistentDataContainer target, NamespacedKey key, PersistentDataType<T, Z> type) {
@@ -897,6 +907,10 @@ public class BetterHorsesAPI {
 
     private static String formatStatLoreLine(FileConfiguration config, LanguageManager lang, @Nullable Player player, boolean speedStat, double value) {
         boolean blocksMode = "BLOCKS".equalsIgnoreCase(config.getString("stats.display-mode", "RAW"));
+        return formatStatLoreLine(lang, player, speedStat, value, blocksMode);
+    }
+
+    private static String formatStatLoreLine(LanguageManager lang, @Nullable Player player, boolean speedStat, double value, boolean blocksMode) {
         if (!blocksMode) {
             String formattedValue = String.format("%.4f", value);
             String legacyKey = speedStat ? "messages.lore-speed" : "messages.lore-jump";
@@ -938,6 +952,53 @@ public class BetterHorsesAPI {
                 || (data.has(BetterHorseKeys.HEALTH, PersistentDataType.DOUBLE)
                 && data.has(BetterHorseKeys.SPEED, PersistentDataType.DOUBLE)
                 && data.has(BetterHorseKeys.JUMP, PersistentDataType.DOUBLE)));
+    }
+
+    /**
+     * Repair items written by the old training implementation. Only genetic stat fields
+     * and matching generated stat lore change; equipment, custom lines, and other metadata stay intact.
+     * Call while owning the inventory that contains this stack.
+     */
+    public static boolean normalizeStoredStats(@Nullable ItemStack item, @Nullable Player viewer) {
+        if (!isHorseItem(item)) return false;
+        ItemMeta meta = item.getItemMeta();
+        PersistentDataContainer data = meta.getPersistentDataContainer();
+        Double oldHealth = data.get(BetterHorseKeys.HEALTH, PersistentDataType.DOUBLE);
+        Double oldSpeed = data.get(BetterHorseKeys.SPEED, PersistentDataType.DOUBLE);
+        Double oldJump = data.get(BetterHorseKeys.JUMP, PersistentDataType.DOUBLE);
+        Double health = HorseStats.stored(data, BetterHorseKeys.HEALTH);
+        Double speed = HorseStats.stored(data, BetterHorseKeys.SPEED);
+        Double jump = HorseStats.stored(data, BetterHorseKeys.JUMP);
+        if (health == null || speed == null || jump == null
+                || (health.equals(oldHealth) && speed.equals(oldSpeed) && jump.equals(oldJump))) return false;
+
+        double current = HorseStats.storedCurrentHealth(data);
+        Double oldCurrent = data.get(BetterHorseKeys.CURRENT_HEALTH, PersistentDataType.DOUBLE);
+        if (oldCurrent == null) oldCurrent = oldHealth;
+        LanguageManager lang = BetterHorses.getInstance().getLang();
+        Map<String, String> replacements = new HashMap<>();
+        if (oldHealth != null && oldCurrent != null) {
+            replacements.put(ChatColor.GRAY + lang.getFormattedRaw(viewer, "messages.lore-health",
+                            "%value%", String.format("%.2f", oldCurrent), "%max%", String.format("%.2f", oldHealth)),
+                    ChatColor.GRAY + lang.getFormattedRaw(viewer, "messages.lore-health",
+                            "%value%", String.format("%.2f", current), "%max%", String.format("%.2f", health)));
+        }
+        for (boolean blocks : new boolean[]{false, true}) {
+            if (oldSpeed != null) replacements.put(formatStatLoreLine(lang, viewer, true, oldSpeed, blocks),
+                    formatStatLoreLine(lang, viewer, true, speed, blocks));
+            if (oldJump != null) replacements.put(formatStatLoreLine(lang, viewer, false, oldJump, blocks),
+                    formatStatLoreLine(lang, viewer, false, jump, blocks));
+        }
+        if (meta.hasLore()) {
+            List<String> lore = new ArrayList<>();
+            for (String line : meta.getLore()) lore.add(replacements.getOrDefault(line, line));
+            meta.setLore(lore);
+        }
+        data.set(BetterHorseKeys.HEALTH, PersistentDataType.DOUBLE, health);
+        data.set(BetterHorseKeys.CURRENT_HEALTH, PersistentDataType.DOUBLE, current);
+        data.set(BetterHorseKeys.SPEED, PersistentDataType.DOUBLE, speed);
+        data.set(BetterHorseKeys.JUMP, PersistentDataType.DOUBLE, jump);
+        return item.setItemMeta(meta);
     }
 
     public static void callSpawnEvent(AbstractHorse horse, ItemStack sourceItem, BetterHorseSpawnEvent.SpawnCause cause) {
