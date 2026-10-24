@@ -522,6 +522,30 @@ loaded as a plugin.
 
 ### 🧠 Plugin API
 
+#### Cancellable interaction events
+
+Events are in `me.luisgamedev.betterhorses.api.events` and use normal Bukkit listener registration.
+
+- `HorseTrampleEvent` fires once per eligible target before damage, knockback, or cooldown. Cancel it to prevent the entire hit. `getRider()`, `getHorse()`, and `getTarget()` identify the participants; `setDamage(...)`, `setKnockback(Vector)`, and `setCooldownTicks(...)` customize the hit. Knockback vectors are copied: change one with `setKnockback(...)`.
+- `BetterHorseNeuterEvent` covers horse items and live mounts. Check `isItem()` or `isEntity()` before reading `getHorseItem()` or `getHorse()`: the other target is `null`. The existing item constructor and item replacement setter remain available. Cancelling live neutering also prevents shears wear, sound, and hurt feedback.
+- The deprecated `BetterHorseEntityNeuterEvent` remains a live-target compatibility subtype. Live neutering dispatches one shared event, so unified and legacy listeners share cancellation and priority ordering.
+
+Existing item-only neuter handlers should begin with `if (!event.isItem()) return;` before reading the item.
+
+```java
+@EventHandler(ignoreCancelled = true)
+public void onTrample(HorseTrampleEvent event) {
+    if (event.getTarget() instanceof Player) event.setCancelled(true);
+}
+
+@EventHandler(ignoreCancelled = true)
+public void onNeuter(BetterHorseNeuterEvent event) {
+    if (event.isEntity()) event.setCancelled(true); // Allow items, block live neutering.
+}
+```
+
+Trample handlers run on the main thread on Paper. On Folia, the rider, horse, and target must share the executing region; stale hits are skipped after movement or region changes.
+
 BetterHorses includes a simple developer API that allows other plugins to create horse items programmatically – no command needed.
 
 #### 🔧 Method
