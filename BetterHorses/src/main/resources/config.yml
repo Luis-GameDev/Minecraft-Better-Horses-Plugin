@@ -18,6 +18,24 @@ world-filter:
 stats:
   display-mode: RAW
 
+# Sneak + right-click a supported horse with an empty main hand to inspect it.
+# Only the inspecting player can see the display. Text and colors are in language.yml.
+# Displays follow the horse as passengers and are never saved to the world.
+# Inspections close before mounting or breeding and are unavailable during love mode.
+horse-inspection:
+  enabled: true
+  duration-seconds: 10
+  # Extra vertical offset above the horse's passenger position (0-8 blocks).
+  height-offset: 0.5
+  # Maximum distance from the horse before the inspection closes (1-64 blocks).
+  view-range: 16
+
+# Optional irreversible interaction: sneak + right-click your tamed horse with shears.
+# Requires betterhorses.neuter; betterhorses.bypass allows neutering another owner's horse.
+# Uses one durability point, honoring Unbreaking, unbreakable tools, and Creative mode.
+horse-neutering:
+  shears-enabled: false
+
 # Configure custom aliases for the /horse command
 command-aliases:
   # - bh

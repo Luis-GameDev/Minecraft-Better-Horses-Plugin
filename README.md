@@ -50,6 +50,13 @@ If you have any questions or need help feel free to join my discord server: http
   Castrated horses are marked and **cannot breed**, just like same-gender pairs.  
   The status is permanently stored in the item and displayed in the lore.
 
+  Optionally enable `horse-neutering.shears-enabled` (default `false`) to neuter a live, tamed horse by sneaking and right-clicking it with shears in your main hand. Requires `betterhorses.neuter` and ownership, or `betterhorses.bypass`. Uses shears durability with normal Unbreaking, unbreakable, and Creative exemptions, plays a shearing sound, and gives harmless hurt feedback. The status survives despawning and respawning.
+
+- 📋 **Private Horse Inspection**
+  Sneak and right-click a supported horse with an empty main hand to see its health, speed, jump, growth, trait, and enabled training stats. Only you see the card, which follows the horse as a passenger. Customize the duration and positioning under `horse-inspection` in `config.yml`, and edit the text, colors, and layout under `horse-inspection` in `language.yml`. Requires `betterhorses.inspect` (default `true`). Mounting or entering breeding mode closes the inspection so the display cannot occupy the horse during those actions.
+
+  Displays are never saved to the world. They are removed on expiry, disconnect, horse removal, chunk/world unload, reload, and shutdown, with tagged stale-display cleanup when entities load. Inspections are temporarily unavailable while a horse is ready to breed.
+
 - 🔥 **Horse Traits (Abilities)**  
   Horses can be born or created with **special traits** that provide passive or active effects such as:
   - `Hellmare` – Leaves a trail of fire when the ability is used

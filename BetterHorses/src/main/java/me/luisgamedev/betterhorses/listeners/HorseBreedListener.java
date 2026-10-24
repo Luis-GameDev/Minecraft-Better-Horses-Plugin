@@ -75,6 +75,12 @@ public class HorseBreedListener implements Listener {
             return;
         }
 
+        // A parent can be neutered after entering love mode but before this event.
+        if (isNeutered(father) || isNeutered(mother)) {
+            event.setCancelled(true);
+            return;
+        }
+
         long now = System.currentTimeMillis();
 
         PersistentDataContainer dataFather = father.getPersistentDataContainer();
@@ -127,7 +133,7 @@ public class HorseBreedListener implements Listener {
 
         BetterHorseBreedEvent betterBreedEvent = new BetterHorseBreedEvent(child, father, mother, childHealth, childSpeed, childJump, gender, selectedTrait);
         Bukkit.getPluginManager().callEvent(betterBreedEvent);
-        if (betterBreedEvent.isCancelled()) {
+        if (betterBreedEvent.isCancelled() || isNeutered(father) || isNeutered(mother)) {
             event.setCancelled(true);
             return;
         }

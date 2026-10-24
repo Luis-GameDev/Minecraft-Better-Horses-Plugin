@@ -5,6 +5,7 @@ import me.luisgamedev.betterhorses.commands.HorseCommand;
 import me.luisgamedev.betterhorses.commands.HorseCommandCompleter;
 import me.luisgamedev.betterhorses.commands.HorseCreateTabCompleter;
 import me.luisgamedev.betterhorses.growing.HorseGrowthManager;
+import me.luisgamedev.betterhorses.inspection.HorseInspectionManager;
 import me.luisgamedev.betterhorses.language.LanguageManager;
 import me.luisgamedev.betterhorses.listeners.HorseMountListener;
 import me.luisgamedev.betterhorses.listeners.*;
@@ -50,10 +51,12 @@ public class BetterHorses extends JavaPlugin {
     private BukkitAudiences audiences;
     private ListenerRegistrationManager listenerRegistrationManager;
     private PostProcessingManager postProcessingManager;
+    private HorseInspectionManager horseInspectionManager;
 
 
     @Override
     public void onDisable() {
+        if (horseInspectionManager != null) horseInspectionManager.shutdown();
         if (postProcessingManager != null) postProcessingManager.shutdown();
         me.luisgamedev.betterhorses.traits.TraitRegistry.cleanupAll();
         if (listenerRegistrationManager != null) listenerRegistrationManager.shutdown();
@@ -68,9 +71,11 @@ public class BetterHorses extends JavaPlugin {
         audiences = BukkitAudiences.create(this);
         debugLog("PLUGIN", "ENABLE_START", true, "Starting BetterHorses plugin bootstrap.");
         languageManager = new LanguageManager(this, audiences);
+        horseInspectionManager = new HorseInspectionManager(this);
 
         configureListeners();
         listenerRegistrationManager.synchronize();
+        horseInspectionManager.start();
 
         PluginCommand horseCommand = getCommand("horse");
         if (horseCommand != null) {
@@ -281,6 +286,10 @@ public class BetterHorses extends JavaPlugin {
         // second responsibility inside this same listener.
         defineCore("horse-mount", HorseMountListener::new);
         defineCore("horse-permission", HorsePermissionListener::new);
+        defineCore("horse-interactions", () -> new HorseInteractionListener(this, horseInspectionManager));
+        // Cleanup must also run in disabled worlds and after a world-filter change.
+        listenerRegistrationManager.define("horse-inspection-cleanup", () -> horseInspectionManager, () -> true,
+                listener -> getServer().getPluginManager().registerEvents(listener, this));
         listenerRegistrationManager.define("world-command", WorldCommandListener::new, () -> true,
                 listener -> getServer().getPluginManager().registerEvents(listener, this));
 

@@ -1,6 +1,7 @@
 package me.luisgamedev.betterhorses.growing;
 
 import me.luisgamedev.betterhorses.BetterHorses;
+import me.luisgamedev.betterhorses.inspection.HorseInspectionManager;
 import me.luisgamedev.betterhorses.utils.MountConfig;
 import me.luisgamedev.betterhorses.utils.AttributeResolver;
 import me.luisgamedev.betterhorses.utils.SupportedMountType;
@@ -51,13 +52,14 @@ public class HorseGrowthManager {
         int minutes = Math.max(1, config.getInt("horse-growth-settings.time-until-adult", 60));
         long stageMillis = GrowthProgress.intervalMillis(minutes);
         Integer stored = data.get(growthKey, PersistentDataType.INTEGER);
+        boolean occupied = horse.getPassengers().stream().anyMatch(passenger -> !HorseInspectionManager.isInspectionDisplay(passenger));
         GrowthProgress progress = GrowthProgress.advance(stored == null ? (horse.isAdult() ? GrowthScale.MAX_STAGE : 1) : stored,
                 data.get(growthUpdatedKey, PersistentDataType.LONG), System.currentTimeMillis(), stageMillis,
-                !horse.getPassengers().isEmpty());
+                occupied);
         boolean stageChanged = stored == null || stored != progress.stage();
         data.set(growthKey, PersistentDataType.INTEGER, progress.stage());
         data.set(growthUpdatedKey, PersistentDataType.LONG, progress.updatedAt());
-        if (!horse.getPassengers().isEmpty()) {
+        if (occupied) {
             if (stageChanged) plugin.refreshMountShaders(horse);
             return;
         }

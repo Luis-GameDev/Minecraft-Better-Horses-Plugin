@@ -1,6 +1,7 @@
 package me.luisgamedev.betterhorses.listeners;
 
 import me.luisgamedev.betterhorses.BetterHorses;
+import me.luisgamedev.betterhorses.inspection.HorseInspectionManager;
 import me.luisgamedev.betterhorses.language.LanguageManager;
 import me.luisgamedev.betterhorses.traits.TraitRegistry;
 import me.luisgamedev.betterhorses.utils.PermissionUtils;
@@ -111,6 +112,7 @@ public class HorseJumpListener implements Listener, ListenerLifecycle {
 
     @EventHandler
     public void onDismount(VehicleExitEvent event) {
+        if (HorseInspectionManager.isInspectionDisplay(event.getExited())) return;
         if (event.getVehicle() instanceof AbstractHorse horse) {
             if (SupportedMountType.isSupported(horse)) {
                 clear(horse);
