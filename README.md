@@ -498,25 +498,11 @@ Version 5.0 and above:
 
 ### 🚀 Installation
 
-1. For this Folia branch, build the plugin on Java 21 from the `BetterHorses` directory:
-
-   ```sh
-   ./gradlew clean build
-   ```
-
-   On Windows, use `gradlew.bat clean build`. The installable artifact is
-   `BetterHorses/build/libs/BetterHorses-6.5-Folia.jar`. The build checks that this
-   shaded JAR contains `plugin.yml` at its root, the Folia support flag, plugin
-   classes, configuration files, and bundled runtime dependencies.
+1. Download the `BetterHorses-7.1.jar` from this repo.
 
 2. Place it into your server’s `plugins/` folder and restart the server to generate the config file.
 
-3. Adjust the values in the `config.yml` and `language.yml` file and use `/horse reload` to apply the changes.
-
-If Folia reports that the JAR does not contain `paper-plugin.yml` or `plugin.yml`,
-replace that file with the generated JAR above and restart the server. Deploy the
-JAR itself; a renamed source ZIP or an archive of the build directory cannot be
-loaded as a plugin.
+3. Adjust the values in the `config.yml` and `language.yml` file.
 
 ---
 
