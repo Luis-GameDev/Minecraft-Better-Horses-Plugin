@@ -31,6 +31,7 @@ Visible growth/random size needs `SCALE`, which Minecraft 1.20.4 does not expose
 ```yaml
 horse-inspection:
   enabled: true
+  only-tamed: true
   duration-seconds: 10
   height-offset: 0.5
   view-range: 16
@@ -46,7 +47,7 @@ random-size-factor:
 
 When global neutering is false, new neutering is blocked through commands, shears and newly created API/command items. `/horse neuter` is removed from routing, suggestions and generated help after reload. Previously neutered horses remain infertile.
 
-Enable shears neutering, then sneak/right-click a tamed owned mount with main-hand shears. `betterhorses.neuter` is required; `betterhorses.bypass` permits another owner's mount. Normal durability, Unbreaking, unbreakable tools and Creative mode are respected; event cancellation prevents state, wear and feedback. Sneak/right-click with an empty main hand opens the private inspection card when `horse-inspection.enabled` and `betterhorses.inspect` allow it. See [Neutering](https://github.com/Luis-GameDev/Minecraft-Better-Horses-Plugin/wiki/command_neuter) and [Configuration](https://github.com/Luis-GameDev/Minecraft-Better-Horses-Plugin/wiki/config.yml#horse-inspection).
+Enable shears neutering, then sneak/right-click a tamed owned mount with main-hand shears. `betterhorses.neuter` is required; `betterhorses.bypass` permits another owner's mount. Normal durability, Unbreaking, unbreakable tools and Creative mode are respected; event cancellation prevents state, wear and feedback. Sneak/right-click with an empty main hand opens the private inspection card when `horse-inspection.enabled` and `betterhorses.inspect` allow it. Inspection is limited to tamed mounts by default; set `horse-inspection.only-tamed: false` to allow untamed mounts. See [Neutering](https://github.com/Luis-GameDev/Minecraft-Better-Horses-Plugin/wiki/command_neuter) and [Configuration](https://github.com/Luis-GameDev/Minecraft-Better-Horses-Plugin/wiki/config.yml#horse-inspection).
 
 The size multiplier is omitted from item lore and inspection. Missing legacy values are initialized once; capture/respawn, restart and undead transformation preserve it. Changing the factor does not reroll existing data. Disabling sizing keeps stored values and stops applying its own variation while preserving unrelated external changes. See [Random size](https://github.com/Luis-GameDev/Minecraft-Better-Horses-Plugin/blob/main/docs/wiki/random-size.md).
 

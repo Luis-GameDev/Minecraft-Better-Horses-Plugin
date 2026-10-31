@@ -102,6 +102,7 @@ public final class HorseInspectionManager implements Listener, ListenerLifecycle
         long expectedGeneration = generation.get();
         FileConfiguration config = configuration.get();
         if (!config.getBoolean("horse-inspection.enabled", true) || !viewer.isOnline() || viewer.isDead()
+                || (config.getBoolean("horse-inspection.only-tamed", true) && !horse.isTamed())
                 || !horse.isValid() || horse.isDead() || horse.isLoveMode() || !viewer.getWorld().equals(horse.getWorld())
                 || !WorldAccessPolicy.isEnabled(horse.getWorld())) return false;
         double range = finiteRange(config.getDouble("horse-inspection.view-range", 16.0D), 16.0D, 1.0D, 64.0D);
@@ -208,6 +209,7 @@ public final class HorseInspectionManager implements Listener, ListenerLifecycle
                 && inspection.viewer.getWorld().equals(inspection.horse.getWorld())
                 && WorldAccessPolicy.isEnabled(inspection.horse.getWorld())
                 && configuration.get().getBoolean("horse-inspection.enabled", true)
+                && (!configuration.get().getBoolean("horse-inspection.only-tamed", true) || inspection.horse.isTamed())
                 && inspection.viewer.getLocation().distanceSquared(inspection.horse.getLocation()) <= inspection.rangeSquared;
     }
 

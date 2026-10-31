@@ -36,6 +36,63 @@ import java.util.logging.Logger;
 import static org.junit.jupiter.api.Assertions.*;
 
 class HorseInspectionManagerTest {
+    @Test void defaultAndEnabledTamedOnlySettingRejectWildMountsBeforeSpawning() {
+        for (boolean explicit : new boolean[]{false, true}) {
+            try (Fixture f = new Fixture()) {
+                if (explicit) f.config.set("horse-inspection.only-tamed", true);
+                f.horse.tamed = false;
+                assertFalse(f.show());
+                assertTrue(f.displays.isEmpty());
+                assertEquals(0, f.runtime.active());
+                f.horse.tamed = true;
+                assertTrue(f.show());
+            }
+        }
+    }
+
+    @Test void disablingTamedOnlySettingAllowsUntamedMountsToRemainInspected() {
+        try (Fixture f = new Fixture()) {
+            f.horse.tamed = false;
+            f.config.set("horse-inspection.only-tamed", false);
+            assertTrue(f.show());
+            f.runtime.monitor().fire();
+            assertTrue(f.lastDisplay().valid);
+            assertEquals(2, f.runtime.active());
+        }
+    }
+
+    @Test void anInspectedMountBecomingUntamedClosesTheDisplay() {
+        try (Fixture f = new Fixture()) {
+            assertTrue(f.show());
+            f.horse.tamed = false;
+            f.runtime.monitor().fire();
+            assertFalse(f.lastDisplay().valid);
+            assertEquals(0, f.runtime.active());
+        }
+    }
+
+    @Test void enablingTamedOnlySettingClosesAnExistingUntamedInspection() {
+        try (Fixture f = new Fixture()) {
+            f.config.set("horse-inspection.only-tamed", false);
+            f.horse.tamed = false;
+            assertTrue(f.show());
+            f.config.set("horse-inspection.only-tamed", true);
+            f.runtime.monitor().fire();
+            assertFalse(f.lastDisplay().valid);
+            assertEquals(0, f.runtime.active());
+        }
+    }
+
+    @Test void passengerCallbackUntamingTheMountAbortsBeforeRevealingItsDisplay() {
+        try (Fixture f = new Fixture()) {
+            f.failure = "untame";
+            assertFalse(f.show());
+            assertFalse(f.lastDisplay().valid);
+            assertEquals(0, f.viewer.reveals);
+            assertEquals(0, f.runtime.active());
+        }
+    }
+
     @Test void displayIsPrivateBeforeInsertionAndExpiresOnItsOwnEntityScheduler() {
         try (Fixture f = new Fixture()) {
             assertTrue(f.show());
@@ -339,7 +396,7 @@ class HorseInspectionManagerTest {
         final List<Entity> passengers = new ArrayList<>();
         Entity vehicle;
         int region = 1, reveals, hides, removeCalls, removalFailures;
-        boolean valid = true, online = true, persistent = true, visibleByDefault = true, checkedBeforeInsertion, inLove, retired;
+        boolean valid = true, online = true, persistent = true, visibleByDefault = true, tamed = true, checkedBeforeInsertion, inLove, retired;
         double x;
         Actor(Fixture f, Class<? extends Entity> type) {
             PersistentDataContainer pdc = proxy(PersistentDataContainer.class, (self, method, args) -> {
@@ -363,6 +420,7 @@ class HorseInspectionManagerTest {
                     case "isDead" -> !valid;
                     case "isOnline" -> online;
                     case "isLoveMode" -> inLove;
+                    case "isTamed" -> tamed;
                     case "getPersistentDataContainer" -> pdc;
                     case "setPersistent" -> { persistent = (boolean) args[0]; yield null; }
                     case "setVisibleByDefault" -> { visibleByDefault = (boolean) args[0]; yield null; }
@@ -376,6 +434,7 @@ class HorseInspectionManagerTest {
                         passenger.vehicle = (Entity) self;
                         passengers.add(passenger.entity);
                         if (f.failure.equals("transfer")) { region = 2; passenger.region = 2; }
+                        if (f.failure.equals("untame")) tamed = false;
                         yield true;
                     }
                     case "showEntity" -> { if (f.failure.equals("reveal")) throw new IllegalStateException("reveal failed"); reveals++; yield null; }

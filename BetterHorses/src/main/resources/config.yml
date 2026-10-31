@@ -23,6 +23,8 @@ stats:
 # Inspections close before mounting or breeding and are unavailable during love mode.
 horse-inspection:
   enabled: true
+  # Only allow inspection of tamed mounts.
+  only-tamed: true
   duration-seconds: 10
   # Extra vertical offset above the horse's passenger position (0-8 blocks).
   height-offset: 0.5
