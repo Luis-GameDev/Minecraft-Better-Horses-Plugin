@@ -27,6 +27,7 @@ messages:
   invalid-item: "You must hold a valid horse item in your main hand."
   invalid-vehicle: "You must ride a horse to despawn it."
   cant-spawn: "You can't spawn your horse here."
+  cant-spawn-chested: "Could not restore this %mount% and its chest. The horse item was kept; its stored inventory could not be restored safely."
   cant-despawn: "You can't despawn your horse here."
   cant-despawn-chested: "You can't despawn this %mount% with a chest on it."
   config-reloaded: "Configuration reloaded successfully."

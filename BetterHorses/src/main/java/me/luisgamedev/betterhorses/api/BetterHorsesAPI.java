@@ -9,6 +9,7 @@ import me.luisgamedev.betterhorses.traits.TraitRegistry;
 import me.luisgamedev.betterhorses.training.TrainingManager;
 import me.luisgamedev.betterhorses.utils.AttributeResolver;
 import me.luisgamedev.betterhorses.utils.HorseArmorUtils;
+import me.luisgamedev.betterhorses.utils.ItemStackSerialization;
 import me.luisgamedev.betterhorses.utils.HorseStats;
 import me.luisgamedev.betterhorses.utils.MountConfig;
 import me.luisgamedev.betterhorses.utils.SupportedMountType;
@@ -250,6 +251,14 @@ public class BetterHorsesAPI {
             return null;
         }
 
+        // Reject unreadable inventory data before inserting an incomplete replacement into the world.
+        try {
+            validateStoredInventory(data);
+        } catch (RuntimeException exception) {
+            BetterHorses.getInstance().getLogger().warning("Could not read stored mount inventory: " + exception.getMessage());
+            return null;
+        }
+
         AbstractHorse horse;
         try {
             if (camelHusk && mountType == SupportedMountType.CAMEL) {
@@ -334,6 +343,7 @@ public class BetterHorsesAPI {
         }
         copyTextureData(data, horseData);
         copyUndeadData(data, horseData);
+        TraitRegistry.copyCooldowns(data, horseData);
 
         if (trait != null && !trait.isBlank()) {
             horseData.set(BetterHorseKeys.TRAIT, PersistentDataType.STRING, trait);
@@ -357,18 +367,17 @@ public class BetterHorsesAPI {
             } catch (Exception ignored) {}
         }
 
-        if (saddleStr != null) {
+        if (saddleStr != null || saddleData != null) {
             ItemStack restoredSaddle = restoreEquipment(saddleData, saddleStr);
             if (restoredSaddle == null) throw new IllegalArgumentException("Invalid saddle data");
             horse.getInventory().setSaddle(restoredSaddle);
         }
         if (horse instanceof Llama llama) restoreLlama(llama, data);
         restoreChestContents(horse, chested != null && chested == (byte) 1, chestContents);
-        if (!undeadSkeleton && armorStr != null) {
+        if (!undeadSkeleton && (armorStr != null || armorData != null)) {
             ItemStack armorItem = restoreArmorItem(armorStr, armorData);
-            if (armorItem != null) {
-                HorseArmorUtils.setArmor(horse.getInventory(), armorItem);
-            }
+            if (armorItem == null) throw new IllegalArgumentException("Invalid armor data");
+            HorseArmorUtils.setArmor(horse.getInventory(), armorItem);
         }
 
         // Restore gameplay bonuses only after genetic stats, training, and current HP are loaded.
@@ -442,7 +451,22 @@ public class BetterHorsesAPI {
         if (carryingChest && !plugin.getConfig().getBoolean("settings.allow-chested-mount-despawn", false)) {
             return null;
         }
-        String serializedChestContents = carryingChest ? serializeStorageContents(horse.getInventory().getStorageContents()) : null;
+        // Finish every inventory serialization before returning a consumable horse item.
+        // A failed snapshot must leave the live mount available to the caller.
+        String serializedChestContents;
+        String serializedSaddle;
+        String serializedArmor;
+        String serializedDecor;
+        try {
+            serializedChestContents = carryingChest ? serializeStorageContents(inv.getStorageContents()) : null;
+            serializedSaddle = saddle == null ? null : Base64.getEncoder().encodeToString(ItemStackSerialization.serialize(saddle));
+            serializedArmor = armor == null ? null : Base64.getEncoder().encodeToString(ItemStackSerialization.serialize(armor));
+            ItemStack decor = horse instanceof Llama llama ? llama.getInventory().getDecor() : null;
+            serializedDecor = decor == null ? null : Base64.getEncoder().encodeToString(ItemStackSerialization.serialize(decor));
+        } catch (RuntimeException exception) {
+            plugin.getLogger().warning("Could not capture mount inventory: " + exception.getMessage());
+            return null;
+        }
 
         ItemStack item = new ItemStack(getHorseItemMaterial());
         ItemMeta meta = item.getItemMeta();
@@ -502,16 +526,17 @@ public class BetterHorsesAPI {
             itemData.set(BetterHorseKeys.CAMEL_HUSK, PersistentDataType.BYTE, (byte) 1);
         }
         copyUndeadData(data, itemData);
+        TraitRegistry.copyCooldowns(data, itemData);
         if (trait != null) itemData.set(traitKey, PersistentDataType.STRING, trait.toLowerCase());
         if (isNeutered) itemData.set(neuterKey, PersistentDataType.BYTE, (byte) 1);
         if (cooldown != null) itemData.set(BetterHorseKeys.COOLDOWN, PersistentDataType.LONG, cooldown);
         if (saddle != null) {
             itemData.set(BetterHorseKeys.SADDLE, PersistentDataType.STRING, saddle.getType().name());
-            itemData.set(BetterHorseKeys.SADDLE_DATA, PersistentDataType.STRING, Base64.getEncoder().encodeToString(saddle.serializeAsBytes()));
+            itemData.set(BetterHorseKeys.SADDLE_DATA, PersistentDataType.STRING, serializedSaddle);
         }
         if (armor != null) {
             itemData.set(BetterHorseKeys.ARMOR, PersistentDataType.STRING, armor.getType().name());
-            itemData.set(BetterHorseKeys.ARMOR_DATA, PersistentDataType.STRING, Base64.getEncoder().encodeToString(armor.serializeAsBytes()));
+            itemData.set(BetterHorseKeys.ARMOR_DATA, PersistentDataType.STRING, serializedArmor);
         }
         if (carryingChest) {
             itemData.set(BetterHorseKeys.CHESTED, PersistentDataType.BYTE, (byte) 1);
@@ -522,9 +547,7 @@ public class BetterHorsesAPI {
         if (horse instanceof Llama llama) {
             itemData.set(BetterHorseKeys.LLAMA_STRENGTH, PersistentDataType.INTEGER, llama.getStrength());
             itemData.set(BetterHorseKeys.LLAMA_COLOR, PersistentDataType.STRING, llama.getColor().name());
-            ItemStack decor = llama.getInventory().getDecor();
-            if (decor != null) itemData.set(BetterHorseKeys.LLAMA_DECOR, PersistentDataType.STRING,
-                    Base64.getEncoder().encodeToString(decor.serializeAsBytes()));
+            if (serializedDecor != null) itemData.set(BetterHorseKeys.LLAMA_DECOR, PersistentDataType.STRING, serializedDecor);
         }
         applyResolvedTextureData(meta, readTextureData(data));
 
@@ -538,29 +561,44 @@ public class BetterHorsesAPI {
     }
 
     private static void restoreChestContents(AbstractHorse horse, boolean carryingChest, @Nullable String serializedContents) {
-        if (!(horse instanceof ChestedHorse chestedHorse) || !carryingChest) {
-            return;
+        if (!carryingChest) return;
+        if (!(horse instanceof ChestedHorse chestedHorse)) {
+            throw new IllegalArgumentException("Stored chest does not match mount type");
         }
         chestedHorse.setCarryingChest(true);
-        if (serializedContents == null || serializedContents.isBlank()) {
-            return;
-        }
+        // Older item formats could store only the empty-chest flag.
+        if (serializedContents == null) return;
         ItemStack[] contents = deserializeStorageContents(serializedContents);
-        if (contents != null) {
-            if (contents.length > horse.getInventory().getStorageContents().length) {
-                throw new IllegalArgumentException("Stored chest exceeds mount capacity");
-            }
-            horse.getInventory().setStorageContents(contents);
+        if (contents.length > horse.getInventory().getStorageContents().length) {
+            throw new IllegalArgumentException("Stored chest exceeds mount capacity");
         }
+        horse.getInventory().setStorageContents(contents);
     }
 
-    private static @Nullable ItemStack restoreEquipment(@Nullable String encoded, String legacyMaterial) {
-        if (encoded != null && !encoded.isBlank()) {
-            try { return ItemStack.deserializeBytes(Base64.getDecoder().decode(encoded)); }
-            catch (IllegalArgumentException exception) { return null; }
+    private static @Nullable ItemStack restoreEquipment(@Nullable String encoded, @Nullable String legacyMaterial) {
+        if (encoded != null) {
+            if (encoded.isBlank()) throw new IllegalArgumentException("Empty equipment payload");
+            return ItemStackSerialization.deserialize(Base64.getDecoder().decode(encoded));
         }
-        Material material = Material.matchMaterial(legacyMaterial);
-        return material == null ? null : new ItemStack(material);
+        Material material = legacyMaterial == null ? null : Material.matchMaterial(legacyMaterial);
+        return material == null || !material.isItem() ? null : new ItemStack(material);
+    }
+
+    private static void validateStoredInventory(PersistentDataContainer data) {
+        String saddle = data.get(BetterHorseKeys.SADDLE, PersistentDataType.STRING);
+        String saddleData = data.get(BetterHorseKeys.SADDLE_DATA, PersistentDataType.STRING);
+        if ((saddle != null || saddleData != null) && restoreEquipment(saddleData, saddle) == null) {
+            throw new IllegalArgumentException("Invalid stored saddle");
+        }
+        String armor = data.get(BetterHorseKeys.ARMOR, PersistentDataType.STRING);
+        String armorData = data.get(BetterHorseKeys.ARMOR_DATA, PersistentDataType.STRING);
+        if ((armor != null || armorData != null) && restoreEquipment(armorData, armor) == null) {
+            throw new IllegalArgumentException("Invalid stored armor");
+        }
+        String decor = data.get(BetterHorseKeys.LLAMA_DECOR, PersistentDataType.STRING);
+        if (decor != null) restoreEquipment(decor, Material.WHITE_CARPET.name());
+        String chest = data.get(BetterHorseKeys.CHEST_CONTENTS, PersistentDataType.STRING);
+        if (chest != null) deserializeStorageContents(chest);
     }
 
     private static void restoreLlama(Llama llama, PersistentDataContainer data) {
@@ -579,31 +617,41 @@ public class BetterHorsesAPI {
         }
     }
 
-    private static @Nullable String serializeStorageContents(ItemStack[] contents) {
+    private static String serializeStorageContents(ItemStack[] contents) {
+        if (contents == null || contents.length > 256) throw new IllegalArgumentException("Invalid chest inventory size");
         try (ByteArrayOutputStream byteOutput = new ByteArrayOutputStream();
              BukkitObjectOutputStream output = new BukkitObjectOutputStream(byteOutput)) {
             output.writeInt(contents.length);
-            for (ItemStack content : contents) {
-                output.writeObject(content);
-            }
+            for (ItemStack content : contents) output.writeObject(content);
             return Base64.getEncoder().encodeToString(byteOutput.toByteArray());
-        } catch (IOException ignored) {
-            return null;
+        } catch (IOException exception) {
+            throw new IllegalArgumentException("Could not serialize chest inventory", exception);
         }
     }
 
-    private static @Nullable ItemStack[] deserializeStorageContents(String serializedContents) {
-        try (ByteArrayInputStream byteInput = new ByteArrayInputStream(Base64.getDecoder().decode(serializedContents));
+    private static ItemStack[] deserializeStorageContents(String serializedContents) {
+        if (serializedContents == null || serializedContents.isBlank()) {
+            throw new IllegalArgumentException("Empty chest inventory payload");
+        }
+        if (serializedContents.length() > 12 * 1024 * 1024) throw new IllegalArgumentException("Stored chest is too large");
+        byte[] bytes = Base64.getDecoder().decode(serializedContents);
+        if (bytes.length > 8 * 1024 * 1024) throw new IllegalArgumentException("Stored chest is too large");
+        try (ByteArrayInputStream byteInput = new ByteArrayInputStream(bytes);
              BukkitObjectInputStream input = new BukkitObjectInputStream(byteInput)) {
+            input.setObjectInputFilter(info -> info.depth() > 64 || info.references() > 100_000
+                    || info.arrayLength() > 1_000_000 || info.streamBytes() > 8 * 1024 * 1024
+                    ? java.io.ObjectInputFilter.Status.REJECTED : java.io.ObjectInputFilter.Status.UNDECIDED);
             int length = input.readInt();
+            if (length < 0 || length > 256) throw new IOException("Invalid chest inventory size");
             ItemStack[] contents = new ItemStack[length];
             for (int i = 0; i < length; i++) {
                 Object object = input.readObject();
-                contents[i] = object instanceof ItemStack itemStack ? itemStack : null;
+                if (object != null && !(object instanceof ItemStack)) throw new IOException("Invalid chest inventory entry");
+                contents[i] = (ItemStack) object;
             }
             return contents;
-        } catch (IOException | ClassNotFoundException | IllegalArgumentException ignored) {
-            return null;
+        } catch (IOException | ClassNotFoundException | IllegalArgumentException exception) {
+            throw new IllegalArgumentException("Could not decode chest inventory", exception);
         }
     }
 
@@ -732,19 +780,8 @@ public class BetterHorsesAPI {
         return lang.getFormattedRaw(player, "messages.horse-item-name", "%name%", displayName, "%gender%", genderSymbol);
     }
 
-    private static @Nullable ItemStack restoreArmorItem(String armorMaterial, @Nullable String serializedArmor) {
-        if (serializedArmor != null && !serializedArmor.isBlank()) {
-            try {
-                return ItemStack.deserializeBytes(Base64.getDecoder().decode(serializedArmor));
-            } catch (IllegalArgumentException ignored) {
-            }
-        }
-
-        try {
-            return new ItemStack(Material.valueOf(armorMaterial));
-        } catch (IllegalArgumentException ignored) {
-            return null;
-        }
+    private static @Nullable ItemStack restoreArmorItem(@Nullable String armorMaterial, @Nullable String serializedArmor) {
+        return restoreEquipment(serializedArmor, armorMaterial);
     }
 
     private static List<String> buildHorseLore(

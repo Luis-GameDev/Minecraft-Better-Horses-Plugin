@@ -32,6 +32,16 @@ class TaskRegistryTest {
         assertEquals(1, registry.size());
     }
 
+    @Test
+    void ownershipArrivingAfterShutdownIsCancelledRatherThanLeaked() {
+        TaskRegistry registry = new TaskRegistry();
+        registry.cancelAll();
+        FakeHandle late = new FakeHandle();
+        registry.own(late);
+        assertTrue(late.cancelled);
+        assertEquals(0, registry.size());
+    }
+
     private static final class FakeHandle implements ScheduledTaskHandle {
         private boolean cancelled;
         private boolean done;

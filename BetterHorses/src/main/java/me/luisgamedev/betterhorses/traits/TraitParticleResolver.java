@@ -1,17 +1,22 @@
 package me.luisgamedev.betterhorses.traits;
 
 import me.luisgamedev.betterhorses.BetterHorses;
+import me.luisgamedev.betterhorses.utils.RuntimeCompat;
 import org.bukkit.Particle;
 
-import java.util.HashSet;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.Locale;
 import java.util.Set;
 
 public final class TraitParticleResolver {
 
-    private static final Set<String> warnedInvalidParticles = new HashSet<>();
+    private static final Set<String> warnedInvalidParticles = ConcurrentHashMap.newKeySet();
 
     private TraitParticleResolver() {
+    }
+
+    public static Particle getTraitParticle(String traitKey, String... fallbackNames) {
+        return getTraitParticle(traitKey, RuntimeCompat.particle(fallbackNames));
     }
 
     public static Particle getTraitParticle(String traitKey, Particle fallback) {
@@ -25,7 +30,7 @@ public final class TraitParticleResolver {
 
         String normalized = configured.trim().toUpperCase(Locale.ROOT);
         try {
-            return Particle.valueOf(normalized);
+            return RuntimeCompat.particle(normalized);
         } catch (IllegalArgumentException ignored) {
             String warningKey = traitKey.toLowerCase(Locale.ROOT) + ":" + normalized;
             if (warnedInvalidParticles.add(warningKey)) {

@@ -165,8 +165,10 @@ public final class TrainingDataLifecycleListener implements Listener, ListenerLi
                 if (!horse.isValid() || horse.isDead() || !Bukkit.isOwnedByCurrentRegion(horse)
                         || !WorldAccessPolicy.isEnabled(horse.getWorld())) return;
                 SupportedMountType type = SupportedMountType.fromEntity(horse).orElse(null);
-                if (type == null || !type.isEnabled(plugin.getConfig()) || !hasStoredTraining(horse.getPersistentDataContainer())) return;
-                if (available()) TrainingManager.recalculateAndApplyBonuses(horse);
+                if (type == null || !type.isEnabled(plugin.getConfig())) return;
+                me.luisgamedev.betterhorses.traits.TraitRegistry.reconcileTemporaryState(horse);
+                HorseStepHeightListener.reconcileTemporaryState(horse);
+                if (available() && hasStoredTraining(horse.getPersistentDataContainer())) TrainingManager.recalculateAndApplyBonuses(horse);
             }), pending::finish));
         } catch (RuntimeException exception) {
             pending.finish();

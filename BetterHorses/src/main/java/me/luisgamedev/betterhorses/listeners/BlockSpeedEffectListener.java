@@ -1,6 +1,7 @@
 package me.luisgamedev.betterhorses.listeners;
 
 import me.luisgamedev.betterhorses.BetterHorses;
+import me.luisgamedev.betterhorses.utils.RuntimeCompat;
 import me.luisgamedev.betterhorses.utils.SupportedMountType;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -90,8 +91,8 @@ public class BlockSpeedEffectListener implements Listener, ListenerLifecycle {
     }
 
     private enum EffectStrength {
-        SLOWNESS_I(PotionEffectType.SLOWNESS, 0),
-        SLOWNESS_II(PotionEffectType.SLOWNESS, 1),
+        SLOWNESS_I(RuntimeCompat.potion("SLOWNESS", "SLOW"), 0),
+        SLOWNESS_II(RuntimeCompat.potion("SLOWNESS", "SLOW"), 1),
         SPEED_I(PotionEffectType.SPEED, 0),
         SPEED_II(PotionEffectType.SPEED, 1),
         SPEED_III(PotionEffectType.SPEED, 2);

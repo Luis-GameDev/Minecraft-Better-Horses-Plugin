@@ -120,6 +120,10 @@ public final class HorseGrowthManager implements Listener {
         }
         int threshold = GrowthScale.normalize(config.getInt("horse-growth-settings.ride-and-breed-threshhold", 7));
         if (stage >= threshold && !horse.isAdult()) horse.setAdult();
+        else if (stage < threshold && horse.isAdult()) {
+            horse.setBaby();
+            horse.setLoveModeTicks(0);
+        }
         horse.setAgeLock(!horse.isAdult());
         // Normalize the version's baby model after choosing its age, so the
         // riding threshold contributes only the next overall size increment.
@@ -148,7 +152,7 @@ public final class HorseGrowthManager implements Listener {
         String trait = horse.getPersistentDataContainer().get(traitKey, PersistentDataType.STRING);
         if (trait == null || !config.getBoolean("traits." + trait.toLowerCase() + ".enabled", false)) return;
         Particle fallback = switch (trait.toLowerCase()) {
-            case "hellmare" -> Particle.FLAME; case "ghosthorse" -> Particle.SMOKE;
+            case "hellmare" -> Particle.FLAME; case "ghosthorse" -> me.luisgamedev.betterhorses.utils.RuntimeCompat.particle("SMOKE", "SMOKE_NORMAL");
             case "dashboost" -> Particle.SWEEP_ATTACK; case "revenantcurse" -> Particle.SOUL;
             case "frosthooves" -> Particle.SNOWFLAKE; case "kickback" -> Particle.CRIT;
             case "fireheart" -> Particle.LAVA; case "heavenhooves" -> Particle.GLOW;
