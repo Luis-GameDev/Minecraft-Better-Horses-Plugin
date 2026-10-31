@@ -46,6 +46,7 @@ permissions:
       betterhorses.trait.skyburst: true
       betterhorses.trait.revenantcurse: true
       betterhorses.info: true
+      betterhorses.inspect: true
       betterhorses.neuter: true
       betterhorses.create: true
       betterhorses.reload: true
@@ -190,7 +191,11 @@ permissions:
     default: true
 
   betterhorses.neuter:
-    description: Allows using the /horse neuter command
+    description: Allows using /horse neuter and the optional shears interaction on owned horses
+    default: true
+
+  betterhorses.inspect:
+    description: Allows viewing private horse stats with sneak and an empty-hand right-click
     default: true
 
   betterhorses.create:

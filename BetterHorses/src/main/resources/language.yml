@@ -12,6 +12,7 @@ messages:
   horse-usage: "Usage: /horse <%subcommands%>"
   already-castrated: "This horse is already castrated."
   successfully-castrated: "You castrated the horse. It can no longer breed."
+  neutering-requires-tamed: "You can only neuter a tamed horse."
   horse-respawned: "%mount% respawned with stored stats."
   invalid-horse-data: "This item does not contain valid %mount% data."
   not-horse-owner: "You are not the owner of this %mount%."
@@ -81,6 +82,36 @@ messages:
       - "%known_values%"
     no-target:
       - "&cHold a horse item in your main hand or ride a horse first."
+
+# Private sneak + empty-hand horse inspection. MiniMessage and legacy color codes work.
+# Important stats use the same labels, units, and enabled categories as horse item lore.
+# Remove/reorder any line. Empty optional stat lines are automatically omitted.
+# Formatted lines: %health_line%, %speed_line%, %jump_line%, %growth_line%, %trait_line%,
+# %neutered_line%, %training_title%, %riding_line%, %brushing_line%, %feeding_line%.
+# Other placeholders include %name%, %gender%, %owner%, %mount_type%, %color%, %style%,
+# %current_health%, %max_health%, %speed%, %jump%, %speed_blocks%, %jump_blocks%,
+# %growth_stage%, %growth_percent%, %trait%, %neutered%, %riding_percent%,
+# %brushing_percent%, and %feeding_percent%.
+horse-inspection:
+  lines:
+    - "<dark_gray>━━━━━━━━━━━━━━━━━━━━━━━━</dark_gray>"
+    - "<gold><bold>%name%</bold></gold> <dark_gray>·</dark_gray> %gender%"
+    - "%health_line%"
+    - "%speed_line% <dark_gray>│</dark_gray> %jump_line%"
+    - "%growth_line%"
+    - "%trait_line%"
+    - "%neutered_line%"
+    - "%training_title%"
+    - "%riding_line%"
+    - "%brushing_line%"
+    - "%feeding_line%"
+    - "<dark_gray>━━━━━━━━━━━━━━━━━━━━━━━━</dark_gray>"
+  values:
+    unknown: "?"
+    none: "None"
+    "yes": "Yes"
+    "no": "No"
+    growth: "<gray>Growth: %growth_percent%% <dark_gray>(%growth_stage%/10)</dark_gray></gray>"
 
 traits:
   hellmare: "Hellmare"

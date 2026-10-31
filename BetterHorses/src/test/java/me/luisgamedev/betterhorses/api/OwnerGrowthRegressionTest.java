@@ -172,6 +172,35 @@ class OwnerGrowthRegressionTest {
         }
     }
 
+    @Test void privateInspectionDoesNotPauseGrowthButARealRiderStillDoes() throws Exception {
+        try (Fixture f = new Fixture()) {
+            f.adult = false;
+            f.config.set("horse-growth-settings.time-until-adult", 3);
+            NamespacedKey marker = new NamespacedKey("betterhorses", "inspection_display");
+            PersistentDataContainer markerData = proxy(PersistentDataContainer.class, (p, m, a) -> {
+                if (m.getName().equals("has")) return marker.equals(a[0]);
+                return defaultValue(m.getReturnType());
+            });
+            org.bukkit.entity.TextDisplay display = proxy(org.bukkit.entity.TextDisplay.class, (p, m, a) ->
+                    m.getName().equals("getPersistentDataContainer") ? markerData : defaultValue(m.getReturnType()));
+            f.passengers = List.of(display);
+            f.values.put(BetterHorseKeys.GROWTH_STAGE, 1);
+            NamespacedKey updated = new NamespacedKey("betterhorses", "growth_updated_at");
+            f.values.put(updated, System.currentTimeMillis() - 25_000L);
+            Method process = HorseGrowthManager.class.getDeclaredMethod("processGrowth",
+                    org.bukkit.entity.AbstractHorse.class, SupportedMountType.class, FileConfiguration.class);
+            process.setAccessible(true);
+            process.invoke(new HorseGrowthManager(f.plugin), f.horse, SupportedMountType.HORSE, f.config);
+            assertEquals(2, f.values.get(BetterHorseKeys.GROWTH_STAGE));
+
+            f.passengers = List.of(display, f.player);
+            f.values.put(updated, System.currentTimeMillis() - 25_000L);
+            process.invoke(new HorseGrowthManager(f.plugin), f.horse, SupportedMountType.HORSE, f.config);
+            assertEquals(2, f.values.get(BetterHorseKeys.GROWTH_STAGE));
+            assertFalse(f.adult);
+        }
+    }
+
     public static final class TestPlugin extends BetterHorses {
         FileConfiguration config;
         SilentLanguage language;
@@ -196,6 +225,7 @@ class OwnerGrowthRegressionTest {
         final Player player;
         UUID owner;
         boolean adult = true, ageLocked, mounted, bypass;
+        List<org.bukkit.entity.Entity> passengers;
         int loveMode, ejections;
         double scale = 2.0D;
 
@@ -254,7 +284,7 @@ class OwnerGrowthRegressionTest {
                     case "setAgeLock" -> { ageLocked = (boolean) a[0]; yield null; }
                     case "setLoveModeTicks" -> { loveMode = (int) a[0]; yield null; }
                     case "eject" -> { mounted = false; ejections++; yield true; }
-                    case "getPassengers" -> mounted ? List.of(player) : List.of();
+                    case "getPassengers" -> passengers != null ? passengers : mounted ? List.of(player) : List.of();
                     default -> defaultValue(m.getReturnType());
                 });
             } catch (Exception | Error failure) { close(); throw failure; }
