@@ -55,6 +55,8 @@ import java.util.Optional;
 import java.util.UUID;
 import me.luisgamedev.betterhorses.utils.HorseDataValidator;
 import me.luisgamedev.betterhorses.growing.GrowthScale;
+import me.luisgamedev.betterhorses.growing.HorseSize;
+import me.luisgamedev.betterhorses.utils.NeuteringPolicy;
 
 public class BetterHorsesAPI {
 
@@ -82,6 +84,7 @@ public class BetterHorsesAPI {
         LanguageManager lang = plugin.getLang();
         plugin.debugLog("API_CREATE_ITEM", "START", true, "Creating horse item health=" + health + ", speed=" + speed + ", jump=" + jump + ".");
         SupportedMountType targetMountType = mountType == null ? SupportedMountType.HORSE : mountType;
+        isNeutered = isNeutered && NeuteringPolicy.isEnabled(plugin.getConfig());
 
         String genderSymbol = gender.equals("male") ? lang.getRaw(owner, "messages.gender-male") : gender.equals("female") ? lang.getRaw(owner, "messages.gender-female") : "?";
 
@@ -111,6 +114,7 @@ public class BetterHorsesAPI {
         data.set(BetterHorseKeys.COLOR, PersistentDataType.STRING, Horse.Color.CREAMY.name());
         data.set(BetterHorseKeys.GROWTH_STAGE, PersistentDataType.INTEGER, growth);
         data.set(BetterHorseKeys.MOUNT_TYPE, PersistentDataType.STRING, targetMountType.getEntityType().name());
+        HorseSize.ensure(data, plugin.getConfig());
         if (isNeutered) {
             data.set(BetterHorseKeys.NEUTERED, PersistentDataType.BYTE, (byte) 1);
         }
@@ -194,6 +198,8 @@ public class BetterHorsesAPI {
         if (meta == null) return null;
 
         PersistentDataContainer data = meta.getPersistentDataContainer();
+        HorseSize.ensure(data, BetterHorses.getInstance().getConfig());
+        item.setItemMeta(meta);
 
         Double health = data.get(BetterHorseKeys.HEALTH, PersistentDataType.DOUBLE);
         Double currentHealth = data.get(BetterHorseKeys.CURRENT_HEALTH, PersistentDataType.DOUBLE);
@@ -277,8 +283,6 @@ public class BetterHorsesAPI {
                 horse.setBaby();
                 horse.setAgeLock(true);
             }
-            setAttribute(horse, AttributeResolver.generic("SCALE"), GrowthScale.forStage(growthStage, maxScale,
-                    horse.isAdult(), GrowthScale.babyScale(mountType.name(), Bukkit.getBukkitVersion())));
             horse.getPersistentDataContainer().set(BetterHorseKeys.GROWTH_STAGE, PersistentDataType.INTEGER, growthStage);
         } else if (vanillaAge != null) {
             horse.setAge(vanillaAge);
@@ -298,6 +302,15 @@ public class BetterHorsesAPI {
         horse.setOwner(restoredOwner);
 
         PersistentDataContainer horseData = horse.getPersistentDataContainer();
+        HorseSize.copy(data, horseData, BetterHorses.getInstance().getConfig());
+        double growthScale = MountConfig.isGrowthEnabled(BetterHorses.getInstance().getConfig(), mountType)
+                ? GrowthScale.forStageUnclamped(growthStage, maxScale, horse.isAdult(),
+                        GrowthScale.babyScale(mountType.name(), Bukkit.getBukkitVersion())) : 1.0D;
+        if (MountConfig.isGrowthEnabled(BetterHorses.getInstance().getConfig(), mountType)) {
+            HorseSize.apply(horse, growthScale, BetterHorses.getInstance().getConfig());
+        } else {
+            HorseSize.applyWithoutGrowth(horse, BetterHorses.getInstance().getConfig());
+        }
         horseData.set(BetterHorseKeys.BASE_HEALTH, PersistentDataType.DOUBLE,
                 data.getOrDefault(BetterHorseKeys.BASE_HEALTH, PersistentDataType.DOUBLE, health));
         horseData.set(BetterHorseKeys.BASE_SPEED, PersistentDataType.DOUBLE,
@@ -374,6 +387,7 @@ public class BetterHorsesAPI {
         BetterHorses plugin = BetterHorses.getInstance();
         LanguageManager lang = plugin.getLang();
         PersistentDataContainer data = horse.getPersistentDataContainer();
+        HorseSize.ensure(data, plugin.getConfig());
 
         boolean undeadSkeleton = horse instanceof SkeletonHorse && data.has(BetterHorseKeys.UNDEAD_SKELETON, PersistentDataType.BYTE);
         SupportedMountType mountType = undeadSkeleton
@@ -480,6 +494,7 @@ public class BetterHorsesAPI {
         itemData.set(BetterHorseKeys.STYLE, PersistentDataType.STRING, style.name());
         itemData.set(BetterHorseKeys.COLOR, PersistentDataType.STRING, color.name());
         itemData.set(BetterHorseKeys.GROWTH_STAGE, PersistentDataType.INTEGER, growthStage);
+        HorseSize.copy(data, itemData, plugin.getConfig());
         itemData.set(BetterHorseKeys.VANILLA_AGE, PersistentDataType.INTEGER, horse.getAge());
         itemData.set(BetterHorseKeys.MOUNT_TYPE, PersistentDataType.STRING, mountType.getEntityType().name());
         if (horse.getType().name().equals("CAMEL_HUSK")
@@ -956,13 +971,18 @@ public class BetterHorsesAPI {
 
     /**
      * Repair items written by the old training implementation. Only genetic stat fields
-     * and matching generated stat lore change; equipment, custom lines, and other metadata stay intact.
+     * and matching generated stat lore change; missing individual size data is also initialized.
+     * Equipment, custom lines, and other metadata stay intact.
      * Call while owning the inventory that contains this stack.
      */
     public static boolean normalizeStoredStats(@Nullable ItemStack item, @Nullable Player viewer) {
         if (!isHorseItem(item)) return false;
         ItemMeta meta = item.getItemMeta();
         PersistentDataContainer data = meta.getPersistentDataContainer();
+        Double previousSize = data.has(BetterHorseKeys.RANDOM_SIZE_MULTIPLIER, PersistentDataType.DOUBLE)
+                ? data.get(BetterHorseKeys.RANDOM_SIZE_MULTIPLIER, PersistentDataType.DOUBLE) : null;
+        double size = HorseSize.ensure(data, BetterHorses.getInstance().getConfig());
+        boolean sizeChanged = previousSize == null || Double.compare(previousSize, size) != 0;
         Double oldHealth = data.get(BetterHorseKeys.HEALTH, PersistentDataType.DOUBLE);
         Double oldSpeed = data.get(BetterHorseKeys.SPEED, PersistentDataType.DOUBLE);
         Double oldJump = data.get(BetterHorseKeys.JUMP, PersistentDataType.DOUBLE);
@@ -970,7 +990,9 @@ public class BetterHorsesAPI {
         Double speed = HorseStats.stored(data, BetterHorseKeys.SPEED);
         Double jump = HorseStats.stored(data, BetterHorseKeys.JUMP);
         if (health == null || speed == null || jump == null
-                || (health.equals(oldHealth) && speed.equals(oldSpeed) && jump.equals(oldJump))) return false;
+                || (health.equals(oldHealth) && speed.equals(oldSpeed) && jump.equals(oldJump))) {
+            return sizeChanged && item.setItemMeta(meta);
+        }
 
         double current = HorseStats.storedCurrentHealth(data);
         Double oldCurrent = data.get(BetterHorseKeys.CURRENT_HEALTH, PersistentDataType.DOUBLE);
