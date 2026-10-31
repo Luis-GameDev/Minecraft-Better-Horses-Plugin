@@ -143,46 +143,46 @@ class TrainingManagerTest {
         }
     }
 
-    @Test void legacyDashIsRetiredButNewModelDashDoesNotBecomeGenetic() throws Exception {
+    @Test void expiredDashModifierIsRetiredWithoutChangingGeneticOrTrainingBases() throws Exception {
         try (Fixture f = new Fixture()) {
-            f.fullTraining(); f.originalBases(); f.speed.base = .36;
-            Field field = TraitRegistry.class.getDeclaredField("dashBoostOriginalSpeeds");
-            field.setAccessible(true);
-            @SuppressWarnings("unchecked") Map<UUID, Double> originals = (Map<UUID, Double>) field.get(null);
-            originals.put(f.id, .24);
-            try {
-                TrainingManager.recalculateAndApplyBonuses(f.horse);
-                TraitRegistry.revertDashBoostIfActive(f.horse);
-                assertFalse(originals.containsKey(f.id));
-                assertEquals(.2, f.speed.getBaseValue(), 1e-12);
-                assertEquals(.24, f.speed.getValue(), 1e-12);
-                f.speed.setBaseValue(.3);
-                TrainingManager.recalculateAndApplyBonuses(f.horse);
-                assertEquals(.3, f.speed.getBaseValue(), 1e-12);
-                assertEquals(.36, f.speed.getValue(), 1e-12);
-                assertEquals(.2, f.number(BetterHorseKeys.SPEED), 1e-12);
-                assertEquals(.2, f.number(BetterHorseKeys.BASE_SPEED), 1e-12);
-            } finally { originals.remove(f.id); }
+            f.fullTraining(); f.originalBases();
+            TrainingManager.recalculateAndApplyBonuses(f.horse);
+            UUID dashId = UUID.fromString("ef1d94d8-a92c-4bc7-8c27-a18275d60e24");
+            f.speed.addModifier(new AttributeModifier(dashId, "BetterHorses.dashboost", .5,
+                    AttributeModifier.Operation.MULTIPLY_SCALAR_1));
+            NamespacedKey expiry = new NamespacedKey("betterhorses", "dashboost_expires_at");
+            f.data.set(expiry, PersistentDataType.LONG, 0L);
+            assertEquals(.36, f.speed.getValue(), 1e-12);
+            TraitRegistry.reconcileTemporaryState(f.horse);
+            assertNull(f.speed.getModifier(dashId));
+            assertFalse(f.data.has(expiry));
+            assertEquals(.2, f.speed.getBaseValue(), 1e-12);
+            assertEquals(.24, f.speed.getValue(), 1e-12);
+            assertEquals(.2, f.number(BetterHorseKeys.SPEED), 1e-12);
+            f.speed.setBaseValue(.3);
+            TrainingManager.recalculateAndApplyBonuses(f.horse);
+            assertEquals(.3, f.speed.getBaseValue(), 1e-12);
+            assertEquals(.36, f.speed.getValue(), 1e-12);
+            assertEquals(.2, f.number(BetterHorseKeys.BASE_SPEED), 1e-12);
         }
     }
 
-    @Test void explicitSpeedEditRetiresTheDashRestoreTimer() throws Exception {
+    @Test void explicitSpeedEditRetiresOwnedDashWithoutOverwritingTheNewBase() throws Exception {
         try (Fixture f = new Fixture()) {
             f.fullTraining();
             TrainingManager.recalculateAndApplyBonuses(f.horse);
-            Field field = TraitRegistry.class.getDeclaredField("dashBoostOriginalSpeeds");
-            field.setAccessible(true);
-            @SuppressWarnings("unchecked") Map<UUID, Double> originals = (Map<UUID, Double>) field.get(null);
-            originals.put(f.id, .2);
-            f.speed.setBaseValue(.3);
-            try {
-                TrainingManager.setBaseStat(f.horse, f.speed.attribute, BetterHorseKeys.SPEED, BetterHorseKeys.BASE_SPEED, .4);
-                TraitRegistry.revertDashBoostIfActive(f.horse);
-                assertFalse(originals.containsKey(f.id));
-                assertEquals(.4, f.speed.getBaseValue(), 1e-12);
-                assertEquals(.48, f.speed.getValue(), 1e-12);
-                assertEquals(.4, f.number(BetterHorseKeys.BASE_SPEED), 1e-12);
-            } finally { originals.remove(f.id); }
+            UUID dashId = UUID.fromString("ef1d94d8-a92c-4bc7-8c27-a18275d60e24");
+            f.speed.addModifier(new AttributeModifier(dashId, "BetterHorses.dashboost", .5,
+                    AttributeModifier.Operation.MULTIPLY_SCALAR_1));
+            NamespacedKey expiry = new NamespacedKey("betterhorses", "dashboost_expires_at");
+            f.data.set(expiry, PersistentDataType.LONG, System.currentTimeMillis() + 5000L);
+            TrainingManager.setBaseStat(f.horse, f.speed.attribute, BetterHorseKeys.SPEED, BetterHorseKeys.BASE_SPEED, .4);
+            TraitRegistry.revertDashBoostIfActive(f.horse);
+            assertNull(f.speed.getModifier(dashId));
+            assertFalse(f.data.has(expiry));
+            assertEquals(.4, f.speed.getBaseValue(), 1e-12);
+            assertEquals(.48, f.speed.getValue(), 1e-12);
+            assertEquals(.4, f.number(BetterHorseKeys.BASE_SPEED), 1e-12);
         }
     }
 

@@ -7,6 +7,8 @@ import org.bukkit.entity.AbstractHorse;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
+import me.luisgamedev.betterhorses.utils.RuntimeCompat;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.persistence.PersistentDataType;
@@ -17,9 +19,9 @@ public class RevenantCurseListener implements Listener {
 
     private static final NamespacedKey CURSE_KEY = new NamespacedKey(BetterHorses.getInstance(), "revenantcurse_active");
 
-    @EventHandler
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onHorseOrRiderHit(EntityDamageByEntityEvent event) {
-        if (!(event.getDamager() instanceof LivingEntity attacker)) return;
+        if (event.isCancelled() || !(event.getDamager() instanceof LivingEntity attacker)) return;
 
         if (event.getEntity() instanceof AbstractHorse horse) {
             if (hasActiveCurse(horse)) {
@@ -43,8 +45,14 @@ public class RevenantCurseListener implements Listener {
     }
 
     private void applyDebuff(LivingEntity attacker) {
+        if (!org.bukkit.Bukkit.isOwnedByCurrentRegion(attacker)) {
+            BetterHorses.getInstance().scheduler().entity(attacker, 1L, ignored -> {
+                if (attacker.isValid() && !attacker.isDead()) applyDebuff(attacker);
+            }, () -> { });
+            return;
+        }
         attacker.addPotionEffect(new PotionEffect(PotionEffectType.BLINDNESS, 30, 3));
-        attacker.addPotionEffect(new PotionEffect(PotionEffectType.NAUSEA, 30, 3)); // Nausea
-        attacker.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 30, 6));
+        attacker.addPotionEffect(new PotionEffect(RuntimeCompat.potion("NAUSEA", "CONFUSION"), 30, 3)); // Nausea
+        attacker.addPotionEffect(new PotionEffect(RuntimeCompat.potion("SLOWNESS", "SLOW"), 30, 6));
     }
 }

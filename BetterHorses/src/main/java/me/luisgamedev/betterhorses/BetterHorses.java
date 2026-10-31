@@ -3,6 +3,7 @@ package me.luisgamedev.betterhorses;
 import me.luisgamedev.betterhorses.commands.CustomHorseCommand;
 import me.luisgamedev.betterhorses.commands.HorseCommand;
 import me.luisgamedev.betterhorses.commands.HorseCommandHelp;
+import me.luisgamedev.betterhorses.commands.HorseCommandAliases;
 import me.luisgamedev.betterhorses.commands.HorseCommandCompleter;
 import me.luisgamedev.betterhorses.commands.HorseCreateTabCompleter;
 import me.luisgamedev.betterhorses.growing.HorseGrowthManager;
@@ -58,13 +59,20 @@ public class BetterHorses extends JavaPlugin {
 
     @Override
     public void onDisable() {
-        if (postProcessingManager != null) postProcessingManager.shutdown();
-        me.luisgamedev.betterhorses.traits.TraitRegistry.cleanupAll();
-        me.luisgamedev.betterhorses.utils.CooldownDisplay.cleanupAll();
-        if (growthManager != null) growthManager.shutdown();
-        if (listenerRegistrationManager != null) listenerRegistrationManager.shutdown();
-        if (scheduler != null) scheduler.shutdown();
-        if(audiences != null) audiences.close();
+        cleanupOnDisable("postprocessing", () -> { if (postProcessingManager != null) postProcessingManager.shutdown(); });
+        cleanupOnDisable("traits", me.luisgamedev.betterhorses.traits.TraitRegistry::shutdown);
+        cleanupOnDisable("cooldown displays", me.luisgamedev.betterhorses.utils.CooldownDisplay::cleanupAll);
+        cleanupOnDisable("growth", () -> { if (growthManager != null) growthManager.shutdown(); });
+        cleanupOnDisable("listeners", () -> { if (listenerRegistrationManager != null) listenerRegistrationManager.shutdown(); });
+        cleanupOnDisable("scheduler", () -> { if (scheduler != null) scheduler.shutdown(); });
+        cleanupOnDisable("audiences", () -> { if (audiences != null) audiences.close(); });
+    }
+
+    private void cleanupOnDisable(String component, Runnable cleanup) {
+        try { cleanup.run(); }
+        catch (RuntimeException | LinkageError failure) {
+            getLogger().log(Level.WARNING, "Could not finish " + component + " cleanup; continuing plugin shutdown.", failure);
+        }
     }
 
     @Override
@@ -270,14 +278,12 @@ public class BetterHorses extends JavaPlugin {
             return;
         }
         List<String> aliases = getConfig().getStringList("command-aliases");
-        horseCommand.setAliases(aliases);
 
         try {
             Object server = Bukkit.getServer();
             Object commandMapObject = server.getClass().getMethod("getCommandMap").invoke(server);
             if (commandMapObject instanceof SimpleCommandMap commandMap) {
-                horseCommand.unregister(commandMap);
-                commandMap.register(getDescription().getName(), horseCommand);
+                aliases = HorseCommandAliases.refresh(horseCommand, commandMap, getDescription().getName(), aliases);
             } else {
                 getLogger().warning("Unable to refresh horse command aliases because the command map is unavailable.");
                 debugLog("PLUGIN", "COMMAND_ALIAS", false, "Command map was unavailable for alias refresh.");
@@ -333,7 +339,7 @@ public class BetterHorses extends JavaPlugin {
         listenerRegistrationManager.define("trait-undead", UndeadTraitListener::new,
                 () -> traitsEnabled("undead"));
         listenerRegistrationManager.define("trait-passive", PassiveTraitListener::new,
-                () -> traitsEnabled("frosthooves", "featherhooves", "fireheart"));
+                () -> traitsEnabled("frosthooves", "featherhooves", "fireheart", "heavenhooves"));
         listenerRegistrationManager.define("trait-revenant-curse", RevenantCurseListener::new,
                 () -> traitsEnabled("revenantcurse"));
         listenerRegistrationManager.define("trait-jump", HorseJumpListener::new,
