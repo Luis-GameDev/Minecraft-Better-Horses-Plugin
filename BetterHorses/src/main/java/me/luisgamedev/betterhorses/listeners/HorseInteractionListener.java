@@ -5,6 +5,7 @@ import me.luisgamedev.betterhorses.inspection.HorseInspectionManager;
 import me.luisgamedev.betterhorses.inspection.HorseInspectionText;
 import me.luisgamedev.betterhorses.inspection.HorseNeuteringService;
 import me.luisgamedev.betterhorses.utils.SupportedMountType;
+import me.luisgamedev.betterhorses.utils.NeuteringPolicy;
 import org.bukkit.Material;
 import org.bukkit.entity.AbstractHorse;
 import org.bukkit.entity.Player;
@@ -45,7 +46,8 @@ public final class HorseInteractionListener implements Listener {
         }
 
         Material held = player.getInventory().getItemInMainHand().getType();
-        if (held == Material.SHEARS && plugin.getConfig().getBoolean("horse-neutering.shears-enabled", false)) {
+        if (held == Material.SHEARS && NeuteringPolicy.isEnabled(plugin.getConfig())
+                && plugin.getConfig().getBoolean("horse-neutering.shears-enabled", false)) {
             event.setCancelled(true);
             if (neutering.neuter(player, horse, EquipmentSlot.HAND)) inspections.hideMount(horse);
             return;

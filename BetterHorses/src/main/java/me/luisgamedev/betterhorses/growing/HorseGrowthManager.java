@@ -3,13 +3,11 @@ package me.luisgamedev.betterhorses.growing;
 import me.luisgamedev.betterhorses.BetterHorses;
 import me.luisgamedev.betterhorses.inspection.HorseInspectionManager;
 import me.luisgamedev.betterhorses.utils.MountConfig;
-import me.luisgamedev.betterhorses.utils.AttributeResolver;
 import me.luisgamedev.betterhorses.utils.SupportedMountType;
 import me.luisgamedev.betterhorses.utils.WorldAccessPolicy;
 import org.bukkit.Bukkit;
 import org.bukkit.NamespacedKey;
 import org.bukkit.World;
-import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.AbstractHorse;
 import org.bukkit.persistence.PersistentDataContainer;
@@ -45,8 +43,10 @@ public class HorseGrowthManager {
 
     private void processGrowth(AbstractHorse horse, SupportedMountType type, FileConfiguration config) {
         PersistentDataContainer data = horse.getPersistentDataContainer();
+        HorseSize.ensure(data, config);
         if (!MountConfig.isGrowthEnabled(config, type)) {
             if (data.has(growthKey) || data.has(growthUpdatedKey)) resetGrowthForHorse(horse);
+            else HorseSize.applyWithoutGrowth(horse, config);
             return;
         }
         int minutes = Math.max(1, config.getInt("horse-growth-settings.time-until-adult", 60));
@@ -60,6 +60,8 @@ public class HorseGrowthManager {
         data.set(growthKey, PersistentDataType.INTEGER, progress.stage());
         data.set(growthUpdatedKey, PersistentDataType.LONG, progress.updatedAt());
         if (occupied) {
+            setScaleSafe(horse, GrowthScale.forStageUnclamped(progress.stage(), config.getDouble("horse-growth-settings.max-size", 1.3),
+                    horse.isAdult(), GrowthScale.babyScale(type.name(), Bukkit.getBukkitVersion())));
             if (stageChanged) plugin.refreshMountShaders(horse);
             return;
         }
@@ -67,7 +69,7 @@ public class HorseGrowthManager {
         if (progress.stage() >= threshold && !horse.isAdult()) horse.setAdult();
         horse.setAgeLock(!horse.isAdult());
         // Normalize the version's baby model after choosing its age.
-        setScaleSafe(horse, GrowthScale.forStage(progress.stage(), config.getDouble("horse-growth-settings.max-size", 1.3),
+        setScaleSafe(horse, GrowthScale.forStageUnclamped(progress.stage(), config.getDouble("horse-growth-settings.max-size", 1.3),
                 horse.isAdult(), GrowthScale.babyScale(type.name(), Bukkit.getBukkitVersion())));
         if (stageChanged) plugin.refreshMountShaders(horse);
     }
@@ -83,11 +85,6 @@ public class HorseGrowthManager {
     }
 
     private void setScaleSafe(AbstractHorse horse, double scale) {
-        try {
-            AttributeInstance attribute = horse.getAttribute(AttributeResolver.generic("SCALE"));
-            if (attribute != null) attribute.setBaseValue(scale);
-        } catch (IllegalArgumentException | NoSuchFieldError exception) {
-            plugin.debugLog("GROWTH_MANAGER", "SET_SCALE", false, exception.getMessage());
-        }
+        HorseSize.apply(horse, scale, plugin.getConfig());
     }
 }

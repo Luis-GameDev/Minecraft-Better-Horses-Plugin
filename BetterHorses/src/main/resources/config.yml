@@ -34,7 +34,19 @@ horse-inspection:
 # Requires betterhorses.neuter; betterhorses.bypass allows neutering another owner's horse.
 # Uses one durability point, honoring Unbreaking, unbreakable tools, and Creative mode.
 horse-neutering:
+  # Disables every new neutering action and unregisters /horse neuter when false.
+  # Existing neutered horses keep their permanent status. Reload to refresh commands.
+  enabled: true
   shears-enabled: false
+
+# A private size multiplier, applied after the growth-stage size calculation.
+# Each new horse receives its own value; foals do not inherit their parents' sizes.
+# Missing values are assigned once, then retained on the horse and its item.
+# The multiplier is never shown in item lore or the inspection display.
+random-size-factor:
+  enabled: true
+  # 0.1 allows 10% smaller to 10% bigger. Valid range: 0.0 to 0.99.
+  factor: 0.1
 
 # Configure custom aliases for the /horse command
 command-aliases:

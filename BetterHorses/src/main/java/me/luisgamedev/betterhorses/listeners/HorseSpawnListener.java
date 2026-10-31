@@ -4,13 +4,12 @@ import me.luisgamedev.betterhorses.BetterHorses;
 import me.luisgamedev.betterhorses.api.BetterHorsesAPI;
 import me.luisgamedev.betterhorses.api.events.BetterHorseSpawnEvent;
 import me.luisgamedev.betterhorses.growing.GrowthScale;
+import me.luisgamedev.betterhorses.growing.HorseSize;
 import me.luisgamedev.betterhorses.training.TrainingManager;
-import me.luisgamedev.betterhorses.utils.AttributeResolver;
 import me.luisgamedev.betterhorses.utils.MountConfig;
 import me.luisgamedev.betterhorses.utils.SupportedMountType;
 import org.bukkit.Bukkit;
 import org.bukkit.NamespacedKey;
-import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.entity.AbstractHorse;
 import org.bukkit.entity.SkeletonHorse;
 import org.bukkit.event.EventHandler;
@@ -37,6 +36,7 @@ public class HorseSpawnListener implements Listener {
         if (mountType == null) return;
         makeSkeletonHorseMountableIfEnabled(plugin, horse);
         if (!mountType.isEnabled(plugin.getConfig())) return;
+        HorseSize.applyWithoutGrowth(horse, plugin.getConfig());
         if (event.getSpawnReason() != CreatureSpawnEvent.SpawnReason.NATURAL) return;
         plugin.debugLog("HORSE_SPAWN", "NATURAL", true, "Natural mount spawn detected for " + horse.getUniqueId() + ".");
 
@@ -67,13 +67,8 @@ public class HorseSpawnListener implements Listener {
 
             // Apply after the age transition to account for vanilla baby scaling.
             double maxScale = plugin.getConfig().getDouble("horse-growth-settings.max-size", 1.3);
-            try {
-                AttributeInstance attr = horse.getAttribute(AttributeResolver.generic("SCALE"));
-                if (attr != null) attr.setBaseValue(GrowthScale.forStage(stage, maxScale, horse.isAdult(),
-                        GrowthScale.babyScale(mountType.name(), Bukkit.getBukkitVersion())));
-            } catch (IllegalArgumentException | NoSuchFieldError ignored) {
-                // SCALE not supported – fallback for older Paper versions.
-            }
+            HorseSize.apply(horse, GrowthScale.forStageUnclamped(stage, maxScale, horse.isAdult(),
+                    GrowthScale.babyScale(mountType.name(), Bukkit.getBukkitVersion())), plugin.getConfig());
             data.set(growthKey, PersistentDataType.INTEGER, stage);
         }
 
