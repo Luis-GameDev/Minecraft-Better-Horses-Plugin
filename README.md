@@ -1,549 +1,82 @@
-<img width="2754" height="472" alt="banner" src="https://github.com/user-attachments/assets/4908a6f1-a71b-4aaa-b1cb-37fc303bfad8" />
+# BetterHorses
 
-# 🐴 BetterHorses – Advanced Horse Plugin
+The `main` branch currently contains the 7.0 code line. The documentation describes the 7.1 development branches and labels features that require those changes. Select an artifact built from the intended branch; a main/released 7.0 JAR does not automatically include the 7.1 additions.
 
-<img width="1395" height="179" alt="Bild_2026-04-24_232658578-removebg-preview" src="https://github.com/user-attachments/assets/bdf05309-d45b-4d4a-ba5d-adac9f9764c1" />
+Persistent mount items, genetic breeding, training, traits, custom growth and individual hidden size variation for Minecraft servers.
 
+The complete, reviewable [7.1 documentation](docs/wiki/Home.md) is kept under `docs/wiki` on main. Branch-specific source is in [Standard](https://github.com/Luis-GameDev/Minecraft-Better-Horses-Plugin/tree/version/7.1) and [Folia](https://github.com/Luis-GameDev/Minecraft-Better-Horses-Plugin/tree/folia/version/7.1). The [published GitHub wiki](https://github.com/Luis-GameDev/Minecraft-Better-Horses-Plugin/wiki) is a separate Git repository; [wiki synchronization instructions](docs/WIKI_SYNC.md) explain how reviewed source pages become live there.
 
-**BetterHorses** is a Minecraft plugin that completely reworks the vanilla horse system by introducing **realistic genetics, mutations, breeding mechanics, and item-based horse storage**. Designed with realism and flexibility in mind, every single feature and value is customizable and toggleable, it’s perfect for survival servers, RPGs, or just better vanilla gameplay.
-<br><br>
-<p align="center">
-  <img width="494" height="351" alt="image" src="https://github.com/user-attachments/assets/054650d4-524b-4711-88f7-6f4443ce73c2" />
-</p>
-<br><br>
-<p align="center">
-  <a href="https://youtu.be/7rTkeEhS2r0">
-    <img src="https://img.youtube.com/vi/7rTkeEhS2r0/maxresdefault.jpg" width="700">
-  </a>
-  <br>
-  ▶ Click to watch showcase video
-</p>
-<br><br>
-If you have any questions or need help feel free to join my discord server: https://discord.gg/gBEKWGanM7
+## Builds and compatibility
 
----
+| Branch | Server | Build task | Current deployable filename |
+| --- | --- | --- | --- |
+| `version/7.1` | Standard Bukkit/Spigot or Paper, Minecraft 1.20.4+ with feature API limits | `./gradlew shadowJar` | `BetterHorses-7.1-all.jar` |
+| `folia/version/7.1` | Folia | `./gradlew verifyPluginJar` | `BetterHorses-7.0-Folia.jar` |
 
-<img width="1492" height="167" alt="3941f700-3ae2-40a3-87cb-4c6eb68ea2f5-removebg-preview" src="https://github.com/user-attachments/assets/979d9748-83c1-4538-896d-feef47ad3772" />
+Both require **Java 21**. The Folia branch retains version 7.0 in its current build metadata despite its 7.1 development branch name. Install the matching shaded artifact from `BetterHorses/build/libs/`; install one artifact at a time. See [Installation](docs/wiki/installation.md) for optional PlaceholderAPI, resource-pack requirements and legacy equipment conversion.
 
+Visible growth/random size needs `SCALE`, which Minecraft 1.20.4 does not expose; size data remains saved. Optional postprocessing requires Minecraft **26.3** and the supported Paper/Folia API. Other forks/releases require their own runtime validation; compilation does not certify every combination.
 
-- 🧬 **Genetics & Mutation**  
-  Horses pass down **Health, Speed, and Jump Strength** to their offspring.  
-  A configurable **mutation factor** adds random variation to keep things interesting and realistic.
+## Features
 
-- 👫 **Gender System**  
-  Every horse has a **gender** (♂ / ♀) assigned at spawn or birth.
-  Two horses of the same gender cannot breed unless enabled
+- Store supported ridden mounts as horse items with their genetic stats, health, ownership, training, traits, equipment and relevant cooldowns. Optional chest storage is disabled by default; conversion failure preserves the source.
+- Breed genetic health/speed/jump with configured mutation and maxima. Training supplies separate gameplay bonuses and does not inflate inherited/stored genetic stats.
+- Custom growth progresses from stage 1 to 10 over nine intervals. The default ride/breed threshold is stage 7; size continues increasing to stage 10.
+- Hidden individual sizes default to ±10%, persist on horse and item, apply after growth, and are freshly rolled for offspring rather than inherited.
+- Eleven configurable traits cover fire resistance/trails, slow falling, speed boosts, ice, knockback, invisibility, jump abilities, curse retaliation and undead transformation.
+- Optional block speed effects, trample hits, rider buffs, particle/cooldown displays, item textures/lore layouts, MiniMessage and PlaceholderAPI integration.
+- World blacklist/whitelist and per-action permissions. Ownership restriction is **disabled by default**; enable `settings.restrict-mounting-to-owner` to enforce ownership for riding and despawning. `betterhorses.bypass` exempts riding; Standard live shears also accepts it.
+- **Standard only:** private empty-hand inspection and optional live shears neutering. Folia currently includes item neutering and the global toggle, without these built-in live interactions.
 
-- 🐏 **Horse Trampling & Rider Buffs**
-  Horse trampling allows horses to stomp away enemies in their path while dealing a considerable amount of damage, in addition there are numerous configuration options that allow the rider of a horse to either deal more damage, or be invincible while mounted on a horse.
+## Neutering, inspection and size defaults
 
-- 🏳️ **Language Customization**  
-  Every text generated by the plugin can be customized in the `language.yml` file. All generated text supports Placeholder API and MiniMessage format.
-
-- 🦴 **Growth System**  
-  Horses now realistically grow up and increase in size over time, 
-  making the transition from baby to adult seemless, the final size of a horse 
-  as well as the time it takes to grow up can be customized in the config
-
-- ✂️ **Castration System**  
-  Players can use `/horse neuter` to castrate a horse item.  
-  Castrated horses are marked and **cannot breed**, just like same-gender pairs.  
-  The status is permanently stored in the item and displayed in the lore.
-
-- 🔥 **Horse Traits (Abilities)**  
-  Horses can be born or created with **special traits** that provide passive or active effects such as:
-  - `Hellmare` – Leaves a trail of fire when the ability is used
-  - `Fireheart` – The horse and its rider are immune to fire
-  - `Feather Hooves` – The horse and its rider can glide
-  - `Frost Hooves` – Freezes water below the horse
-  - `Dashboost` - Increases the horse's movement speed significantly for a short amount of time when the ability is used
-  - `Kickback` - The horse knocks away all enemies when the ability is used
-  - `Ghosthorse` - You and the horse enter the realm of the undead and become invisible for a short amount of time when the ability is used
-  - `Heaven Hooves` - The horse can fly by jumping, similar to flappy bird movement
-
-  Active traits can be used by pressing F (or the swap hands keybind).
-  
-  All traits are **fully configurable and toggleable** in the `config.yml`:
-  - Enable or disable the whole trait-feature
-  - Set trait chance
-  - Enable/disable individual traits
-  - Define duration, cooldown, radius, intensity and more
-
-- **NEW**
-  Camels, Llamas, Skeleton Horses, Zombie Horses, Mules and Donkeys are now supported by the plugin if enabled in the config!
-
-### ⚙️ Commands 
-
-- 🎒 **/horse despawn**  
-  Converts a tamed horse you're riding into a **horse item** that stores all it's data until respawned.
-  A horse can only be despawned by its owner.
-
-- ✂️ **/horse neuter**  
-  Castrates the horse item in your mainhand. Castration is permanent and cannot be undone. 
-
-- 🧲 **/horse spawn**  
-  Respawns your horse using the stored data in the horse item. 
-  Additionally a horse can be spawned by rightclicking while holding the horse item.
-
-- ⚙️ **/horse info**
-  Administrator command that is only active when the debug mode is activated. When used, it gives all information that exist about the currently ridden horse or the currently held horse item.
-
-- 🔄 **/horse reload**
-  Administrator command that reloads the entire plugin configuration and language file, certain features however require a full restart of the server after being enabled.
-
-- 🛠 **/horsecreate [health] [speed] [jump] [gender] [name] [trait] [growth] [mounttype] [neutered]**  
-  Administrator command to generate a custom horse item with your own stats, name, and optional **specific trait**.  
-  If no trait is provided, one is selected randomly based on configured chances, traits can only be selected if enabled in the config. 
-
----
-
-### ⚙️ Configuration
-
-
-
-<details>
-<summary>Inside your config.yml:</summary>
-
-<div style="height:250px; overflow:auto;">
-  
 ```yaml
-# BetterHorses config
-
-# Controls how horse stats are displayed on horse item lore.
-# Supported values:
-#   RAW - Shows the internal movement speed and jump strength values.
-#   BLOCKS - Converts speed to blocks per second and jump to block height.
-stats:
-  display-mode: RAW
-
-# Configure custom aliases for the /horse command
-command-aliases:
-  # - bh
-  # - horses
-
-# Extensive debugging for command flow and horse item metadata inspection
-debug:
-  # When enabled, detailed BetterHorses debug logs are written to console
-  # and the /horse info command becomes available.
-  enabled: false
-
-# Customizes how big the maximum positive or negative mutation effect is (e.g. 0.05 = ±0.05)
-# e.g. health-factor 3 means the health of the child can be up to 3 HP higher or lower than the average HP of both parents
-mutation-factor:
-  health: 3.0
-  speed: 0.05
-  jump: 0.05
-  skeleton-horses:
-    health: 3.0
-    speed: 0.05
-    jump: 0.05
-  zombie-horses:
-    health: 3.0
-    speed: 0.05
-    jump: 0.05
-  camels:
-    health: 3.0
-    speed: 0.05
-    jump: 0.05
-  llamas:
-    health: 3.0
-    speed: 0.05
-    jump: 0.05
-  mules:
-    health: 3.0
-    speed: 0.05
-    jump: 0.05
-  donkeys:
-    health: 3.0
-    speed: 0.05
-    jump: 0.05
-
-# Max stats a horse can reach
-max-stats:
-  health: 300.0
-  speed: 0.4
-  jump: 1.2
-  skeleton-horses:
-    health: 300.0
-    speed: 0.4
-    jump: 1.2
-  zombie-horses:
-    health: 300.0
-    speed: 0.4
-    jump: 1.2
-  camels:
-    health: 300.0
-    speed: 0.4
-    jump: 1.2
-  llamas:
-    health: 300.0
-    speed: 0.4
-    jump: 1.2
-  mules:
-    health: 300.0
-    speed: 0.4
-    jump: 1.2
-  donkeys:
-    health: 300.0
-    speed: 0.4
-    jump: 1.2
-
-# Settings that determine horse growth
-horse-growth-settings:
-
-  # If false, horses will remain their Vanilla size, this feature only works for Paper 1.20.6 & Java 21 or above
+horse-neutering:
   enabled: true
-  mount-types:
-    skeleton-horses: true
-    zombie-horses: true
-    camels: false
-    llamas: false
-    mules: true
-    donkeys: true
+  shears-enabled: false # Standard only
 
-  # Minutes from newborn stage 1 to fully grown stage 10 (nine equal time intervals).
-  time-until-adult: 3
-
-  # Becomes rideable and breedable at this stage, without a sudden size jump.
-  # Baby model compensation follows the mount type and Minecraft version.
-  ride-and-breed-threshhold: 7
-
-  # The maximum size a horse can reach, this is the scale applied to a vanilla sized horse
-  # If the value remains 1, an adult horse will be vanilla sized
-  # Newborns start at 50% of this value, then grow in nine equal steps to 100%.
-  max-size: 1.3 # 30% bigger than vanilla
-
-# General settings
-settings:
-
-  # Customizes the original item a horse item is
-  horse-item: SADDLE
-
-  # Optional texture/model references applied to all created horse items.
-  # Leave values empty or 0 to keep the default item appearance.
-  texture:
-    # When enabled, the configured values below always override texture data stored on horse items or supplied through the API.
-    override-texture-data: false
-    custom-model-data: 0
-    item-model: ""
-    cit-string: ""
-    model-string: ""
-
-  # Controls which lore parts are shown for horse items and in what order.
-  # Use nested sections to ensure child lines are only loaded when the parent section resolves to a visible line.
-  # Available values: gender, health, speed, jump, growth, training, riding, brushing, feeding, trait, neutered, blank
-  # You can also add literal custom lines with: literal:&7Your custom text
-  horse-item-lore-layout:
-    - stats:
-        - gender
-        - health
-        - speed
-        - jump
-        - growth
-        - blank
-    - training:
-        - riding
-        - brushing
-        - feeding
-        - blank
-    - trait
-    - neutered
-
-  # Allow additional mount types to be treated like BetterHorses horses
-  mount-types:
-    skeleton-horses: true
-    zombie-horses: true
-    camels: false
-    llamas: false
-    mules: true
-    donkeys: true
-
-  # Controls whether supported chest-capable mounts (for example donkeys, mules, and any future supported
-  # chest mount) can be converted into horse items while carrying a chest. When enabled, the chest and
-  # its storage contents are moved into the horse item and restored on spawn.
-  allow-chested-mount-despawn: false
-
-  # Allows two horses of the same gender to breed
-  allow-same-gender-breeding: false
-
-  # Restricts mounting a tamed horse to its respective owner
-  restrict-mounting-to-owner: false
-
-  # Makes every skeleton horse mountable like a vanilla horse, including skeleton horses spawned from spawn eggs
-  mountable-skeleton-horses: true
-
-  # Allows spawning the horse by rightclicking with the horse item
-  allow-rightclick-spawn: true
-
-  # If enabled, players riding a horse cant be hit
-  rider-invulnerable: false
-
-  # Fixes a vanilla bug where horses cant automatically climb from a path block onto a full block
-  # because it exceeds their 1-block step height, only applies to mounted horses
-  fix-step-height: true
-
-  # Increases player melee damage by the given percentage while riding a horse
-  mounted-damage-boost:
-    enabled: false
-    percentage: 25.0 # 25% more damage while mounted
-
-  # Applies a two-second speed or slowness effect to a mounted BetterHorse while it stands on a configured block.
-  # Effects: SLOWNESS_I, SLOWNESS_II, SPEED_I, SPEED_II, SPEED_III.
-  # Mount types: horse, skeleton-horses, zombie-horses, camels, llamas, mules, donkeys.
-  block-speed-effects:
-    enabled: false
-    entries:
-      - block: SAND
-        effect: SLOWNESS_II
-        mount-type: horse
-      - block: RED_SAND
-        effect: SLOWNESS_II
-        mount-type: horse
-      - block: SUSPICIOUS_SAND
-        effect: SLOWNESS_II
-        mount-type: horse
-
-  # Traited horses will have particles around them, disabling this will result in slightly better performance
-  trait-particle-indicator: true
-
-  # The amount of time in seconds that a horse needs before it can breed again (set to 0 for no cooldown)
-  breeding-cooldown: 300 # 5 minutes
-
-  # If true, male horses will ignore the breeding cooldown
-  male-ignore-cooldown: true
-
-  cooldown-display:
-    # If false, the trait cooldown isn't displayed at all
-    enabled: true
-
-    # If true, the trait cooldown is shown as a bossbar when using an ability that is currently on cooldown
-    show-bossbar-indicator: false
-
-    # If true, the trait cooldown is shown above the hotbar when using an ability that is currently on cooldown
-    show-hotbar-indicator: true
-
-
-# Damages and knocks back nearby entities when a player rides a horse through them.
-trample:
-  enabled: false
-  # Toggle trample separately for each supported mount type.
-  # Horses remain available here even though they are always an enabled mount type.
-  mount-types:
-    horse: true
-    skeleton-horses: true
-    zombie-horses: true
-    camels: false
-    llamas: false
-    mules: false
-    donkeys: false
-  
-  damage: 4.0
-  knockback: 1.5
-  radius: 1.2
-  cooldown-ticks: 20
-  affect-players: true
-  affect-mobs: true
-  hit-angle-degrees: 90.0
-  min-speed: 0.15
-
-# Horse Abilities
-traits:
-  # Set this to false to disable the whole trait feature
+random-size-factor:
   enabled: true
-
-  hellmare:
-    enabled: true
-    chance: 0.005 # 0.5%
-    particle: FLAME
-    duration: 5
-    cooldown: 90
-    radius: 2 # Radius of the fire below the horse
-
-  fireheart:
-    enabled: true
-    chance: 0.01 # 1%
-    particle: LAVA
-
-  dashboost:
-    enabled: true
-    chance: 0.01 # 1%
-    particle: SWEEP_ATTACK
-    duration: 10
-    cooldown: 30
-
-  featherhooves:
-    enabled: true
-    chance: 0.01 # 1%
-    particle: CLOUD
-
-  frosthooves:
-    enabled: true
-    chance: 0.005 # 0.5%
-    particle: SNOWFLAKE
-    radius: 3 # Radius of the ice below the horse
-
-  kickback:
-    enabled: true
-    chance: 0.005 # 0.5%
-    particle: CRIT
-    radius: 4
-    strength: 6
-    cooldown: 20
-
-  ghosthorse:
-    enabled: true
-    chance: 0.005 # 0.5%
-    particle: SMOKE
-    duration: 5
-    cooldown: 30
-
-  skyburst:
-    enabled: true
-    chance: 0.003 # 0.3%
-    particle: CLOUD
-    radius: 4
-
-  revenantcurse:
-    enabled: true
-    chance: 0.005 # 0.5%
-    particle: SOUL
-    cooldown: 30
-    duration: 10
-
-
-  undead:
-    enabled: true
-    chance: 0.01
-    particle: SOUL
-    transform-back-item: ENCHANTED_GOLDEN_APPLE
-    transform-back-animation: true
-
-  heavenhooves:
-    enabled: true
-    chance: 0.001 # 0.1%
-    particle: GLOW
-    strength: 0.4
-    particles: true # Refers to particles that appear when jumping
-
-# Horse training system
-training:
-  # Master toggle for all training categories
-  enabled: true
-
-  lore:
-    # Controls whether training information should be displayed on horse-item lore.
-    enabled: true
-
-    progress-bar:
-      length: 15
-      # If true, hides the progressbar when at 100% and replaces it with "Complete"
-      hide-on-complete: true
-      # If true, if all categories are completed, they are combined and displayed as "Training Complete"
-      combine-all-complete: true
-
-  categories:
-    riding:
-      enabled: true
-      # 1% progress = this many blocks ridden
-      units-per-percent: 100.0
-      # 0.2 means +0.2% speed per 1% progress
-      bonus-percent-per-progress-percent: 0.2
-
-    brushing:
-      enabled: true
-      item: BRUSH
-      cooldown-seconds: 180
-      units-per-use: 2.0
-      # 1% progress = this many brush uses (units)
-      units-per-percent: 1.0
-      # 0.2 means +0.2% jump strength per 1% progress
-      bonus-percent-per-progress-percent: 0.2
-
-    feeding:
-      enabled: true
-      cooldown-seconds: 180
-      # 1% progress = this much total food value
-      units-per-percent: 2.0
-      # 0.2 means +0.2% max HP per 1% progress
-      bonus-percent-per-progress-percent: 0.2
-      food-values:
-        WHEAT: 1.0
-        APPLE: 1.0
-        CARROT: 1.0
-        SUGAR: 1.0
-        HAY_BLOCK: 2.0
-        GOLDEN_CARROT: 3.0
-        GOLDEN_APPLE: 5.0
-        ENCHANTED_GOLDEN_APPLE: 8.0
-
+  factor: 0.1
 ```
 
-</div>
+When global neutering is false, new neutering is blocked through commands, shears and newly created API/command items. `/horse neuter` is removed from routing, suggestions and generated help after reload. Previously neutered horses remain infertile.
 
-</details>
+On Standard, enable shears neutering, then sneak/right-click a tamed owned mount with main-hand shears. `betterhorses.neuter` is required; `betterhorses.bypass` permits another owner's mount. Normal durability, Unbreaking, unbreakable tools and Creative mode are respected; event cancellation prevents state, wear and feedback. Sneak/right-click with an empty main hand opens the private inspection card when `horse-inspection.enabled` and `betterhorses.inspect` allow it. See [Neutering](docs/wiki/neutering.md) and [Inspection](docs/wiki/horse-inspection.md).
 
----
+The size multiplier is omitted from item lore and inspection. Missing legacy values are initialized once; capture/respawn, restart and undead transformation preserve it. Changing the factor does not reroll existing data. Disabling sizing keeps stored values and stops applying its own variation while preserving unrelated external changes. See [Random size](docs/wiki/random-size.md).
 
-### 🧩 Requirements
+## Commands
 
-Up to Version 4.1:
-- Minecraft (Spigot) `1.17` - `1.21.6`
-- Java `17+`
+| Command | Permission | Notes |
+| --- | --- | --- |
+| `/horse spawn` | `betterhorses.spawn.command` | Restore main-hand horse item |
+| `/horse despawn` | `betterhorses.despawn` | Store ridden tamed mount; ownership restriction is configurable |
+| `/horse neuter` | `betterhorses.neuter` | Permanent item neutering; registered only when enabled |
+| `/horse info` | `betterhorses.info` | Also requires `debug.enabled` |
+| `/horse reload` | `betterhorses.reload` | Operator default; console supported |
+| `/horsecreate` | `betterhorses.create` | Operator default; player-only |
 
-Version 5.0 and above:
-- Minecraft (Spigot) `1.20.4` - `latest`
-- Java `21+`
+```text
+/horsecreate <health> <speed> <jump> [gender] [name] [trait] [growth] [mounttype] [neutered]
+/horsecreate 20 0.3 0.7 null null null null donkey null
+```
 
-# Folia #
-Version 7.0 and above:
-- Minecraft (Folia) `1.20.4` - `latest`
-- Java `21+`
+All six optional arguments accept case-insensitive `null`, keeping their position and using the omitted default. Required numbers remain raw finite positive stats. Defaults are random gender, localized horse name, configured random trait selection, growth 10, horse type and not neutered. See [Command reference](docs/wiki/command_horsecreate.md) and [Permissions](docs/wiki/Permissions.md).
 
----
+## Configuration and API
 
-### 🚀 Installation
-
-1. Download the `BetterHorses-7.0.jar` from this my discord or via [SpigotMC](https://www.spigotmc.org/resources/better-horses.124223/).
-
-2. Place it into your server’s `plugins/` folder and restart the server to generate the config file.
-
-3. Adjust the values in the `config.yml` and `language.yml` file and use `/horse reload` to apply the changes.
-
----
-
-### 🧠 Plugin API
-
-BetterHorses includes a simple developer API that allows other plugins to create horse items programmatically – no command needed.
-
-#### 🔧 Method
+Edit `plugins/BetterHorses/config.yml` and `language.yml`, then `/horse reload`. See the complete [config reference](docs/wiki/config.yml.md), [language reference](docs/wiki/language.yml.md), [training](docs/wiki/training.md), [growth](docs/wiki/Growth.md), and [shader guide](docs/wiki/postprocessing‐shaders.md). The obsolete `sand-slowness` setting is replaced by `settings.block-speed-effects`.
 
 ```java
-ItemStack horse = BetterHorsesAPI.createHorseItem(
-    double health,
-    double speed,
-    double jump, 
-    String gender,      // "male" or "female"
-    String name,        // name of the horse
-    Player owner,       // owner of the horse
-    Inventory inventory,// inventory to place the item into
-    boolean dropIfFull, // drop if inventory is full
-    String trait        // optional trait name, or null
-);
-```
-
-Minecraft 26.3 servers with the supported Paper/Folia API can also enable configurable client postprocessing shaders. All matching nested conditions contribute effects, with order-independent matching. Updates follow player and world events; integrations can request a refresh after changing placeholders or permissions. See the [postprocessing shader configuration guide](docs/postprocessing-shaders.md) for compatibility, resource pack requirements, conditions, examples, and API hooks.
-
-For example, this YAML flow mapping applies blur while mounted. Every nested section has braces, and commas separate entries:
-
-```yaml
-postprocessing-shaders: {
-  enabled: true,
-  default-namespace: minecraft,
-  rules: {
-    Mounted: {
-      default: "blur",
-      Mounttype: { Horse: { default: "blur" } }
-    }
-  }
+ItemStack item = BetterHorsesAPI.createHorseItem(
+        30.0, 0.25, 0.8, "female", "Daisy",
+        player, null, false, "fireheart", false, 10,
+        SupportedMountType.HORSE);
+BetterHorse horse = BetterHorsesAPI.getBetterHorse(mount);
+if (horse != null) {
+    horse.setSpeed(0.3);
 }
 ```
+
+`getBetterHorse` returns a nullable direct wrapper. Creation has 12- and 13-argument overloads, with the last overload adding texture data. Synchronous entity/inventory operations require their owning thread on Folia. For custom spawns, use the cancellation-returning dispatcher and roll back before consuming the source when cancelled. Unified neuter events require item/entity target guards; trample events expose damage, knockback and cooldown overrides. The [API reference](docs/wiki/API.md) covers these contracts and shader refresh methods.
