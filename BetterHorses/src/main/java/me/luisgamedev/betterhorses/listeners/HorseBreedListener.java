@@ -6,6 +6,8 @@ import me.luisgamedev.betterhorses.api.events.BetterHorseBreedEvent;
 import me.luisgamedev.betterhorses.growing.GrowthScale;
 import me.luisgamedev.betterhorses.growing.HorseSize;
 import me.luisgamedev.betterhorses.utils.HorseStats;
+import me.luisgamedev.betterhorses.utils.HorseDataValidator;
+import me.luisgamedev.betterhorses.training.TrainingManager;
 import me.luisgamedev.betterhorses.utils.MountConfig;
 import me.luisgamedev.betterhorses.utils.PermissionUtils;
 import me.luisgamedev.betterhorses.utils.SupportedMountType;
@@ -18,6 +20,7 @@ import org.bukkit.entity.AbstractHorse;
 import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityBreedEvent;
 import org.bukkit.event.entity.EntityEnterLoveModeEvent;
@@ -28,8 +31,9 @@ import java.util.Set;
 
 public class HorseBreedListener implements Listener {
 
-    @EventHandler
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onHorseEnterLoveMode(EntityEnterLoveModeEvent event) {
+        if (event.isCancelled()) return;
         if (!(event.getEntity() instanceof AbstractHorse horse)) return;
 
         SupportedMountType mountType = SupportedMountType.fromEntity(horse).orElse(null);
@@ -54,8 +58,9 @@ public class HorseBreedListener implements Listener {
         }
     }
 
-    @EventHandler
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onHorseBreed(EntityBreedEvent event) {
+        if (event.isCancelled()) return;
         if (!(event.getEntity() instanceof AbstractHorse child)) return;
         SupportedMountType sizeType = SupportedMountType.fromEntity(child).orElse(null);
         FileConfiguration sizeConfig = BetterHorses.getInstance().getConfig();
@@ -74,8 +79,15 @@ public class HorseBreedListener implements Listener {
         FileConfiguration config = BetterHorses.getInstance().getConfig();
 
         if (childType == null || fatherType == null || motherType == null) return;
-        if (!childType.equals(fatherType) || !childType.equals(motherType)) return;
         if (!childType.isEnabled(config)) return;
+        if (!childType.equals(fatherType) || !childType.equals(motherType)) {
+            // Vanilla crossbreeds retain their native stats, but are still public-API mounts.
+            PersistentDataContainer childData = child.getPersistentDataContainer();
+            childData.set(BetterHorseKeys.MOUNT_TYPE, PersistentDataType.STRING, childType.getEntityType().name());
+            childData.set(BetterHorseKeys.GENDER, PersistentDataType.STRING, Math.random() < 0.5 ? "male" : "female");
+            TrainingManager.ensureBaseStats(child);
+            return;
+        }
 
         Player breeder = event.getBreeder() instanceof Player player ? player : null;
         if (breeder != null && !breeder.hasPermission(PermissionUtils.BREED)) {
@@ -141,7 +153,7 @@ public class HorseBreedListener implements Listener {
 
         BetterHorseBreedEvent betterBreedEvent = new BetterHorseBreedEvent(child, father, mother, childHealth, childSpeed, childJump, gender, selectedTrait);
         Bukkit.getPluginManager().callEvent(betterBreedEvent);
-        if (betterBreedEvent.isCancelled() || isNeutered(father) || isNeutered(mother)) {
+        if (event.isCancelled() || betterBreedEvent.isCancelled() || isNeutered(father) || isNeutered(mother)) {
             event.setCancelled(true);
             return;
         }
@@ -152,11 +164,22 @@ public class HorseBreedListener implements Listener {
         gender = betterBreedEvent.getGender();
         selectedTrait = betterBreedEvent.getTrait();
 
+        if (!HorseDataValidator.isValid(childHealth, childHealth, childSpeed, childJump, gender, 1)) {
+            event.setCancelled(true);
+            return;
+        }
         setHealth(child, childHealth);
         setSpeed(child, childSpeed);
         setJump(child, childJump);
-
-        child.getPersistentDataContainer().set(BetterHorseKeys.GENDER, PersistentDataType.STRING, gender);
+        PersistentDataContainer childData = child.getPersistentDataContainer();
+        childData.set(BetterHorseKeys.HEALTH, PersistentDataType.DOUBLE, childHealth);
+        childData.set(BetterHorseKeys.BASE_HEALTH, PersistentDataType.DOUBLE, childHealth);
+        childData.set(BetterHorseKeys.SPEED, PersistentDataType.DOUBLE, childSpeed);
+        childData.set(BetterHorseKeys.BASE_SPEED, PersistentDataType.DOUBLE, childSpeed);
+        childData.set(BetterHorseKeys.JUMP, PersistentDataType.DOUBLE, childJump);
+        childData.set(BetterHorseKeys.BASE_JUMP, PersistentDataType.DOUBLE, childJump);
+        childData.set(BetterHorseKeys.MOUNT_TYPE, PersistentDataType.STRING, childType.getEntityType().name());
+        childData.set(BetterHorseKeys.GENDER, PersistentDataType.STRING, gender.toLowerCase(java.util.Locale.ROOT));
 
         if (MountConfig.isGrowthEnabled(config, childType)) {
             child.getPersistentDataContainer().set(BetterHorseKeys.GROWTH_STAGE, PersistentDataType.INTEGER, 1);
@@ -171,6 +194,8 @@ public class HorseBreedListener implements Listener {
         if (selectedTrait != null && !selectedTrait.isBlank()) {
             child.getPersistentDataContainer().set(BetterHorseKeys.TRAIT, PersistentDataType.STRING, selectedTrait.toLowerCase());
         }
+
+        TrainingManager.recalculateAndApplyBonuses(child);
 
         // Bukkit's parent roles do not identify the stored genders. Record both
         // timestamps so item conversion preserves them; cooldown checks apply exemptions.

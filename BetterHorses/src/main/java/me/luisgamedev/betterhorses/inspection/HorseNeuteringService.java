@@ -11,7 +11,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Material;
 import org.bukkit.Sound;
-import org.bukkit.enchantments.Enchantment;
+import me.luisgamedev.betterhorses.utils.RuntimeCompat;
 import org.bukkit.entity.AbstractHorse;
 import org.bukkit.entity.AnimalTamer;
 import org.bukkit.entity.Player;
@@ -124,7 +124,7 @@ public final class HorseNeuteringService {
     private Wear prepareWear(Player player, ItemStack original) {
         if (!(original.getItemMeta() instanceof Damageable meta)) return null;
         if (player.getGameMode() == GameMode.CREATIVE || meta.isUnbreakable()) return new Wear(original, false, false);
-        int unbreaking = Math.max(0, meta.getEnchantLevel(Enchantment.UNBREAKING));
+        int unbreaking = Math.max(0, meta.getEnchantLevel(RuntimeCompat.enchantment("UNBREAKING", "DURABILITY")));
         if (unbreaking > 0 && random.getAsDouble() >= 1.0D / (unbreaking + 1.0D)) return new Wear(original, false, false);
 
         PlayerItemDamageEvent damage = new PlayerItemDamageEvent(player, original.clone(), 1);
@@ -133,7 +133,7 @@ public final class HorseNeuteringService {
         int amount = Math.max(0, damage.getDamage());
         if (amount == 0) return new Wear(original, false, false);
 
-        int maximum = meta.hasMaxDamage() ? meta.getMaxDamage() : original.getType().getMaxDurability();
+        int maximum = RuntimeCompat.maximumDamage(meta, original.getType());
         if (maximum <= 0) return null;
         ItemStack result = original.clone();
         if ((long) meta.getDamage() + amount >= maximum) {

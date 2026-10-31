@@ -67,6 +67,10 @@ public class HorseGrowthManager {
         }
         int threshold = GrowthScale.normalize(config.getInt("horse-growth-settings.ride-and-breed-threshhold", 7));
         if (progress.stage() >= threshold && !horse.isAdult()) horse.setAdult();
+        else if (progress.stage() < threshold && horse.isAdult()) {
+            horse.setBaby();
+            horse.setLoveModeTicks(0);
+        }
         horse.setAgeLock(!horse.isAdult());
         // Normalize the version's baby model after choosing its age.
         setScaleSafe(horse, GrowthScale.forStageUnclamped(progress.stage(), config.getDouble("horse-growth-settings.max-size", 1.3),

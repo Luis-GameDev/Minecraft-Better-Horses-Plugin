@@ -149,7 +149,7 @@ max-stats:
 horse-growth-settings:
 
   # If false, baby horses use vanilla aging, feeding, and size.
-  # Custom growth requires Paper 1.20.6 & Java 21 or above.
+  # Java 21 is required. Visible growth needs the server SCALE attribute, absent on 1.20.4.
   enabled: true
   mount-types:
     skeleton-horses: true
@@ -167,9 +167,9 @@ horse-growth-settings:
   # Baby model compensation follows the mount type and Minecraft version.
   ride-and-breed-threshhold: 7
 
-  # The maximum size a horse can reach, this is the scale applied to a vanilla sized horse
+  # Stage-10 baseline size, before the optional individual random-size multiplier.
   # If the value remains 1, an adult horse will be vanilla sized
-  # Newborns start at 50% of this value, then grow in nine equal steps to 100%.
+  # Newborns start at 50% of this baseline, then grow in nine equal steps to 100%.
   max-size: 1.3 # 30% bigger than vanilla
 
 # General settings

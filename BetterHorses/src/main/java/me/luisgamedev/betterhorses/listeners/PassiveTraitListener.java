@@ -2,43 +2,126 @@ package me.luisgamedev.betterhorses.listeners;
 
 import me.luisgamedev.betterhorses.BetterHorses;
 import me.luisgamedev.betterhorses.traits.TraitRegistry;
-import me.luisgamedev.betterhorses.utils.PermissionUtils;
 import me.luisgamedev.betterhorses.utils.SupportedMountType;
-import org.bukkit.NamespacedKey;
+import me.luisgamedev.betterhorses.utils.WorldAccessPolicy;
+import me.luisgamedev.betterhorses.api.BetterHorseKeys;
 import org.bukkit.entity.AbstractHorse;
+import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.event.entity.EntityMountEvent;
+import org.bukkit.event.entity.EntityDismountEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
-import org.bukkit.persistence.PersistentDataContainer;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.persistence.PersistentDataType;
 
-public class PassiveTraitListener implements Listener {
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
-    @EventHandler
+/** Short, owned passive effects are refreshed even for an idle mounted rider. */
+public class PassiveTraitListener implements Listener, ListenerLifecycle {
+    private final BetterHorses plugin = BetterHorses.getInstance();
+    private final Map<UUID, Session> sessions = new ConcurrentHashMap<>();
+
+    public PassiveTraitListener() { discoverMountedPlayers(); }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onMount(EntityMountEvent event) {
+        if (event.getEntity() instanceof Player player) later(player);
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onDismount(EntityDismountEvent event) {
+        if (event.getEntity() instanceof Player player) stop(player.getUniqueId());
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onQuit(PlayerQuitEvent event) { stop(event.getPlayer().getUniqueId()); }
+
+    @EventHandler(ignoreCancelled = true)
     public void onPlayerMove(PlayerMoveEvent event) {
-        if (!BetterHorses.getInstance().getConfig().getBoolean("traits.enabled", true)) return;
         Player player = event.getPlayer();
-        if (!(player.getVehicle() instanceof AbstractHorse mount)) return;
-        if (!SupportedMountType.isSupported(mount)) return;
+        ensure(player);
+        if (player.getVehicle() instanceof AbstractHorse horse
+                && trait(horse).equals("frosthooves") && TraitRegistry.passiveAllowed(player, horse, "frosthooves"))
+            TraitRegistry.activateFrostHooves(player, horse);
+    }
 
-        PersistentDataContainer data = mount.getPersistentDataContainer();
-        NamespacedKey traitKey = new NamespacedKey(BetterHorses.getInstance(), "trait");
-        if (!data.has(traitKey, PersistentDataType.STRING)) return;
+    private void later(Player player) {
+        org.bukkit.Bukkit.getScheduler().runTask(plugin, () -> ensure(player));
+    }
 
-        String trait = data.get(traitKey, PersistentDataType.STRING).toLowerCase();
-        if (!PermissionUtils.canUseTrait(player, trait)) return;
+    private void ensure(Player player) {
+        if (!(player.getVehicle() instanceof AbstractHorse mount)) { stop(player.getUniqueId()); return; }
+        UUID id = player.getUniqueId();
+        Session previous = sessions.get(id);
+        if (previous != null && previous.mount != mount) stop(id);
+        if (!refresh(player, mount)) { stop(id); return; }
+        if (previous != null && previous.mount == mount) return;
+        Session session = new Session(player, mount);
+        sessions.put(id, session);
+        var task = org.bukkit.Bukkit.getScheduler().runTaskTimer(plugin, () -> {
+            if (!refresh(player, mount)) stop(id);
+        }, 1L, 10L);
+        session.cancel = task::cancel;
+    }
 
+    private boolean refresh(Player player, AbstractHorse mount) {
+        if (!player.isOnline() || player.isDead() || player.getVehicle() != mount || !mount.isValid()
+                || !SupportedMountType.isSupported(mount) || !WorldAccessPolicy.isEnabled(mount.getWorld())) return false;
+        String trait = trait(mount);
+        if (!TraitRegistry.passiveAllowed(player, mount, trait)) return false;
         switch (trait) {
-            case "frosthooves":
-                TraitRegistry.activateFrostHooves(player, mount);
-                break;
-            case "featherhooves":
-                TraitRegistry.activateFeatherHooves(player, mount);
-                break;
-            case "fireheart":
-                TraitRegistry.activateFireheart(player, mount);
-                break;
+            case "fireheart" -> TraitRegistry.activateFireheart(player, mount);
+            case "featherhooves" -> TraitRegistry.activateFeatherHooves(player, mount);
+            case "heavenhooves" -> TraitRegistry.activateHeavenHooves(player, mount, null);
+            case "frosthooves" -> { }
+            default -> { return false; }
         }
+        return true;
+    }
+
+    private String trait(AbstractHorse mount) {
+        return mount.getPersistentDataContainer().getOrDefault(BetterHorseKeys.TRAIT, PersistentDataType.STRING, "")
+                .toLowerCase(java.util.Locale.ROOT);
+    }
+
+    private void stop(UUID id) {
+        Session session = sessions.remove(id);
+        if (session == null) return;
+        session.cancel.run();
+        clear(session.player);
+        clear(session.mount);
+    }
+
+    private void clear(LivingEntity entity) {
+        Runnable action = () -> {
+            if (entity.isValid()) TraitRegistry.clearPassiveEffects(entity);
+            else me.luisgamedev.betterhorses.traits.OwnedPotionEffects.forget(entity.getUniqueId());
+        };
+        action.run();
+    }
+
+    private void discoverMountedPlayers() {
+        for (Player player : java.util.List.copyOf(org.bukkit.Bukkit.getOnlinePlayers())) later(player);
+    }
+
+    @Override public void onConfigurationReload() {
+        shutdown();
+        discoverMountedPlayers();
+    }
+
+    @Override public void shutdown() {
+        for (UUID id : java.util.List.copyOf(sessions.keySet())) stop(id);
+    }
+
+    private static final class Session {
+        final Player player;
+        final AbstractHorse mount;
+        Runnable cancel = () -> { };
+        Session(Player player, AbstractHorse mount) { this.player = player; this.mount = mount; }
     }
 }
