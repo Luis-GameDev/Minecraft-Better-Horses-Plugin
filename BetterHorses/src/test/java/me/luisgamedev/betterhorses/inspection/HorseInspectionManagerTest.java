@@ -49,6 +49,51 @@ import static org.junit.jupiter.api.Assertions.*;
 
 /** Exercises the production manager through real Paper interfaces without a running Minecraft server. */
 class HorseInspectionManagerTest {
+    @Test void untamedMountsAreRejectedByDefaultAndWhenExplicitlyRestricted() {
+        for (Boolean onlyTamed : new Boolean[]{null, true}) {
+            Fixture f = new Fixture();
+            try {
+                if (onlyTamed != null) f.config.set("horse-inspection.only-tamed", onlyTamed);
+                f.horse.tamed = false;
+                assertFalse(f.show());
+                assertTrue(f.displays.isEmpty());
+                assertEquals(0, f.scheduler.activeCount());
+                f.horse.tamed = true;
+                assertTrue(f.show());
+            } finally { f.close(); }
+        }
+    }
+
+    @Test void disablingTheTamedRestrictionAllowsUntamedMounts() {
+        Fixture f = new Fixture();
+        try {
+            f.config.set("horse-inspection.only-tamed", false);
+            f.horse.tamed = false;
+            assertTrue(f.show());
+            f.scheduler.monitor().fire();
+            assertTrue(f.lastDisplay().valid);
+        } finally { f.close(); }
+    }
+
+    @Test void activeInspectionsCloseWhenTamingOrTheRestrictionChanges() {
+        for (boolean changeSetting : new boolean[]{false, true}) {
+            Fixture f = new Fixture();
+            try {
+                if (changeSetting) {
+                    f.horse.tamed = false;
+                    f.config.set("horse-inspection.only-tamed", false);
+                }
+                assertTrue(f.show());
+                if (changeSetting) f.config.set("horse-inspection.only-tamed", true);
+                else f.horse.tamed = false;
+                f.scheduler.monitor().fire();
+                assertFalse(f.lastDisplay().valid);
+                assertTrue(f.horse.passengers.isEmpty());
+                assertEquals(0, f.scheduler.activeCount());
+            } finally { f.close(); }
+        }
+    }
+
     @Test void privacyAndPersistenceAreSetBeforeInsertionAndOnlyTheViewerSeesTheDisplay() {
         Fixture f = new Fixture();
         try {
@@ -336,7 +381,7 @@ class HorseInspectionManagerTest {
         final List<Entity> passengers = new ArrayList<>();
         TestWorld world;
         Entity vehicle;
-        boolean valid = true, online = true, persistent = true, visibleByDefault = true, checkedBeforeInsertion, inLove;
+        boolean valid = true, online = true, persistent = true, visibleByDefault = true, tamed = true, checkedBeforeInsertion, inLove;
         int reveals, hides, removalFailures;
         double x;
 
@@ -360,6 +405,7 @@ class HorseInspectionManagerTest {
                     case "isDead" -> !valid;
                     case "isOnline" -> online;
                     case "isLoveMode" -> inLove;
+                    case "isTamed" -> tamed;
                     case "getPersistentDataContainer" -> container;
                     case "setPersistent" -> { persistent = (boolean) args[0]; yield null; }
                     case "setVisibleByDefault" -> { visibleByDefault = (boolean) args[0]; yield null; }
