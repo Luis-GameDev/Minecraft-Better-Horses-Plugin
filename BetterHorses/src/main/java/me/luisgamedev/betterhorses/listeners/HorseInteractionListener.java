@@ -53,6 +53,7 @@ public final class HorseInteractionListener implements Listener {
             return;
         }
         if (!held.isAir() || !plugin.getConfig().getBoolean("horse-inspection.enabled", true)) return;
+        if (plugin.getConfig().getBoolean("horse-inspection.only-tamed", true) && !horse.isTamed()) return;
         if (!player.hasPermission("betterhorses.inspect")) return;
 
         event.setCancelled(true);
