@@ -23,15 +23,15 @@ Visible growth/random size needs `SCALE`, which Minecraft 1.20.4 does not expose
 - Hidden individual sizes default to ±10%, persist on horse and item, apply after growth, and are freshly rolled for offspring rather than inherited.
 - Eleven configurable traits cover fire resistance/trails, slow falling, speed boosts, ice, knockback, invisibility, jump abilities, curse retaliation and undead transformation.
 - Optional block speed effects, trample hits, rider buffs, particle/cooldown displays, item textures/lore layouts, MiniMessage and PlaceholderAPI integration.
-- World blacklist/whitelist and per-action permissions. Ownership restriction is **disabled by default**; enable `settings.restrict-mounting-to-owner` to enforce ownership for riding and despawning. `betterhorses.bypass` exempts riding; Standard live shears also accepts it.
-- **Standard only:** private empty-hand inspection and optional live shears neutering. Folia currently includes item neutering and the global toggle, without these built-in live interactions.
+- World blacklist/whitelist and per-action permissions. Ownership restriction is **disabled by default**; enable `settings.restrict-mounting-to-owner` to enforce ownership for riding and despawning. `betterhorses.bypass` exempts riding; live shears neutering also accepts it.
+- Private empty-hand inspection and optional live shears neutering are available in both Standard and Folia.
 
 ## Neutering, inspection and size defaults
 
 ```yaml
 horse-neutering:
   enabled: true
-  shears-enabled: false # Standard only
+  shears-enabled: false
 
 random-size-factor:
   enabled: true
@@ -40,7 +40,7 @@ random-size-factor:
 
 When global neutering is false, new neutering is blocked through commands, shears and newly created API/command items. `/horse neuter` is removed from routing, suggestions and generated help after reload. Previously neutered horses remain infertile.
 
-On Standard, enable shears neutering, then sneak/right-click a tamed owned mount with main-hand shears. `betterhorses.neuter` is required; `betterhorses.bypass` permits another owner's mount. Normal durability, Unbreaking, unbreakable tools and Creative mode are respected; event cancellation prevents state, wear and feedback. Sneak/right-click with an empty main hand opens the private inspection card when `horse-inspection.enabled` and `betterhorses.inspect` allow it. See [Neutering](https://github.com/Luis-GameDev/Minecraft-Better-Horses-Plugin/blob/main/docs/wiki/neutering.md) and [Inspection](https://github.com/Luis-GameDev/Minecraft-Better-Horses-Plugin/blob/main/docs/wiki/horse-inspection.md).
+Enable shears neutering, then sneak/right-click a tamed owned mount with main-hand shears. `betterhorses.neuter` is required; `betterhorses.bypass` permits another owner's mount. Normal durability, Unbreaking, unbreakable tools and Creative mode are respected; event cancellation prevents state, wear and feedback. Sneak/right-click with an empty main hand opens the private inspection card when `horse-inspection.enabled` and `betterhorses.inspect` allow it. See [Neutering](https://github.com/Luis-GameDev/Minecraft-Better-Horses-Plugin/wiki/command_neuter) and [Configuration](https://github.com/Luis-GameDev/Minecraft-Better-Horses-Plugin/wiki/config.yml#horse-inspection).
 
 The size multiplier is omitted from item lore and inspection. Missing legacy values are initialized once; capture/respawn, restart and undead transformation preserve it. Changing the factor does not reroll existing data. Disabling sizing keeps stored values and stops applying its own variation while preserving unrelated external changes. See [Random size](https://github.com/Luis-GameDev/Minecraft-Better-Horses-Plugin/blob/main/docs/wiki/random-size.md).
 

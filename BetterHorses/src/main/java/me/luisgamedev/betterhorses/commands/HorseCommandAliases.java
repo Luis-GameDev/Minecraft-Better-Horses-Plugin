@@ -19,7 +19,17 @@ public final class HorseCommandAliases {
         List<String> aliases = normalize(configured);
         Map<String, Command> commands = knownCommands(commandMap);
         synchronized (commandMap) {
-            commands.entrySet().removeIf(entry -> entry.getValue() == command);
+            // Paper can expose a command-map facade whose iterators cannot remove entries.
+            // Read actual entry labels: Paper's key-set iterator may return command names.
+            List<String> ownedLabels = new ArrayList<>();
+            for (Map.Entry<String, Command> entry : commands.entrySet()) {
+                if (entry.getValue() == command) ownedLabels.add(entry.getKey());
+            }
+            for (String label : ownedLabels) {
+                if (commands.get(label) == command) {
+                    commands.remove(label);
+                }
+            }
             command.unregister(commandMap);
             command.setAliases(new ArrayList<>(aliases));
             commandMap.register(owner, command);
