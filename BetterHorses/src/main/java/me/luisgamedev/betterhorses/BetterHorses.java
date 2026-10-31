@@ -2,6 +2,7 @@ package me.luisgamedev.betterhorses;
 
 import me.luisgamedev.betterhorses.commands.CustomHorseCommand;
 import me.luisgamedev.betterhorses.commands.HorseCommand;
+import me.luisgamedev.betterhorses.commands.HorseCommandHelp;
 import me.luisgamedev.betterhorses.commands.HorseCommandCompleter;
 import me.luisgamedev.betterhorses.commands.HorseCreateTabCompleter;
 import me.luisgamedev.betterhorses.growing.HorseGrowthManager;
@@ -50,6 +51,7 @@ public class BetterHorses extends JavaPlugin {
     private LanguageManager languageManager;
     private BukkitAudiences audiences;
     private ListenerRegistrationManager listenerRegistrationManager;
+    private HorseCommand horseCommandExecutor;
     private PostProcessingManager postProcessingManager;
     private HorseInspectionManager horseInspectionManager;
 
@@ -79,8 +81,10 @@ public class BetterHorses extends JavaPlugin {
 
         PluginCommand horseCommand = getCommand("horse");
         if (horseCommand != null) {
-            horseCommand.setTabCompleter(new HorseCommandCompleter());
-            horseCommand.setExecutor(new HorseCommand());
+            horseCommandExecutor = new HorseCommand();
+            horseCommand.setTabCompleter(new HorseCommandCompleter(horseCommandExecutor));
+            horseCommand.setExecutor(horseCommandExecutor);
+            updateHorseCommandUsage();
             applyHorseCommandAliases();
         }
         getCommand("horsecreate").setExecutor(new CustomHorseCommand());
@@ -139,6 +143,8 @@ public class BetterHorses extends JavaPlugin {
         listenerRegistrationManager.synchronize();
         languageManager.reload();
         if (postProcessingManager != null) postProcessingManager.reload();
+        if (horseCommandExecutor != null) horseCommandExecutor.synchronizeSubcommands();
+        updateHorseCommandUsage();
         applyHorseCommandAliases();
         Bukkit.getOnlinePlayers().forEach(org.bukkit.entity.Player::updateCommands);
         debugLog("PLUGIN", "RELOAD", true, "Configuration and language files were reloaded.");
@@ -247,6 +253,14 @@ public class BetterHorses extends JavaPlugin {
             return;
         }
         getLogger().warning(message);
+    }
+
+    private void updateHorseCommandUsage() {
+        PluginCommand command = getCommand("horse");
+        if (command != null && horseCommandExecutor != null) {
+            HorseCommandHelp.updateUsage(command, getServer().getHelpMap(),
+                    "/<command> <" + String.join("|", horseCommandExecutor.getRegisteredSubcommands()) + ">");
+        }
     }
 
     private void applyHorseCommandAliases() {

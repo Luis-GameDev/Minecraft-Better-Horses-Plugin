@@ -5,6 +5,7 @@ import me.luisgamedev.betterhorses.api.BetterHorseKeys;
 import me.luisgamedev.betterhorses.api.BetterHorsesAPI;
 import me.luisgamedev.betterhorses.api.events.BetterHorseNeuterEvent;
 import me.luisgamedev.betterhorses.language.LanguageManager;
+import me.luisgamedev.betterhorses.utils.NeuteringPolicy;
 import org.bukkit.ChatColor;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
@@ -21,6 +22,7 @@ public class HorseNeuterCommand {
 
     public static boolean handle(Player player) {
         LanguageManager lang = BetterHorses.getInstance().getLang();
+        if (!NeuteringPolicy.isEnabled()) return true;
 
         if (!player.hasPermission("betterhorses.neuter")) {
             lang.sendFormatted(player, "messages.insufficient-permission", "%command%", "/horse neuter");
@@ -53,7 +55,7 @@ public class HorseNeuterCommand {
 
         BetterHorseNeuterEvent neuterEvent = new BetterHorseNeuterEvent(player, item.clone());
         Bukkit.getPluginManager().callEvent(neuterEvent);
-        if (neuterEvent.isCancelled()) {
+        if (neuterEvent.isCancelled() || !NeuteringPolicy.isEnabled()) {
             BetterHorses.getInstance().debugLog("HORSE_NEUTER", "EVENT", false,
                     "BetterHorseNeuterEvent was cancelled for player " + player.getName());
             return true;

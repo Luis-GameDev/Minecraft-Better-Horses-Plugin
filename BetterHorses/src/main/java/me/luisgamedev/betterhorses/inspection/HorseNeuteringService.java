@@ -5,6 +5,7 @@ import me.luisgamedev.betterhorses.api.BetterHorseKeys;
 import me.luisgamedev.betterhorses.api.events.BetterHorseEntityNeuterEvent;
 import me.luisgamedev.betterhorses.api.events.BetterHorseNeuterEvent;
 import me.luisgamedev.betterhorses.utils.SupportedMountType;
+import me.luisgamedev.betterhorses.utils.NeuteringPolicy;
 import me.luisgamedev.betterhorses.utils.WorldAccessPolicy;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
@@ -77,6 +78,7 @@ public final class HorseNeuteringService {
     }
 
     private boolean canNeuter(Player player, AbstractHorse horse, EquipmentSlot hand, boolean feedback) {
+        if (!NeuteringPolicy.isEnabled(plugin.getConfig())) return false;
         if (player == null || horse == null || hand != EquipmentSlot.HAND || !player.isSneaking()
                 || !horse.isValid() || horse.isDead() || !player.isOnline() || player.isDead()
                 || !plugin.getConfig().getBoolean("horse-neutering.shears-enabled", false)

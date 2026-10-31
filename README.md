@@ -45,10 +45,14 @@ If you have any questions or need help feel free to join my discord server: http
   making the transition from baby to adult seemless, the final size of a horse 
   as well as the time it takes to grow up can be customized in the config
 
+  `random-size-factor.enabled` is `true` by default. `random-size-factor.factor: 0.1` gives each horse a hidden size multiplier between 0.9 and 1.1. It multiplies the final growth-stage size, also works without custom growth, and is saved on both the horse and its item. Existing horses without size data receive a value once; foals get a fresh roll rather than inheriting a parent's size. The multiplier is absent from item lore and inspection text. Disabling the feature stops applying the multiplier without deleting it. Servers without the scale attribute retain the data but cannot display the size variation.
+
 - ✂️ **Castration System**  
   Players can use `/horse neuter` to castrate a horse item.  
   Castrated horses are marked and **cannot breed**, just like same-gender pairs.  
   The status is permanently stored in the item and displayed in the lore.
+
+  Set `horse-neutering.enabled: false` to block all new neutering, including item creation through `/horsecreate` and the API, and unregister `/horse neuter` from routing, usage, and suggestions. The default is `true`. Reloading applies the setting; previously neutered horses retain their status.
 
   Optionally enable `horse-neutering.shears-enabled` (default `false`) to neuter a live, tamed horse by sneaking and right-clicking it with shears in your main hand. Requires `betterhorses.neuter` and ownership, or `betterhorses.bypass`. Uses shears durability with normal Unbreaking, unbreakable, and Creative exemptions, plays a shearing sound, and gives harmless hurt feedback. The status survives despawning and respawning.
 
@@ -102,6 +106,8 @@ If you have any questions or need help feel free to join my discord server: http
   Administrator command to generate a custom horse item with your own stats, name, and optional **specific trait**.  
   If no trait is provided, one is selected randomly based on configured chances, traits can only be selected if enabled in the config. 
 
+  Every optional position accepts `null` (case-insensitive) to use the same default as an omitted value while keeping later arguments in place. For example, `/horsecreate 20 0.3 0.7 null null null null donkey null` uses the default gender, name, trait selection, adult growth stage, and neutered flag while selecting a donkey. The three required numeric arguments do not accept `null`.
+
 ---
 
 ### ⚙️ Configuration
@@ -115,6 +121,14 @@ If you have any questions or need help feel free to join my discord server: http
   
 ```yaml
 # BetterHorses config
+
+horse-neutering:
+  enabled: true
+  shears-enabled: false
+
+random-size-factor:
+  enabled: true
+  factor: 0.1
 
 # Controls how horse stats are displayed on horse item lore.
 # Supported values:

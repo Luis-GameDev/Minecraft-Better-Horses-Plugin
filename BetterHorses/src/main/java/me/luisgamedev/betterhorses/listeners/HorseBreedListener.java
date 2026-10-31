@@ -4,6 +4,7 @@ import me.luisgamedev.betterhorses.BetterHorses;
 import me.luisgamedev.betterhorses.api.BetterHorseKeys;
 import me.luisgamedev.betterhorses.api.events.BetterHorseBreedEvent;
 import me.luisgamedev.betterhorses.growing.GrowthScale;
+import me.luisgamedev.betterhorses.growing.HorseSize;
 import me.luisgamedev.betterhorses.utils.HorseStats;
 import me.luisgamedev.betterhorses.utils.MountConfig;
 import me.luisgamedev.betterhorses.utils.PermissionUtils;
@@ -56,6 +57,13 @@ public class HorseBreedListener implements Listener {
     @EventHandler
     public void onHorseBreed(EntityBreedEvent event) {
         if (!(event.getEntity() instanceof AbstractHorse child)) return;
+        SupportedMountType sizeType = SupportedMountType.fromEntity(child).orElse(null);
+        FileConfiguration sizeConfig = BetterHorses.getInstance().getConfig();
+        if (sizeType != null && sizeType.isEnabled(sizeConfig)) {
+            // A newborn is a new individual, even if another plugin copied parental data.
+            child.getPersistentDataContainer().remove(BetterHorseKeys.RANDOM_SIZE_MULTIPLIER);
+            HorseSize.applyWithoutGrowth(child, sizeConfig);
+        }
         if (!(event.getFather() instanceof AbstractHorse father)) return;
         if (!(event.getMother() instanceof AbstractHorse mother)) return;
 
@@ -155,14 +163,9 @@ public class HorseBreedListener implements Listener {
             int threshold = GrowthScale.normalize(config.getInt("horse-growth-settings.ride-and-breed-threshhold", 7));
             if (threshold == 1) child.setAdult(); else child.setBaby();
             child.setAgeLock(!child.isAdult());
-            try {
-                AttributeInstance scale = child.getAttribute(AttributeResolver.generic("SCALE"));
-                if (scale != null) scale.setBaseValue(GrowthScale.forStage(1,
-                        config.getDouble("horse-growth-settings.max-size", 1.3), child.isAdult(),
-                        GrowthScale.babyScale(childType.name(), Bukkit.getBukkitVersion())));
-            } catch (IllegalArgumentException | NoSuchFieldError ignored) {
-                // Servers without SCALE keep their vanilla size.
-            }
+            HorseSize.apply(child, GrowthScale.forStageUnclamped(1,
+                    config.getDouble("horse-growth-settings.max-size", 1.3), child.isAdult(),
+                    GrowthScale.babyScale(childType.name(), Bukkit.getBukkitVersion())), config);
         }
 
         if (selectedTrait != null && !selectedTrait.isBlank()) {
