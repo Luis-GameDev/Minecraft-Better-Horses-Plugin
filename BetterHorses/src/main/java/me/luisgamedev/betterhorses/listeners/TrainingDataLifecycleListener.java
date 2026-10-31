@@ -1,6 +1,5 @@
 package me.luisgamedev.betterhorses.listeners;
 
-import com.destroystokyo.paper.event.entity.EntityAddToWorldEvent;
 import me.luisgamedev.betterhorses.BetterHorses;
 import me.luisgamedev.betterhorses.api.BetterHorseKeys;
 import me.luisgamedev.betterhorses.api.BetterHorsesAPI;
@@ -74,9 +73,6 @@ public final class TrainingDataLifecycleListener implements Listener, ListenerLi
         players.clear();
     }
 
-    @EventHandler(priority = EventPriority.MONITOR)
-    public void onAdded(EntityAddToWorldEvent event) { requestHorse(event.getEntity()); }
-
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onSpawn(EntitySpawnEvent event) { requestHorse(event.getEntity()); }
 
@@ -138,9 +134,10 @@ public final class TrainingDataLifecycleListener implements Listener, ListenerLi
                 horses.remove(id);
                 if (!active || !horse.isValid() || horse.isDead() || !WorldAccessPolicy.isEnabled(horse.getWorld())) return;
                 SupportedMountType type = SupportedMountType.fromEntity(horse).orElse(null);
-                if (type != null && type.isEnabled(plugin.getConfig()) && hasTrainingData(horse.getPersistentDataContainer())) {
-                    TrainingManager.recalculateAndApplyBonuses(horse);
-                }
+                if (type == null || !type.isEnabled(plugin.getConfig())) return;
+                me.luisgamedev.betterhorses.traits.TraitRegistry.reconcileTemporaryState(horse);
+                HorseStepHeightListener.reconcileTemporaryState(horse);
+                if (hasTrainingData(horse.getPersistentDataContainer())) TrainingManager.recalculateAndApplyBonuses(horse);
             }
         }.runTask(plugin));
     }
