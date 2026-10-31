@@ -2,6 +2,9 @@ package me.luisgamedev.betterhorses.listeners;
 
 import me.luisgamedev.betterhorses.BetterHorses;
 import me.luisgamedev.betterhorses.api.BetterHorseKeys;
+import me.luisgamedev.betterhorses.growing.GrowthScale;
+import me.luisgamedev.betterhorses.growing.HorseSize;
+import me.luisgamedev.betterhorses.utils.MountConfig;
 import me.luisgamedev.betterhorses.training.TrainingManager;
 import me.luisgamedev.betterhorses.traits.TraitParticleResolver;
 import me.luisgamedev.betterhorses.utils.AttributeResolver;
@@ -102,6 +105,7 @@ public class UndeadTraitListener implements Listener {
     }
 
     private void transformToSkeleton(AbstractHorse original) {
+        HorseSize.ensure(original.getPersistentDataContainer(), plugin.getConfig());
         Location location = original.getLocation();
         List<Entity> passengers = List.copyOf(original.getPassengers());
         PersistentDataContainer oldData = original.getPersistentDataContainer();
@@ -131,6 +135,7 @@ public class UndeadTraitListener implements Listener {
             if (chestContents != null) data.set(BetterHorseKeys.UNDEAD_CHEST_CONTENTS, PersistentDataType.STRING, chestContents);
         }
         applyStats(skeleton, maxHealth, speed, jump);
+        applySize(skeleton);
         skeleton.setTamed(original.isTamed());
         skeleton.setOwner(original.getOwner());
         skeleton.getInventory().setSaddle(saddle == null ? null : saddle.clone());
@@ -145,6 +150,7 @@ public class UndeadTraitListener implements Listener {
     }
 
     private void transformBack(SkeletonHorse skeleton) {
+        HorseSize.ensure(skeleton.getPersistentDataContainer(), plugin.getConfig());
         PersistentDataContainer data = skeleton.getPersistentDataContainer();
         SupportedMountType type = SupportedMountType.fromName(data.get(BetterHorseKeys.UNDEAD_ORIGINAL_TYPE, PersistentDataType.STRING)).orElse(SupportedMountType.HORSE);
         List<Entity> passengers = List.copyOf(skeleton.getPassengers());
@@ -158,6 +164,7 @@ public class UndeadTraitListener implements Listener {
         applyStats(restored, maxHealth,
                 storedSpeed == null ? HorseStats.speed(skeleton) : storedSpeed,
                 storedJump == null ? HorseStats.jump(skeleton) : storedJump);
+        applySize(restored);
         restored.setTamed(skeleton.isTamed());
         restored.setOwner(skeleton.getOwner());
         restored.getInventory().setSaddle(skeleton.getInventory().getSaddle());
@@ -209,6 +216,20 @@ public class UndeadTraitListener implements Listener {
         AttributeInstance maximum = horse.getAttribute(AttributeResolver.generic("MAX_HEALTH"));
         horse.setHealth(maximum == null ? health : maximum.getValue());
     }
+    private void applySize(AbstractHorse horse) {
+        SupportedMountType type = SupportedMountType.fromEntity(horse).orElse(SupportedMountType.HORSE);
+        double base = 1.0D;
+        if (MountConfig.isGrowthEnabled(plugin.getConfig(), type)) {
+            int stage = horse.getPersistentDataContainer().getOrDefault(BetterHorseKeys.GROWTH_STAGE,
+                    PersistentDataType.INTEGER, horse.isAdult() ? GrowthScale.MAX_STAGE : 1);
+            base = GrowthScale.forStageUnclamped(stage, plugin.getConfig().getDouble("horse-growth-settings.max-size", 1.3D),
+                    horse.isAdult(), GrowthScale.babyScale(type.name(), Bukkit.getBukkitVersion()));
+            HorseSize.apply(horse, base, plugin.getConfig());
+        } else {
+            HorseSize.applyWithoutGrowth(horse, plugin.getConfig());
+        }
+    }
+
     private void setAttribute(AbstractHorse horse, Attribute attribute, double value) { AttributeInstance instance = horse.getAttribute(attribute); if (instance != null) instance.setBaseValue(value); }
     private void copyBetterHorsesData(PersistentDataContainer from, PersistentDataContainer to) {
         for (org.bukkit.NamespacedKey key : from.getKeys()) {

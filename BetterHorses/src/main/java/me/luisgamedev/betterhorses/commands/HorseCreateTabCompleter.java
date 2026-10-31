@@ -13,6 +13,7 @@ import org.bukkit.configuration.file.FileConfiguration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 
 public class HorseCreateTabCompleter implements TabCompleter {
@@ -61,8 +62,10 @@ public class HorseCreateTabCompleter implements TabCompleter {
             }
         }
 
-        String lastArg = args[args.length - 1].toLowerCase();
-        suggestions.removeIf(s -> !s.toLowerCase().startsWith(lastArg));
+        if (args.length >= 4 && args.length <= 9) suggestions.add("null");
+
+        String lastArg = args[args.length - 1].toLowerCase(Locale.ROOT);
+        suggestions.removeIf(s -> !s.toLowerCase(Locale.ROOT).startsWith(lastArg));
         return suggestions;
     }
 }
