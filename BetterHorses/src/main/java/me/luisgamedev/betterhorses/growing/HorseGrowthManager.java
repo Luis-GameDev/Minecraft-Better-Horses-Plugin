@@ -3,6 +3,7 @@ package me.luisgamedev.betterhorses.growing;
 import com.destroystokyo.paper.event.entity.EntityAddToWorldEvent;
 import com.destroystokyo.paper.event.entity.EntityRemoveFromWorldEvent;
 import me.luisgamedev.betterhorses.BetterHorses;
+import me.luisgamedev.betterhorses.inspection.HorseInspectionManager;
 import me.luisgamedev.betterhorses.scheduler.ScheduledTaskHandle;
 import me.luisgamedev.betterhorses.traits.TraitParticleResolver;
 import me.luisgamedev.betterhorses.utils.MountConfig;
@@ -106,13 +107,14 @@ public final class HorseGrowthManager implements Listener {
         long stageMillis = GrowthProgress.intervalMillis(minutes);
         long now = System.currentTimeMillis();
         Integer stored = data.get(growthKey, PersistentDataType.INTEGER);
+        boolean occupied = horse.getPassengers().stream().anyMatch(passenger -> !HorseInspectionManager.isInspectionDisplay(passenger));
         GrowthProgress progress = GrowthProgress.advance(stored == null ? (horse.isAdult() ? MAX_STAGE : 1) : stored,
-                data.get(growthUpdatedKey, PersistentDataType.LONG), now, stageMillis, !horse.getPassengers().isEmpty());
+                data.get(growthUpdatedKey, PersistentDataType.LONG), now, stageMillis, occupied);
         int stage = progress.stage();
         boolean stageChanged = stored == null || stored != stage;
         data.set(growthKey, PersistentDataType.INTEGER, stage);
         data.set(growthUpdatedKey, PersistentDataType.LONG, progress.updatedAt());
-        if (!horse.getPassengers().isEmpty()) {
+        if (occupied) {
             setScale(horse, GrowthScale.forStageUnclamped(stage, config.getDouble("horse-growth-settings.max-size", 1.3),
                     horse.isAdult(), GrowthScale.babyScale(type.name(), Bukkit.getBukkitVersion())));
             if (stageChanged) plugin.refreshMountShaders(horse);
