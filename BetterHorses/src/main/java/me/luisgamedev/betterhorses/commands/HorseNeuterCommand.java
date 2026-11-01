@@ -6,6 +6,7 @@ import me.luisgamedev.betterhorses.api.BetterHorsesAPI;
 import me.luisgamedev.betterhorses.api.events.BetterHorseNeuterEvent;
 import me.luisgamedev.betterhorses.language.LanguageManager;
 import me.luisgamedev.betterhorses.utils.NeuteringPolicy;
+import me.luisgamedev.betterhorses.utils.HorseItemTransaction;
 import org.bukkit.ChatColor;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
@@ -23,22 +24,26 @@ public class HorseNeuterCommand {
     public static boolean handle(Player player) {
         LanguageManager lang = BetterHorses.getInstance().getLang();
         if (!NeuteringPolicy.isEnabled()) return true;
+        BetterHorses plugin = BetterHorses.getInstance();
+        if (!HorseItemTransaction.ready(plugin, player)) return true;
 
         if (!player.hasPermission("betterhorses.neuter")) {
             lang.sendFormatted(player, "messages.insufficient-permission", "%command%", "/horse neuter");
             BetterHorses.getInstance().debugLog("HORSE_NEUTER", "PERMISSION", false,
-                    "Player " + player.getName() + " lacks betterhorses.neuter");
+                    "Missing betterhorses.neuter permission.");
             return true;
         }
 
-        ItemStack item = player.getInventory().getItemInMainHand();
+        HorseItemTransaction transaction = HorseItemTransaction.capture(plugin, player);
+        if (transaction == null) return true;
+        ItemStack item = transaction.copy();
         FileConfiguration config = BetterHorses.getInstance().getConfig();
         Material expected = Material.getMaterial(config.getString("settings.horse-item", "SADDLE").toUpperCase());
 
         if (expected == null || item == null || item.getType() != expected || !BetterHorsesAPI.isHorseItem(item)) {
             lang.send(player, "messages.invalid-item");
             BetterHorses.getInstance().debugLog("HORSE_NEUTER", "VALIDATION", false,
-                    "Player " + player.getName() + " did not hold a valid horse item.");
+                    "No valid horse item in the main hand.");
             return true;
         }
 
@@ -49,20 +54,23 @@ public class HorseNeuterCommand {
         if (meta.getPersistentDataContainer().has(BetterHorseKeys.NEUTERED, PersistentDataType.BYTE)) {
             lang.send(player, "messages.already-castrated");
             BetterHorses.getInstance().debugLog("HORSE_NEUTER", "ALREADY_NEUTERED", false,
-                    "Horse item is already neutered for player " + player.getName());
+                    "Horse item is already neutered.");
             return true;
         }
 
         BetterHorseNeuterEvent neuterEvent = new BetterHorseNeuterEvent(player, item.clone());
         Bukkit.getPluginManager().callEvent(neuterEvent);
-        if (neuterEvent.isCancelled() || !NeuteringPolicy.isEnabled()) {
+        if (neuterEvent.isCancelled() || !NeuteringPolicy.isEnabled() || !transaction.matches()) {
             BetterHorses.getInstance().debugLog("HORSE_NEUTER", "EVENT", false,
-                    "BetterHorseNeuterEvent was cancelled for player " + player.getName());
+                    "BetterHorseNeuterEvent was cancelled or its source changed.");
             return true;
         }
 
         item = neuterEvent.getHorseItem();
+        if (item == null || item.getType() != expected || !BetterHorsesAPI.isHorseItem(item)) return true;
+        item = item.clone();
         meta = item.getItemMeta();
+        if (meta == null) return true;
 
         meta.getPersistentDataContainer().set(BetterHorseKeys.NEUTERED, PersistentDataType.BYTE, (byte) 1);
 
@@ -71,10 +79,11 @@ public class HorseNeuterCommand {
         meta.setLore(lore);
 
         item.setItemMeta(meta);
-        player.getInventory().setItemInMainHand(item);
+        if (!NeuteringPolicy.isEnabled() || !transaction.matches()
+                || !player.hasPermission("betterhorses.neuter") || !transaction.replace(item)) return true;
         lang.send(player, "messages.successfully-castrated");
         BetterHorses.getInstance().debugLog("HORSE_NEUTER", "COMPLETE", true,
-                "Horse item neutered and written back to main hand for player " + player.getName());
+                "Horse item neutered and written back to the unchanged main hand.");
         return true;
     }
 }

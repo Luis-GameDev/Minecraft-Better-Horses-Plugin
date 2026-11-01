@@ -717,6 +717,10 @@ public class BetterHorsesAPI {
         copyGeneticStat(source, target, BetterHorseKeys.UNDEAD_ORIGINAL_JUMP);
         copyPdcKey(source, target, BetterHorseKeys.UNDEAD_ORIGINAL_COLOR, PersistentDataType.STRING);
         copyPdcKey(source, target, BetterHorseKeys.UNDEAD_ORIGINAL_STYLE, PersistentDataType.STRING);
+        copyPdcKey(source, target, BetterHorseKeys.UNDEAD_ORIGINAL_AGE, PersistentDataType.INTEGER);
+        copyPdcKey(source, target, BetterHorseKeys.UNDEAD_ORIGINAL_AGE_LOCK, PersistentDataType.BYTE);
+        copyPdcKey(source, target, BetterHorseKeys.UNDEAD_ORIGINAL_LLAMA_STRENGTH, PersistentDataType.INTEGER);
+        copyPdcKey(source, target, BetterHorseKeys.UNDEAD_ORIGINAL_LLAMA_COLOR, PersistentDataType.STRING);
         copyPdcKey(source, target, BetterHorseKeys.UNDEAD_ARMOR_DATA, PersistentDataType.BYTE_ARRAY);
         copyPdcKey(source, target, BetterHorseKeys.UNDEAD_CHESTED, PersistentDataType.BYTE);
         copyPdcKey(source, target, BetterHorseKeys.UNDEAD_CHEST_CONTENTS, PersistentDataType.STRING);
