@@ -27,15 +27,18 @@ import org.bukkit.persistence.PersistentDataType;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 /** Event-driven, entity-owned growth and trait indicator processing. */
 public final class HorseGrowthManager implements Listener {
     private static final int MAX_STAGE = 10;
     private final BetterHorses plugin;
+    private volatile boolean stopped;
     private final NamespacedKey growthKey;
     private final NamespacedKey growthUpdatedKey;
     private final NamespacedKey traitKey;
-    private final ConcurrentMap<UUID, ScheduledTaskHandle> tasks = new ConcurrentHashMap<>();
+    private final ConcurrentMap<UUID, GrowthTask> tasks = new ConcurrentHashMap<>();
 
     public HorseGrowthManager(BetterHorses plugin) {
         this.plugin = plugin;
@@ -45,6 +48,7 @@ public final class HorseGrowthManager implements Listener {
     }
 
     public void start() {
+        stopped = false;
         plugin.getServer().getPluginManager().registerEvents(this, plugin);
         // Discover existing entities without reading or mutating them outside their owning region.
         plugin.scheduler().global(ignored -> Bukkit.getWorlds().forEach(world -> {
@@ -58,6 +62,7 @@ public final class HorseGrowthManager implements Listener {
     }
 
     public void shutdown() {
+        stopped = true;
         tasks.values().forEach(ScheduledTaskHandle::cancel);
         tasks.clear();
     }
@@ -78,12 +83,55 @@ public final class HorseGrowthManager implements Listener {
     }
 
     public void track(org.bukkit.entity.Entity entity) {
-        if (!(entity instanceof AbstractHorse horse) || !SupportedMountType.isSupported(horse)) return;
+        if (stopped || !(entity instanceof AbstractHorse horse) || !SupportedMountType.isSupported(horse)) return;
         UUID id = horse.getUniqueId();
-        tasks.compute(id, (ignored, existing) -> {
-            if (existing != null && !existing.isCancelled()) return existing;
-            return plugin.scheduler().entityRepeating(horse, 1L, 20L, task -> tick(horse), () -> tasks.remove(id));
-        });
+        GrowthTask candidate = new GrowthTask(id);
+        for (;;) {
+            GrowthTask existing = tasks.putIfAbsent(id, candidate);
+            if (existing == null) break;
+            if (!existing.isDone()) return;
+            tasks.remove(id, existing);
+        }
+        if (stopped) { candidate.cancel(); return; }
+        try {
+            // Retirement can run synchronously during submission. Install an identity
+            // first, outside map.compute, so rejection and late callbacks are harmless.
+            candidate.attach(plugin.scheduler().entityRepeating(horse, 1L, 20L,
+                    task -> { if (!candidate.isDone()) tick(horse); }, candidate::cancel));
+        } catch (RuntimeException | LinkageError failure) {
+            candidate.cancel();
+            throw failure;
+        }
+    }
+
+    private final class GrowthTask implements ScheduledTaskHandle {
+        private final UUID id;
+        private final AtomicBoolean done = new AtomicBoolean();
+        private final AtomicReference<ScheduledTaskHandle> handle = new AtomicReference<>();
+
+        private GrowthTask(UUID id) { this.id = id; }
+
+        private void attach(ScheduledTaskHandle submitted) {
+            handle.set(submitted);
+            if (done.get() || stopped || tasks.get(id) != this || submitted.isDone()) cancel();
+        }
+
+        @Override public void cancel() {
+            done.set(true);
+            tasks.remove(id, this);
+            ScheduledTaskHandle submitted = handle.getAndSet(null);
+            if (submitted != null) submitted.cancel();
+        }
+
+        @Override public boolean isCancelled() {
+            ScheduledTaskHandle submitted = handle.get();
+            return done.get() || (submitted != null && submitted.isCancelled());
+        }
+
+        @Override public boolean isDone() {
+            ScheduledTaskHandle submitted = handle.get();
+            return done.get() || (submitted != null && submitted.isDone());
+        }
     }
 
     private void tick(AbstractHorse horse) {

@@ -24,6 +24,8 @@ import org.bukkit.entity.AbstractHorse;
 import org.bukkit.entity.ChestedHorse;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Horse;
+import org.bukkit.entity.Llama;
+import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.SkeletonHorse;
 import org.bukkit.event.EventHandler;
@@ -80,8 +82,10 @@ public class UndeadTraitListener implements Listener {
         ItemStack expected = item.clone();
         // Spawn events may be cancelled or may replace the player's held item. Commit only
         // while both source entities and the intended payment are still present.
-        if (!transformBack(skeleton, () -> expected.equals(player.getInventory().getItem(event.getHand())))) return;
+        if (!transformBack(skeleton, () -> owned(player) && player.isOnline() && expected.equals(player.getInventory().getItem(event.getHand())))) return;
+        if (!owned(player) || !player.isOnline()) return;
         ItemStack current = player.getInventory().getItem(event.getHand());
+        if (!expected.equals(current)) return;
         if (current.getAmount() > 1) current.setAmount(current.getAmount() - 1);
         else player.getInventory().setItem(event.getHand(), null);
     }
@@ -123,6 +127,8 @@ public class UndeadTraitListener implements Listener {
             HorseSize.ensure(original.getPersistentDataContainer(), plugin.getConfig());
             Location location = original.getLocation();
             List<Entity> passengers = List.copyOf(original.getPassengers());
+            int originalAge = original.getAge();
+            boolean originalAgeLock = original.getAgeLock();
             PersistentDataContainer oldData = original.getPersistentDataContainer();
             double maxHealth = HorseStats.maxHealth(original);
             double speed = HorseStats.speed(original);
@@ -134,7 +140,8 @@ public class UndeadTraitListener implements Listener {
             byte[] armorData = armor == null ? null : ItemStackSerialization.serialize(armor);
             String chestContents = carryingChest ? serializeStorageContents(original.getInventory().getStorageContents()) : null;
             skeleton = location.getWorld().spawn(location, SkeletonHorse.class);
-            if (skeleton == null || !skeleton.isValid()) return false;
+            if (skeleton == null) return false;
+            if (!continuation(original, skeleton)) { removeReplacement(skeleton); return false; }
             copyBetterHorsesData(oldData, skeleton.getPersistentDataContainer());
             PersistentDataContainer data = skeleton.getPersistentDataContainer();
             data.set(BetterHorseKeys.UNDEAD_SKELETON, PersistentDataType.BYTE, (byte) 1);
@@ -142,6 +149,12 @@ public class UndeadTraitListener implements Listener {
             data.set(BetterHorseKeys.UNDEAD_ORIGINAL_HEALTH, PersistentDataType.DOUBLE, maxHealth);
             data.set(BetterHorseKeys.UNDEAD_ORIGINAL_SPEED, PersistentDataType.DOUBLE, speed);
             data.set(BetterHorseKeys.UNDEAD_ORIGINAL_JUMP, PersistentDataType.DOUBLE, jump);
+            data.set(BetterHorseKeys.UNDEAD_ORIGINAL_AGE, PersistentDataType.INTEGER, originalAge);
+            data.set(BetterHorseKeys.UNDEAD_ORIGINAL_AGE_LOCK, PersistentDataType.BYTE, originalAgeLock ? (byte) 1 : (byte) 0);
+            if (original instanceof Llama llama) {
+                data.set(BetterHorseKeys.UNDEAD_ORIGINAL_LLAMA_STRENGTH, PersistentDataType.INTEGER, llama.getStrength());
+                data.set(BetterHorseKeys.UNDEAD_ORIGINAL_LLAMA_COLOR, PersistentDataType.STRING, llama.getColor().name());
+            }
             if (original instanceof Horse h) {
                 data.set(BetterHorseKeys.UNDEAD_ORIGINAL_COLOR, PersistentDataType.STRING, h.getColor().name());
                 data.set(BetterHorseKeys.UNDEAD_ORIGINAL_STYLE, PersistentDataType.STRING, h.getStyle().name());
@@ -152,6 +165,8 @@ public class UndeadTraitListener implements Listener {
                 data.set(BetterHorseKeys.UNDEAD_CHEST_CONTENTS, PersistentDataType.STRING, chestContents);
             }
             applyStats(skeleton, maxHealth, speed, jump);
+            skeleton.setAge(originalAge);
+            skeleton.setAgeLock(originalAgeLock);
             applySize(skeleton);
             skeleton.setTamed(original.isTamed());
             skeleton.setOwner(original.getOwner());
@@ -160,16 +175,18 @@ public class UndeadTraitListener implements Listener {
                 skeleton.setCustomName(original.getCustomName());
                 skeleton.setCustomNameVisible(original.isCustomNameVisible());
             }
-            if (!skeleton.isValid() || !original.isValid()) { skeleton.remove(); return false; }
-            if (original.isLeashed()) original.getWorld().dropItemNaturally(location, new ItemStack(Material.LEAD));
+            if (!continuation(original, skeleton)) { removeReplacement(skeleton); return false; }
+            boolean wasLeashed = original.isLeashed();
             original.eject();
+            if (!continuation(original, skeleton)) { removeReplacement(skeleton); return false; }
             original.remove();
             if (original.isValid()) throw new IllegalStateException("Original mount could not be removed");
             committed = true;
+            if (wasLeashed) location.getWorld().dropItemNaturally(location, new ItemStack(Material.LEAD));
             remountNextTick(skeleton, passengers);
             return true;
         } catch (RuntimeException | LinkageError failure) {
-            if (!committed && skeleton != null) skeleton.remove();
+            if (!committed) removeReplacement(skeleton);
             plugin.getLogger().log(java.util.logging.Level.WARNING, committed
                     ? "Undead transformation completed but deferred feedback failed"
                     : "Undead transformation failed; the source mount was retained", failure);
@@ -185,14 +202,21 @@ public class UndeadTraitListener implements Listener {
         try {
             HorseSize.ensure(skeleton.getPersistentDataContainer(), plugin.getConfig());
             PersistentDataContainer data = skeleton.getPersistentDataContainer();
-            SupportedMountType type = SupportedMountType.fromName(data.get(BetterHorseKeys.UNDEAD_ORIGINAL_TYPE,
-                    PersistentDataType.STRING)).orElse(SupportedMountType.HORSE);
+            String originalType = data.get(BetterHorseKeys.UNDEAD_ORIGINAL_TYPE, PersistentDataType.STRING);
+            boolean camelHusk = "CAMEL_HUSK".equals(originalType);
+            SupportedMountType type = camelHusk ? SupportedMountType.CAMEL
+                    : SupportedMountType.fromName(originalType).orElse(SupportedMountType.HORSE);
+            int restoredAge = nativeRestorationAge(skeleton, data);
+            boolean restoredAgeLock = data.getOrDefault(BetterHorseKeys.UNDEAD_ORIGINAL_AGE_LOCK,
+                    PersistentDataType.BYTE, skeleton.getAgeLock() ? (byte) 1 : (byte) 0) == (byte) 1;
             List<Entity> passengers = List.copyOf(skeleton.getPassengers());
             // Invalid saved cargo/equipment must never become a successful empty restoration.
             ItemStack armor = readStoredArmor(data);
             ItemStack[] cargo = readStoredChestContents(data);
-            restored = type.spawn(skeleton.getLocation());
-            if (restored == null || !restored.isValid()) return false;
+            restored = spawnOriginal(type, camelHusk, skeleton.getLocation());
+            if (restored == null) return false;
+            if (!continuation(skeleton, restored) || !paymentUnchanged.getAsBoolean()
+                    || !continuation(skeleton, restored)) { removeReplacement(restored); return false; }
             copyBetterHorsesData(data, restored.getPersistentDataContainer());
             cleanupUndeadKeys(restored.getPersistentDataContainer());
             Double storedHealth = HorseStats.stored(data, BetterHorseKeys.UNDEAD_ORIGINAL_HEALTH);
@@ -201,9 +225,12 @@ public class UndeadTraitListener implements Listener {
             double maxHealth = storedHealth == null ? HorseStats.maxHealth(skeleton) : storedHealth;
             applyStats(restored, maxHealth, storedSpeed == null ? HorseStats.speed(skeleton) : storedSpeed,
                     storedJump == null ? HorseStats.jump(skeleton) : storedJump);
+            restored.setAge(restoredAge);
+            restored.setAgeLock(restoredAgeLock);
             applySize(restored);
             restored.setTamed(skeleton.isTamed());
             restored.setOwner(skeleton.getOwner());
+            if (restored instanceof Llama llama) restoreLlamaState(llama, data, cargo);
             restoreChestContents(restored, data, cargo);
             // The currently equipped saddle is authoritative; an old inventory snapshot never recreates it.
             ItemStack saddle = skeleton.getInventory().getSaddle();
@@ -220,15 +247,17 @@ public class UndeadTraitListener implements Listener {
                 restored.setCustomName(skeleton.getCustomName());
                 restored.setCustomNameVisible(skeleton.isCustomNameVisible());
             }
-            if (!restored.isValid() || !skeleton.isValid() || !paymentUnchanged.getAsBoolean()) {
-                restored.remove(); return false;
-            }
+            if (!continuation(skeleton, restored) || !paymentUnchanged.getAsBoolean()
+                    || !continuation(skeleton, restored)) { removeReplacement(restored); return false; }
             skeleton.eject();
+            if (!continuation(skeleton, restored) || !paymentUnchanged.getAsBoolean()
+                    || !continuation(skeleton, restored)) { removeReplacement(restored); return false; }
             skeleton.remove();
             if (skeleton.isValid()) throw new IllegalStateException("Skeleton mount could not be removed");
             committed = true;
             // Feedback and deferred remounting follow the successful transaction.
-            if (plugin.getConfig().getBoolean("traits.undead.transform-back-animation", true)) {
+            if (owned(restored) && restored.isValid()
+                    && plugin.getConfig().getBoolean("traits.undead.transform-back-animation", true)) {
                 restored.getWorld().spawnParticle(TraitParticleResolver.getTraitParticle("undead", Particle.SOUL),
                         restored.getLocation().add(0, 1, 0), 40, .6, .7, .6, .03);
                 restored.getWorld().playSound(restored.getLocation(), Sound.ENTITY_SKELETON_HORSE_AMBIENT, 1f, .8f);
@@ -236,7 +265,7 @@ public class UndeadTraitListener implements Listener {
             remountNextTick(restored, passengers);
             return true;
         } catch (RuntimeException | LinkageError failure) {
-            if (!committed && restored != null) restored.remove();
+            if (!committed) removeReplacement(restored);
             plugin.getLogger().log(java.util.logging.Level.WARNING, committed
                     ? "Undead restoration completed but deferred feedback failed"
                     : "Undead restoration failed; the source mount and restoration item were retained", failure);
@@ -283,8 +312,13 @@ public class UndeadTraitListener implements Listener {
         SupportedMountType type = SupportedMountType.fromEntity(horse).orElse(SupportedMountType.HORSE);
         double base = 1.0D;
         if (MountConfig.isGrowthEnabled(plugin.getConfig(), type)) {
-            int stage = horse.getPersistentDataContainer().getOrDefault(BetterHorseKeys.GROWTH_STAGE,
-                    PersistentDataType.INTEGER, horse.isAdult() ? GrowthScale.MAX_STAGE : 1);
+            int stage = GrowthScale.normalize(horse.getPersistentDataContainer().getOrDefault(BetterHorseKeys.GROWTH_STAGE,
+                    PersistentDataType.INTEGER, horse.isAdult() ? GrowthScale.MAX_STAGE : 1));
+            int threshold = GrowthScale.normalize(plugin.getConfig().getInt("horse-growth-settings.ride-and-breed-threshhold", 7));
+            boolean adult = stage >= threshold;
+            if (adult && !horse.isAdult()) horse.setAdult();
+            else if (!adult && horse.isAdult()) horse.setBaby();
+            horse.setAgeLock(!adult);
             base = GrowthScale.forStageUnclamped(stage, plugin.getConfig().getDouble("horse-growth-settings.max-size", 1.3D),
                     horse.isAdult(), GrowthScale.babyScale(type.name(), Bukkit.getBukkitVersion()));
             HorseSize.apply(horse, base, plugin.getConfig());
@@ -301,7 +335,68 @@ public class UndeadTraitListener implements Listener {
         }
     }
     private <T, Z> void copyKey(PersistentDataContainer from, PersistentDataContainer to, org.bukkit.NamespacedKey key, PersistentDataType<T, Z> type) { if (from.has(key, type)) to.set(key, type, from.get(key, type)); }
-    private void cleanupUndeadKeys(PersistentDataContainer data) { data.remove(BetterHorseKeys.UNDEAD_SKELETON); data.remove(BetterHorseKeys.UNDEAD_ORIGINAL_TYPE); data.remove(BetterHorseKeys.UNDEAD_ORIGINAL_HEALTH); data.remove(BetterHorseKeys.UNDEAD_ORIGINAL_SPEED); data.remove(BetterHorseKeys.UNDEAD_ORIGINAL_JUMP); data.remove(BetterHorseKeys.UNDEAD_ORIGINAL_COLOR); data.remove(BetterHorseKeys.UNDEAD_ORIGINAL_STYLE); data.remove(BetterHorseKeys.UNDEAD_ARMOR_DATA); data.remove(BetterHorseKeys.UNDEAD_CHESTED); data.remove(BetterHorseKeys.UNDEAD_CHEST_CONTENTS); }
+    private void cleanupUndeadKeys(PersistentDataContainer data) {
+        for (org.bukkit.NamespacedKey key : List.of(BetterHorseKeys.UNDEAD_SKELETON,
+                BetterHorseKeys.UNDEAD_ORIGINAL_TYPE, BetterHorseKeys.UNDEAD_ORIGINAL_HEALTH,
+                BetterHorseKeys.UNDEAD_ORIGINAL_SPEED, BetterHorseKeys.UNDEAD_ORIGINAL_JUMP,
+                BetterHorseKeys.UNDEAD_ORIGINAL_COLOR, BetterHorseKeys.UNDEAD_ORIGINAL_STYLE,
+                BetterHorseKeys.UNDEAD_ORIGINAL_AGE, BetterHorseKeys.UNDEAD_ORIGINAL_AGE_LOCK,
+                BetterHorseKeys.UNDEAD_ORIGINAL_LLAMA_STRENGTH, BetterHorseKeys.UNDEAD_ORIGINAL_LLAMA_COLOR,
+                BetterHorseKeys.UNDEAD_ARMOR_DATA, BetterHorseKeys.UNDEAD_CHESTED,
+                BetterHorseKeys.UNDEAD_CHEST_CONTENTS)) data.remove(key);
+    }
+
+    private AbstractHorse spawnOriginal(SupportedMountType type, boolean camelHusk, Location location) {
+        if (!camelHusk) return type.spawn(location);
+        // A newer entity is looked up by name so old servers can still load this listener.
+        // If a saved husk is unavailable here, retain the skeleton instead of replacing it with a horse.
+        Entity entity = location.getWorld().spawnEntity(location, EntityType.valueOf("CAMEL_HUSK"));
+        if (entity instanceof AbstractHorse horse) return horse;
+        removeReplacement(entity);
+        throw new IllegalArgumentException("Camel husk did not spawn a supported mount");
+    }
+
+    private void restoreLlamaState(Llama llama, PersistentDataContainer data, ItemStack[] cargo) {
+        Integer strength = data.get(BetterHorseKeys.UNDEAD_ORIGINAL_LLAMA_STRENGTH, PersistentDataType.INTEGER);
+        if (strength == null) strength = data.get(BetterHorseKeys.LLAMA_STRENGTH, PersistentDataType.INTEGER);
+        // Legacy skeletons did not record strength. Their slot count still gives the capacity
+        // required to restore the chest, including an entirely empty larger chest.
+        if (strength == null && cargo != null) strength = Math.max(llama.getStrength(), (cargo.length + 2) / 3);
+        if (strength != null) {
+            if (strength < 1 || strength > 5) throw new IllegalArgumentException("Invalid stored llama strength");
+            llama.setStrength(strength);
+        }
+        String color = data.get(BetterHorseKeys.UNDEAD_ORIGINAL_LLAMA_COLOR, PersistentDataType.STRING);
+        if (color == null) color = data.get(BetterHorseKeys.LLAMA_COLOR, PersistentDataType.STRING);
+        if (color != null) llama.setColor(Llama.Color.valueOf(color));
+    }
+
+    private int nativeRestorationAge(SkeletonHorse skeleton, PersistentDataContainer data) {
+        if (data.getOrDefault(BetterHorseKeys.UNDEAD_ORIGINAL_AGE_LOCK, PersistentDataType.BYTE, (byte) 0) == (byte) 1)
+            return data.getOrDefault(BetterHorseKeys.UNDEAD_ORIGINAL_AGE, PersistentDataType.INTEGER, skeleton.getAge());
+        // A skeleton using vanilla aging has continued to age naturally while alive. If it
+        // uses custom growth, that native age belongs to its skeleton stages, not the original.
+        if (!MountConfig.isGrowthEnabled(plugin.getConfig(), SupportedMountType.SKELETON_HORSE))
+            return skeleton.getAge();
+        return data.getOrDefault(BetterHorseKeys.UNDEAD_ORIGINAL_AGE, PersistentDataType.INTEGER, skeleton.getAge());
+    }
+
+    private boolean continuation(Entity... entities) {
+        if (!plugin.isEnabled()) return false;
+        for (Entity entity : entities) if (entity == null || !owned(entity) || !entity.isValid()) return false;
+        return true;
+    }
+
+    private boolean owned(Entity entity) {
+        return Bukkit.isOwnedByCurrentRegion(entity);
+    }
+
+    private void removeReplacement(Entity entity) {
+        if (entity == null) return;
+        if (owned(entity)) entity.remove();
+        else if (plugin.isEnabled()) plugin.scheduler().entity(entity, 1L, task -> entity.remove(), () -> { });
+    }
+
     private ItemStack readStoredArmor(PersistentDataContainer data) {
         byte[] bytes = data.get(BetterHorseKeys.UNDEAD_ARMOR_DATA, PersistentDataType.BYTE_ARRAY);
         if (bytes != null) return ItemStackSerialization.deserialize(bytes);

@@ -33,6 +33,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class TraitRegistry {
 
@@ -45,6 +46,24 @@ public class TraitRegistry {
     private static final Map<UUID, AbstractHorse> boostedHorses = new ConcurrentHashMap<>();
     private static final Map<UUID, AbstractHorse> ghostHorses = new ConcurrentHashMap<>();
     private static final Map<UUID, Player> ghostPlayers = new ConcurrentHashMap<>();
+    private static final Map<UUID, GhostSession> ghostSessions = new ConcurrentHashMap<>();
+    private static final Map<UUID, GhostSession> ghostPlayerSessions = new ConcurrentHashMap<>();
+
+    private static final class GhostSession {
+        final Player player;
+        final AbstractHorse horse;
+        final UUID playerId;
+        final UUID horseId;
+        final AtomicBoolean closed = new AtomicBoolean();
+        volatile ScheduledTaskHandle task;
+
+        GhostSession(Player player, AbstractHorse horse) {
+            this.player = player;
+            this.horse = horse;
+            playerId = player.getUniqueId();
+            horseId = horse.getUniqueId();
+        }
+    }
 
     public static void activateHellmare(Player player, AbstractHorse horse) {
         FileConfiguration config = config();
@@ -59,10 +78,13 @@ public class TraitRegistry {
         int duration = config.getInt("traits.hellmare.duration", 10);
         int radius = config.getInt("traits.hellmare.radius", 1);
         lang().send(player, "traits.hellmare-message");
+        if (!allowed(player, horse)) return;
 
         PotionEffect fireResist = new PotionEffect(PotionEffectType.FIRE_RESISTANCE, duration * 20, 1, false, false, false);
         player.addPotionEffect(fireResist);
+        if (!allowed(player, horse)) return;
         horse.addPotionEffect(fireResist);
+        if (!allowed(player, horse)) return;
 
         setCooldown(horse, key, config.getInt("traits.hellmare.cooldown", 30));
 
@@ -111,11 +133,12 @@ public class TraitRegistry {
 
     public static void activateHeavenHooves(Player player, AbstractHorse horse, Event event) {
         FileConfiguration config = config();
-        if (!config.getBoolean("traits.heavenhooves.enabled")) return;
+        if (!config.getBoolean("traits.heavenhooves.enabled") || !allowed(player, horse)) return;
+        if (event instanceof HorseJumpEvent jump && jump.isCancelled()) return;
 
+        // Passive refreshes deliberately pass null to maintain slow falling between jumps.
         OwnedPotionEffects.apply(horse, PotionEffectType.SLOW_FALLING, 40);
-
-        if (!(event instanceof HorseJumpEvent jumpEvent)) return;
+        if (!allowed(player, horse) || !(event instanceof HorseJumpEvent jumpEvent)) return;
 
         double power = jumpEvent.getPower();
 
@@ -164,15 +187,15 @@ public class TraitRegistry {
         horse.getPersistentDataContainer().set(dashExpiryKey(), PersistentDataType.LONG,
                 System.currentTimeMillis() + duration * 1000L);
         boostedHorses.put(horse.getUniqueId(), horse);
-        lang().send(player, "traits.dashboost-message");
         setCooldown(horse, key, config.getInt("traits.dashboost.cooldown", 30));
         ScheduledTaskHandle task = BetterHorses.getInstance().scheduler().entity(horse, Math.max(1L, duration * 20L),
                 ignored -> revertDashBoostIfActive(horse), () -> clearDashBoostState(horse.getUniqueId()));
         dashBoostTasks.put(horse.getUniqueId(), task);
+        lang().send(player, "traits.dashboost-message");
     }
 
     public static void revertDashBoostIfActive(AbstractHorse horse) {
-        if (horse == null) return;
+        if (horse == null || !Bukkit.isOwnedByCurrentRegion(horse)) return;
         clearDashBoostState(horse.getUniqueId());
         // Invalid/unloaded entities retain their marker until their next owning-thread load.
         if (!horse.isValid()) return;
@@ -185,6 +208,7 @@ public class TraitRegistry {
 
     /** Run on the horse's owning thread before training reconciliation after a load/re-enable. */
     public static void reconcileTemporaryState(AbstractHorse horse) {
+        if (horse == null || !Bukkit.isOwnedByCurrentRegion(horse)) return;
         Long until = horse.getPersistentDataContainer().get(dashExpiryKey(), PersistentDataType.LONG);
         if (until != null && (until <= System.currentTimeMillis() || !dashBoostTasks.containsKey(horse.getUniqueId())))
             revertDashBoostIfActive(horse);
@@ -220,33 +244,94 @@ public class TraitRegistry {
         String key = "ghosthorse";
         if (isOnCooldown(horse, key)) { showCooldownBar(player, horse, key); return; }
         int duration = Math.max(1, config.getInt("traits.ghosthorse.duration", 5));
-        lang().send(player, "traits.ghosthorse-message");
+        GhostSession session = new GhostSession(player, horse);
+        GhostSession previous = ghostSessions.put(session.horseId, session);
+        ghostPlayerSessions.put(session.playerId, session);
+        ghostPlayers.put(session.playerId, player);
+        ghostHorses.put(session.horseId, horse);
+        if (previous != null) finishGhostSession(previous, false);
+
         OwnedPotionEffects.apply(horse, PotionEffectType.INVISIBILITY, duration * 20);
+        if (!currentGhostSession(session) || !allowed(player, horse)) {
+            finishGhostSession(session, false);
+            runOwned(session.horse, () -> clearInactiveGhostHorse(session));
+            return;
+        }
         OwnedPotionEffects.apply(player, PotionEffectType.INVISIBILITY, duration * 20);
-        ghostPlayers.put(player.getUniqueId(), player);
-        ghostHorses.put(horse.getUniqueId(), horse);
-        ScheduledTaskHandle task = BetterHorses.getInstance().scheduler().entity(horse, Math.max(1L, duration * 20L),
-                ignored -> endGhostHorseIfActive(player, horse), () -> clearGhostState(player.getUniqueId(), horse.getUniqueId()));
-        ghostHorseTasks.put(horse.getUniqueId(), task);
+        if (!currentGhostSession(session) || !allowed(player, horse)) {
+            finishGhostSession(session, false);
+            runOwned(session.player, () -> clearInactiveGhostPlayer(session));
+            return;
+        }
         setCooldown(horse, key, config.getInt("traits.ghosthorse.cooldown", 30));
+        try {
+            ScheduledTaskHandle task = BetterHorses.getInstance().scheduler().entity(horse, Math.max(1L, duration * 20L),
+                    ignored -> finishGhostSession(session, false), () -> finishGhostSession(session, true));
+            session.task = task;
+            if (session.closed.get() || task.isCancelled()) {
+                task.cancel();
+                finishGhostSession(session, false);
+            } else {
+                ghostHorseTasks.put(session.horseId, task);
+                // Retirement can run synchronously before the scheduling call returns.
+                if (session.closed.get()) {
+                    ghostHorseTasks.remove(session.horseId, task);
+                    task.cancel();
+                }
+            }
+        } catch (RuntimeException failure) {
+            finishGhostSession(session, false);
+            throw failure;
+        }
+        // Language/PlaceholderAPI callbacks run after the operation is fully registered.
+        if (currentGhostSession(session) && allowed(player, horse)) lang().send(player, "traits.ghosthorse-message");
+    }
+
+    private static boolean currentGhostSession(GhostSession session) {
+        return !session.closed.get() && ghostSessions.get(session.horseId) == session
+                && ghostPlayerSessions.get(session.playerId) == session;
     }
 
     public static void endGhostHorseIfActive(Player player, AbstractHorse horse) {
         if (player == null || horse == null) return;
-        clearGhostState(player.getUniqueId(), horse.getUniqueId());
-        runOwned(player, () -> OwnedPotionEffects.clear(player, PotionEffectType.INVISIBILITY));
-        runOwned(horse, () -> OwnedPotionEffects.clear(horse, PotionEffectType.INVISIBILITY));
+        GhostSession session = ghostSessions.get(horse.getUniqueId());
+        if (session == null || !session.playerId.equals(player.getUniqueId()))
+            session = ghostPlayerSessions.get(player.getUniqueId());
+        if (session != null) finishGhostSession(session, false);
     }
 
-    private static void clearGhostState(UUID playerId, UUID horseId) {
-        ghostPlayers.remove(playerId); ghostHorses.remove(horseId);
-        var task = ghostHorseTasks.remove(horseId);
-        if (task != null) task.cancel();
+    private static void finishGhostSession(GhostSession session, boolean retiredHorse) {
+        if (!session.closed.compareAndSet(false, true)) return;
+        ScheduledTaskHandle task = session.task;
+        if (task != null) {
+            ghostHorseTasks.remove(session.horseId, task);
+            task.cancel();
+        }
+        if (ghostSessions.remove(session.horseId, session)) {
+            ghostHorses.remove(session.horseId, session.horse);
+            if (retiredHorse) OwnedPotionEffects.forget(session.horseId);
+            else runOwned(session.horse, () -> clearInactiveGhostHorse(session));
+        }
+        if (ghostPlayerSessions.remove(session.playerId, session)) {
+            ghostPlayers.remove(session.playerId, session.player);
+            runOwned(session.player, () -> clearInactiveGhostPlayer(session));
+        }
+    }
+
+    private static void clearInactiveGhostHorse(GhostSession session) {
+        if (ghostSessions.containsKey(session.horseId)) return;
+        if (session.horse.isValid()) OwnedPotionEffects.clear(session.horse, PotionEffectType.INVISIBILITY);
+        else OwnedPotionEffects.forget(session.horseId);
+    }
+
+    private static void clearInactiveGhostPlayer(GhostSession session) {
+        if (!ghostPlayerSessions.containsKey(session.playerId))
+            OwnedPotionEffects.clear(session.player, PotionEffectType.INVISIBILITY);
     }
 
     public static void activateSkyburst(Player player, AbstractHorse horse) {
         FileConfiguration config = config();
-        if (!config.getBoolean("traits.skyburst.enabled")) return;
+        if (!config.getBoolean("traits.skyburst.enabled") || !allowed(player, horse)) return;
 
         double radius = config.getDouble("traits.skyburst.radius", 3.0);
         player.getWorld().spawnParticle(Particle.CLOUD, horse.getLocation(), 20, 0.5, 0.1, 0.5, 0.01);
@@ -271,7 +356,7 @@ public class TraitRegistry {
 
     public static void activateRevenantCurse(Player player, AbstractHorse horse) {
         FileConfiguration config = config();
-        if (!config.getBoolean("traits.revenantcurse.enabled")) return;
+        if (!config.getBoolean("traits.revenantcurse.enabled") || !allowed(player, horse)) return;
 
         String key = "revenantcurse";
         if (isOnCooldown(horse, key)) {
@@ -280,7 +365,6 @@ public class TraitRegistry {
         }
 
         int duration = config.getInt("traits.revenantcurse.duration", 5);
-        lang().send(player, "traits.revenantcurse-message");
 
         horse.getPersistentDataContainer().set(
                 new NamespacedKey(BetterHorses.getInstance(), "revenantcurse_active"),
@@ -293,11 +377,12 @@ public class TraitRegistry {
         horse.getWorld().playSound(horse.getLocation(), Sound.ENTITY_WITHER_AMBIENT, 1, 0.8f);
 
         setCooldown(horse, key, config.getInt("traits.revenantcurse.cooldown", 30));
+        lang().send(player, "traits.revenantcurse-message");
     }
 
     public static void activateKickback(Player player, AbstractHorse horse) {
         FileConfiguration config = config();
-        if (!config.getBoolean("traits.kickback.enabled")) return;
+        if (!config.getBoolean("traits.kickback.enabled") || !allowed(player, horse)) return;
 
         String key = "kickback";
         if (isOnCooldown(horse, key)) {
@@ -317,20 +402,22 @@ public class TraitRegistry {
                 Bukkit.getPluginManager().callEvent(event);
 
                 if (!event.isCancelled() && pendingHitAllowed(player, horse, target, origin, radius)) {
-                    Vector knockback = target.getLocation().toVector().subtract(origin.toVector()).normalize().multiply(strength);
+                    Vector knockback = target.getLocation().toVector().subtract(origin.toVector());
+                    if (knockback.lengthSquared() <= 1.0E-12) return;
+                    knockback.normalize().multiply(strength);
                     target.setVelocity(knockback);
                 }
                 }, () -> { });
             }
         }
 
-        lang().send(player, "traits.kickback-message");
         setCooldown(horse, key, config.getInt("traits.kickback.cooldown", 10));
+        lang().send(player, "traits.kickback-message");
     }
 
     public static void activateFrostHooves(Player player, AbstractHorse horse) {
         FileConfiguration config = config();
-        if (!config.getBoolean("traits.frosthooves.enabled")) return;
+        if (!config.getBoolean("traits.frosthooves.enabled") || !allowed(player, horse)) return;
 
         Location center = horse.getLocation().subtract(0, 1, 0);
         int radius = config.getInt("traits.frosthooves.radius", 3);
@@ -381,6 +468,7 @@ public class TraitRegistry {
         long until = horse.getPersistentDataContainer().getOrDefault(cooldownKey(key), PersistentDataType.LONG, 0L);
         double secondsLeft = (until - now) / 1000.0;
         String name = lang().getRaw(player, "traits." + key);
+        if (!allowed(player, horse)) return;
 
         if (secondsLeft > 0) {
             CooldownDisplay.showCooldown(secondsLeft, fullCooldown, player, name);
@@ -415,7 +503,9 @@ public class TraitRegistry {
     }
 
     private static boolean allowed(Player player, AbstractHorse horse) {
-        return player != null && player.isOnline() && horse != null && horse.isValid()
+        return player != null && horse != null && BetterHorses.getInstance().isEnabled()
+                && Bukkit.isOwnedByCurrentRegion(player) && Bukkit.isOwnedByCurrentRegion(horse)
+                && player.isOnline() && horse.isValid()
                 && player.getVehicle() == horse && player.getWorld().equals(horse.getWorld()) && WorldAccessPolicy.isEnabled(horse.getWorld())
                 && config().getBoolean("traits.enabled", true);
     }
@@ -427,8 +517,12 @@ public class TraitRegistry {
         var players = List.copyOf(ghostPlayers.values());
         cancelTrackedTasks();
         horses.forEach(horse -> runOwned(horse, () -> revertDashBoostIfActive(horse)));
-        ghostMounts.forEach(horse -> runOwned(horse, () -> OwnedPotionEffects.clear(horse, PotionEffectType.INVISIBILITY)));
-        players.forEach(player -> runOwned(player, () -> OwnedPotionEffects.clear(player, PotionEffectType.INVISIBILITY)));
+        ghostMounts.forEach(horse -> runOwned(horse, () -> {
+            if (!ghostSessions.containsKey(horse.getUniqueId())) OwnedPotionEffects.clear(horse, PotionEffectType.INVISIBILITY);
+        }));
+        players.forEach(player -> runOwned(player, () -> {
+            if (!ghostPlayerSessions.containsKey(player.getUniqueId())) OwnedPotionEffects.clear(player, PotionEffectType.INVISIBILITY);
+        }));
     }
 
     /** No disabled-plugin scheduling or foreign-region access during teardown. */
@@ -454,6 +548,8 @@ public class TraitRegistry {
         dashBoostTasks.values().forEach(task -> task.cancel());
         ghostHorseTasks.values().forEach(task -> task.cancel());
         dashBoostTasks.clear(); ghostHorseTasks.clear();
+        ghostSessions.values().forEach(session -> session.closed.set(true));
+        ghostSessions.clear(); ghostPlayerSessions.clear();
         boostedHorses.clear(); ghostHorses.clear(); ghostPlayers.clear();
     }
 }
