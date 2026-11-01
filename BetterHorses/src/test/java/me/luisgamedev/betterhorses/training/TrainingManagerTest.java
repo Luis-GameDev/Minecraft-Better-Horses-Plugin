@@ -271,6 +271,7 @@ class TrainingManagerTest {
                 Object server = Proxy.newProxyInstance(Server.class.getClassLoader(), new Class<?>[]{Server.class}, (proxy, method, args) -> switch (method.getName()) {
                     case "getBukkitVersion", "getMinecraftVersion" -> "1.20.6-R0.1-SNAPSHOT";
                     case "getName" -> "Paper";
+                    case "isOwnedByCurrentRegion" -> true;
                     case "getLogger" -> java.util.logging.Logger.getLogger("TrainingManagerTest");
                     default -> defaultValue(method.getReturnType());
                 });

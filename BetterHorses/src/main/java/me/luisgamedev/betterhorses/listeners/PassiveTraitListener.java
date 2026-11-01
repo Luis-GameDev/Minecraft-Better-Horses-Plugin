@@ -44,7 +44,9 @@ public class PassiveTraitListener implements Listener, ListenerLifecycle {
     @EventHandler(ignoreCancelled = true)
     public void onPlayerMove(PlayerMoveEvent event) {
         Player player = event.getPlayer();
+        if (!org.bukkit.Bukkit.isOwnedByCurrentRegion(player)) return;
         ensure(player);
+        if (!org.bukkit.Bukkit.isOwnedByCurrentRegion(player)) return;
         if (player.getVehicle() instanceof AbstractHorse horse
                 && org.bukkit.Bukkit.isOwnedByCurrentRegion(horse) && trait(horse).equals("frosthooves") && TraitRegistry.passiveAllowed(player, horse, "frosthooves"))
             TraitRegistry.activateFrostHooves(player, horse);
@@ -55,22 +57,31 @@ public class PassiveTraitListener implements Listener, ListenerLifecycle {
     }
 
     private void ensure(Player player) {
+        if (!plugin.isEnabled() || !org.bukkit.Bukkit.isOwnedByCurrentRegion(player)) return;
         if (!(player.getVehicle() instanceof AbstractHorse mount)) { stop(player.getUniqueId()); return; }
         UUID id = player.getUniqueId();
         Session previous = sessions.get(id);
         if (previous != null && previous.mount != mount) stop(id);
-        if (!refresh(player, mount)) { stop(id); return; }
+        if (!refresh(player, mount)) {
+            stop(id);
+            clear(player);
+            clear(mount);
+            return;
+        }
         if (previous != null && previous.mount == mount) return;
         Session session = new Session(player, mount);
-        sessions.put(id, session);
+        if (sessions.putIfAbsent(id, session) != null) return;
         var task = plugin.scheduler().entityRepeating(player, 1L, 10L, scheduled -> {
+            if (sessions.get(id) != session) { scheduled.cancel(); return; }
             if (!refresh(player, mount)) { stop(id); scheduled.cancel(); }
         }, () -> { if (sessions.remove(id, session)) me.luisgamedev.betterhorses.traits.OwnedPotionEffects.forget(id); });
         session.cancel = task::cancel;
+        if (sessions.get(id) != session) task.cancel();
     }
 
     private boolean refresh(Player player, AbstractHorse mount) {
-        if (!org.bukkit.Bukkit.isOwnedByCurrentRegion(mount)) return false;
+        if (!plugin.isEnabled() || !org.bukkit.Bukkit.isOwnedByCurrentRegion(player)
+                || !org.bukkit.Bukkit.isOwnedByCurrentRegion(mount)) return false;
         if (!player.isOnline() || player.isDead() || player.getVehicle() != mount || !mount.isValid()
                 || !SupportedMountType.isSupported(mount) || !WorldAccessPolicy.isEnabled(mount.getWorld())) return false;
         String trait = trait(mount);
@@ -82,7 +93,10 @@ public class PassiveTraitListener implements Listener, ListenerLifecycle {
             case "frosthooves" -> { }
             default -> { return false; }
         }
-        return true;
+        // Adding a potion effect invokes external listeners before returning.
+        return plugin.isEnabled() && org.bukkit.Bukkit.isOwnedByCurrentRegion(player)
+                && org.bukkit.Bukkit.isOwnedByCurrentRegion(mount)
+                && player.isOnline() && player.getVehicle() == mount;
     }
 
     private String trait(AbstractHorse mount) {
