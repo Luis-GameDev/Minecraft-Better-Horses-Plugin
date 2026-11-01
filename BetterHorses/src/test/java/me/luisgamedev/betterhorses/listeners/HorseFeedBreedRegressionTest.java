@@ -199,7 +199,7 @@ class HorseFeedBreedRegressionTest {
         @Override public FileConfiguration getConfig() { return configuration; }
     }
 
-    private static final class Fixture implements AutoCloseable {
+    static final class Fixture implements AutoCloseable {
         final Field pluginField = field(BetterHorses.class, "instance"), serverField = field(Bukkit.class, "server");
         final Object oldPlugin = pluginField.get(null), oldServer = serverField.get(null);
         final FileConfiguration config = new YamlConfiguration();
@@ -273,7 +273,7 @@ class HorseFeedBreedRegressionTest {
         @Override public void close() throws Exception { pluginField.set(null, oldPlugin); serverField.set(null, oldServer); }
     }
 
-    private static final class Mount {
+    static final class Mount {
         final Map<NamespacedKey, Object> values = new HashMap<>();
         final PersistentDataContainer data;
         final Horse handle;
