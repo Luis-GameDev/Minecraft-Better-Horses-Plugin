@@ -76,7 +76,7 @@ If you have any questions or need help feel free to join my discord server: http
 
 - 🎒 **/horse despawn**  
   Converts a tamed horse you're riding into a **horse item** that stores all it's data until respawned.
-  A horse can only be despawned by its owner.
+  Owner-only despawning requires `settings.restrict-mounting-to-owner: true`; this restriction is disabled by default.
 
 - ✂️ **/horse neuter**  
   Castrates the horse item in your mainhand. Castration is permanent and cannot be undone. 
@@ -89,7 +89,7 @@ If you have any questions or need help feel free to join my discord server: http
   Administrator command that is only active when the debug mode is activated. When used, it gives all information that exist about the currently ridden horse or the currently held horse item.
 
 - 🔄 **/horse reload**
-  Administrator command that reloads the entire plugin configuration and language file, certain features however require a full restart of the server after being enabled.
+  Administrator command that reloads configuration, language settings and optional feature registrations.
 
 - 🛠 **/horsecreate [health] [speed] [jump] [gender] [name] [trait] [growth] [mounttype] [neutered]**  
   Administrator command to generate a custom horse item with your own stats, name, and optional **specific trait**.  
@@ -191,7 +191,8 @@ max-stats:
 # Settings that determine horse growth
 horse-growth-settings:
 
-  # If false, horses will remain their Vanilla size, this feature only works for Paper 1.20.6 & Java 21 or above
+  # Disabling this uses vanilla aging; independent random-size variation can still apply.
+  # Visible sizing requires the SCALE attribute, which Minecraft 1.20.4 does not expose.
   enabled: true
   mount-types:
     skeleton-horses: true
@@ -514,19 +515,22 @@ BetterHorses includes a simple developer API that allows other plugins to create
 
 ```java
 ItemStack horse = BetterHorsesAPI.createHorseItem(
-    double health,
-    double speed,
-    double jump, 
-    String gender,      // "male" or "female"
-    String name,        // name of the horse
-    Player owner,       // owner of the horse
-    Inventory inventory,// inventory to place the item into
-    boolean dropIfFull, // drop if inventory is full
-    String trait        // optional trait name, or null
+    30.0,               // maximum health
+    0.25,               // raw movement speed
+    0.7,                // raw jump strength
+    "female",           // "male" or "female"
+    "Daisy",            // name of the horse
+    player,             // owner, or null
+    null,               // target inventory; null returns the item without inserting it
+    false,              // drop if a supplied inventory is full
+    null,               // trait override; null uses configured random selection
+    false,              // neutered, when global neutering is enabled
+    10,                 // growth stage 1-10; null defaults to 10
+    SupportedMountType.HORSE
 );
 ```
 
-Minecraft 26.3 servers with the supported Paper/Folia API can also enable configurable client postprocessing shaders. All matching nested conditions contribute effects, with order-independent matching. Updates follow player and world events; integrations can request a refresh after changing placeholders or permissions. See the [postprocessing shader configuration guide](docs/postprocessing-shaders.md) for compatibility, resource pack requirements, conditions, examples, and API hooks.
+Minecraft 26.3 servers with the supported Paper/Folia API can also enable configurable client postprocessing shaders. All matching nested conditions contribute effects, with order-independent matching. Updates follow player and world events; integrations can request a refresh after changing placeholders or permissions. See the [postprocessing shader configuration guide](https://github.com/Luis-GameDev/Minecraft-Better-Horses-Plugin/wiki/postprocessing‐shaders) for compatibility, resource pack requirements, conditions, examples, and API hooks.
 
 For example, this YAML flow mapping applies blur while mounted. Every nested section has braces, and commas separate entries:
 
@@ -542,3 +546,4 @@ postprocessing-shaders: {
   }
 }
 ```
+
