@@ -27,6 +27,9 @@ import java.lang.reflect.Proxy;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.List;
+import java.util.UUID;
+import org.bukkit.plugin.PluginManager;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -106,6 +109,8 @@ class HorseSizeTest {
             childData.set(BetterHorseKeys.RANDOM_SIZE_MULTIPLIER, PersistentDataType.DOUBLE, 4.0D);
             motherData.set(BetterHorseKeys.RANDOM_SIZE_MULTIPLIER, PersistentDataType.DOUBLE, 0.9D);
             fatherData.set(BetterHorseKeys.RANDOM_SIZE_MULTIPLIER, PersistentDataType.DOUBLE, 1.1D);
+            motherData.set(BetterHorseKeys.GENDER, PersistentDataType.STRING, "female");
+            fatherData.set(BetterHorseKeys.GENDER, PersistentDataType.STRING, "male");
             Mule child = f.mount(Mule.class, EntityType.MULE, childData, new double[]{1.0D});
             Horse mother = f.mount(Horse.class, EntityType.HORSE, motherData, new double[]{1.0D});
             Donkey father = f.mount(Donkey.class, EntityType.DONKEY, fatherData, new double[]{1.0D});
@@ -265,6 +270,9 @@ class HorseSizeTest {
                 Server server = (Server) Proxy.newProxyInstance(Server.class.getClassLoader(), new Class<?>[]{Server.class}, (proxy, method, args) -> switch (method.getName()) {
                     case "getBukkitVersion", "getMinecraftVersion" -> "1.20.6-R0.1-SNAPSHOT";
                     case "getName" -> "Paper";
+                    case "isOwnedByCurrentRegion" -> true;
+                    case "getPluginManager" -> Proxy.newProxyInstance(PluginManager.class.getClassLoader(), new Class<?>[]{PluginManager.class},
+                            (target, callback, values) -> defaultValue(callback.getReturnType()));
                     default -> defaultValue(method.getReturnType());
                 });
                 serverField.set(null, server);
@@ -302,12 +310,16 @@ class HorseSizeTest {
             AttributeInstance attribute = (AttributeInstance) Proxy.newProxyInstance(AttributeInstance.class.getClassLoader(), new Class<?>[]{AttributeInstance.class}, (proxy, method, args) -> switch (method.getName()) {
                 case "getBaseValue", "getValue" -> scale[0];
                 case "setBaseValue" -> { scale[0] = (double) args[0]; yield null; }
+                case "getModifiers" -> List.of();
                 default -> defaultValue(method.getReturnType());
             });
+            UUID id = UUID.randomUUID();
             return mountClass.cast(Proxy.newProxyInstance(mountClass.getClassLoader(), new Class<?>[]{mountClass}, (proxy, method, args) -> switch (method.getName()) {
                 case "getPersistentDataContainer" -> data;
                 case "getAttribute" -> attribute;
                 case "getType" -> type;
+                case "getUniqueId" -> id;
+                case "isValid" -> true;
                 default -> defaultValue(method.getReturnType());
             }));
         }

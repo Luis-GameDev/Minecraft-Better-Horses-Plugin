@@ -29,9 +29,10 @@ public class HorseJumpListener implements Listener, ListenerLifecycle {
     private final Map<UUID, ScheduledTaskHandle> landingTasks = new ConcurrentHashMap<>();
     private final NamespacedKey traitKey = new NamespacedKey(BetterHorses.getInstance(), "trait");
 
-    @EventHandler
+    @EventHandler(ignoreCancelled = true)
     public void onHorseJump(HorseJumpEvent event) {
-        if (!(event.getEntity() instanceof AbstractHorse horse)) return;
+        if (event.isCancelled()) return;
+        if (!(event.getEntity() instanceof AbstractHorse horse) || !org.bukkit.Bukkit.isOwnedByCurrentRegion(horse)) return;
         if (!SupportedMountType.isSupported(horse)) return;
         if (hasHeavenHoovesTrait(horse) && !horse.getPassengers().isEmpty()) {
             Entity rider = horse.getPassengers().get(0);
@@ -39,6 +40,8 @@ public class HorseJumpListener implements Listener, ListenerLifecycle {
                 TraitRegistry.activateHeavenHooves(player, horse, event);
             }
         }
+        // The Heaven Hooves potion event may have transferred the mount to another region.
+        if (!org.bukkit.Bukkit.isOwnedByCurrentRegion(horse)) return;
         if (!hasSkyburstTrait(horse)) return;
         if (horse.hasMetadata("SkyburstCandidate")) return;
 

@@ -12,6 +12,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 import org.bukkit.Location;
 import org.bukkit.NamespacedKey;
+import org.bukkit.World;
 import org.bukkit.entity.AbstractHorse;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
@@ -30,6 +31,7 @@ import org.bukkit.event.player.PlayerSwapHandItemsEvent;
 import org.bukkit.event.world.EntitiesLoadEvent;
 import org.bukkit.inventory.DoubleChestInventory;
 import org.bukkit.inventory.Inventory;
+import org.bukkit.inventory.InventoryView;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
@@ -37,13 +39,17 @@ import org.bukkit.persistence.PersistentDataType;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.BiFunction;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 
 /** One-shot reconciliation after configuration changes and when stored mounts become accessible. */
 public final class TrainingDataLifecycleListener implements Listener, ListenerLifecycle {
     private final BetterHorses plugin;
     private final NamespacedKey modelKey;
+    private final BiFunction<ItemStack, Player, Boolean> normalizer;
+    private final AtomicLong revision = new AtomicLong();
     private final Set<UUID> pendingHorses = ConcurrentHashMap.newKeySet();
     private final Set<UUID> pendingPlayers = ConcurrentHashMap.newKeySet();
     private final Set<PendingTask> tasks = ConcurrentHashMap.newKeySet();
@@ -52,7 +58,12 @@ public final class TrainingDataLifecycleListener implements Listener, ListenerLi
     private volatile boolean stopped;
 
     public TrainingDataLifecycleListener(BetterHorses plugin) {
+        this(plugin, BetterHorsesAPI::normalizeStoredStats);
+    }
+
+    TrainingDataLifecycleListener(BetterHorses plugin, BiFunction<ItemStack, Player, Boolean> normalizer) {
         this.plugin = Objects.requireNonNull(plugin, "plugin");
+        this.normalizer = Objects.requireNonNull(normalizer, "normalizer");
         modelKey = new NamespacedKey(plugin, "training_stat_model");
     }
 
@@ -65,12 +76,14 @@ public final class TrainingDataLifecycleListener implements Listener, ListenerLi
 
     @Override
     public void onConfigurationReload() {
+        revision.incrementAndGet();
         if (available()) reconcileLoadedData();
     }
 
     @Override
     public synchronized void shutdown() {
         if (stopped) return;
+        revision.incrementAndGet();
         stopped = true;
         running = false;
         tasks.forEach(PendingTask::cancel);
@@ -194,17 +207,7 @@ public final class TrainingDataLifecycleListener implements Listener, ListenerLi
         if (pending == null) return;
         try {
             pending.attach(plugin.scheduler().entity(player, 1L, ignored -> pending.run(() -> {
-                if (!player.isOnline() || !Bukkit.isOwnedByCurrentRegion(player)
-                        || !WorldAccessPolicy.isEnabled(player.getWorld())) return;
-                Inventory inventory = player.getInventory();
-                normalizeInventory(inventory, player);
-                if (!available() || !Bukkit.isOwnedByCurrentRegion(player)
-                        || !WorldAccessPolicy.isEnabled(player.getWorld())) return;
-                ItemStack cursor = player.getItemOnCursor();
-                if (BetterHorsesAPI.normalizeStoredStats(cursor, player) && available()) player.setItemOnCursor(cursor);
-                if (!available()) return;
-                Inventory top = player.getOpenInventory().getTopInventory();
-                if (top != inventory && isSafeVisibleInventory(top, player)) normalizeInventory(top, player);
+                normalizePlayer(player);
             }), pending::finish));
         } catch (RuntimeException exception) {
             pending.finish();
@@ -226,10 +229,52 @@ public final class TrainingDataLifecycleListener implements Listener, ListenerLi
         return location != null && WorldAccessPolicy.isEnabled(location.getWorld()) && Bukkit.isOwnedByCurrentRegion(location);
     }
 
+    private void normalizePlayer(Player player) {
+        long expectedRevision = revision.get();
+        if (!available() || !Bukkit.isOwnedByCurrentRegion(player)) return;
+        World world = player.getWorld();
+        if (!current(player, world, expectedRevision)) return;
+        Inventory inventory = player.getInventory();
+        normalizeInventory(inventory, player);
+        if (!current(player, world, expectedRevision)) return;
+        Inventory top = player.getOpenInventory().getTopInventory();
+        if (top != inventory && isSafeVisibleInventory(top, player)) normalizeInventory(top, player);
+        if (!current(player, world, expectedRevision)) return;
+        // Normalization invokes PlaceholderAPI. Work on a detached copy and commit
+        // only while the same cursor, view and owner are still accessible.
+        InventoryView cursorView = player.getOpenInventory();
+        ItemStack cursor = player.getItemOnCursor();
+        if (cursor == null) return;
+        ItemStack snapshot = cursor.clone();
+        ItemStack normalized = snapshot.clone();
+        if (normalizer.apply(normalized, player) && current(player, world, expectedRevision)
+                && player.getOpenInventory() == cursorView
+                && snapshot.equals(player.getItemOnCursor())) player.setItemOnCursor(normalized);
+    }
+
+    private boolean current(Player player, World world, long expectedRevision) {
+        return available() && revision.get() == expectedRevision && Bukkit.isOwnedByCurrentRegion(player)
+                && player.isOnline() && player.getWorld() == world && WorldAccessPolicy.isEnabled(world);
+    }
+
+    private boolean accessible(Inventory inventory, Player player, World world, long expectedRevision) {
+        if (!current(player, world, expectedRevision)) return false;
+        if (inventory == player.getInventory()) return true;
+        return inventory == player.getOpenInventory().getTopInventory() && isSafeVisibleInventory(inventory, player);
+    }
+
     private void normalizeInventory(Inventory inventory, Player player) {
-        for (int slot = 0; available() && slot < inventory.getSize(); slot++) {
+        long expectedRevision = revision.get();
+        if (!available() || !Bukkit.isOwnedByCurrentRegion(player)) return;
+        World world = player.getWorld();
+        for (int slot = 0; accessible(inventory, player, world, expectedRevision) && slot < inventory.getSize(); slot++) {
             ItemStack item = inventory.getItem(slot);
-            if (BetterHorsesAPI.normalizeStoredStats(item, player) && available()) inventory.setItem(slot, item);
+            if (item == null) continue;
+            ItemStack snapshot = item.clone();
+            ItemStack normalized = snapshot.clone();
+            if (normalizer.apply(normalized, player)
+                    && accessible(inventory, player, world, expectedRevision)
+                    && snapshot.equals(inventory.getItem(slot))) inventory.setItem(slot, normalized);
         }
     }
 

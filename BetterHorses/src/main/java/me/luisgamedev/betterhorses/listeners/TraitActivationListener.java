@@ -23,12 +23,13 @@ public class TraitActivationListener implements Listener {
     @EventHandler
     public void onTraitKeyPressed(PlayerSwapHandItemsEvent event) {
         Player player = event.getPlayer();
+        if (!Bukkit.isOwnedByCurrentRegion(player)) return;
         BetterHorses plugin = BetterHorses.getInstance();
         if (!plugin.getConfig().getBoolean("traits.enabled", true)) return;
         plugin.debugLog("TRAIT_ACTIVATION", "EVENT", true, "Trait key pressed.");
         Entity vehicle = player.getVehicle();
 
-        if (!(vehicle instanceof AbstractHorse mount)) return;
+        if (!(vehicle instanceof AbstractHorse mount) || !Bukkit.isOwnedByCurrentRegion(mount)) return;
         if (!SupportedMountType.isSupported(mount)) return;
 
         PersistentDataContainer data = mount.getPersistentDataContainer();
@@ -43,6 +44,10 @@ public class TraitActivationListener implements Listener {
 
         BetterHorseAbilityUseEvent abilityEvent = new BetterHorseAbilityUseEvent(player, mount, trait.toLowerCase());
         Bukkit.getPluginManager().callEvent(abilityEvent);
+        event.setCancelled(true); // The ability gesture never swaps the held items.
+        if (!plugin.isEnabled() || !Bukkit.isOwnedByCurrentRegion(player) || !Bukkit.isOwnedByCurrentRegion(mount)
+                || !player.isOnline() || !mount.isValid() || player.getVehicle() != mount
+                || !plugin.getConfig().getBoolean("traits.enabled", true)) return;
         if (abilityEvent.isCancelled()) {
             plugin.debugLog("TRAIT_ACTIVATION", "EVENT", false, "Ability use cancelled for " + player.getName() + " trait=" + trait + ".");
             event.setCancelled(true);
@@ -50,6 +55,7 @@ public class TraitActivationListener implements Listener {
         }
 
         String selectedTrait = normalizeTraitKey(abilityEvent.getTraitKey());
+        if (!PermissionUtils.canUseTrait(player, selectedTrait)) return;
         plugin.debugLog("TRAIT_ACTIVATION", "TRIGGER", true, "Player " + player.getName() + " activated trait " + selectedTrait + ".");
         switch (selectedTrait) {
             case "hellmare":

@@ -111,6 +111,16 @@ public final class HorseInspectionManager implements Listener, ListenerLifecycle
         double seconds = finiteRange(config.getDouble("horse-inspection.duration-seconds", 10.0D), 10.0D, 0.05D, 3600.0D);
         long ticks = Math.max(1L, (long) Math.ceil(seconds * 20.0D));
         hide(viewer);
+        // Closing a previous display fires PlayerHideEntityEvent. Add-ons may
+        // teleport participants, reload the plugin, or change eligibility there.
+        if (!available() || expectedGeneration != generation.get()
+                || !runtime.owned(viewer) || !runtime.owned(horse)) return false;
+        FileConfiguration current = configuration.get();
+        if (!current.getBoolean("horse-inspection.enabled", true) || !viewer.isOnline() || viewer.isDead()
+                || !horse.isValid() || horse.isDead() || horse.isLoveMode()
+                || (current.getBoolean("horse-inspection.only-tamed", true) && !horse.isTamed())
+                || !viewer.getWorld().equals(horse.getWorld()) || !WorldAccessPolicy.isEnabled(horse.getWorld())
+                || viewer.getLocation().distanceSquared(horse.getLocation()) > range * range) return false;
         TextDisplay[] pending = new TextDisplay[1];
         Inspection inspection = null;
         try {
@@ -182,7 +192,9 @@ public final class HorseInspectionManager implements Listener, ListenerLifecycle
 
     public void hideMount(AbstractHorse horse) {
         if (horse == null || !runtime.owned(horse)) return;
+        long expectedGeneration = generation.get();
         removeRelated(horse);
+        if (expectedGeneration != generation.get() || !runtime.owned(horse)) return;
         for (Entity passenger : new ArrayList<>(horse.getPassengers())) {
             if (runtime.owned(passenger) && isInspectionDisplay(passenger)) removeDisplay((TextDisplay) passenger, null);
         }

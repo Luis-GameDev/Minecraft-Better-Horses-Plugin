@@ -199,7 +199,7 @@ class HorseFeedBreedRegressionTest {
         @Override public FileConfiguration getConfig() { return configuration; }
     }
 
-    private static final class Fixture implements AutoCloseable {
+    static final class Fixture implements AutoCloseable {
         final Field pluginField = field(BetterHorses.class, "instance"), serverField = field(Bukkit.class, "server");
         final Object oldPlugin = pluginField.get(null), oldServer = serverField.get(null);
         final FileConfiguration config = new YamlConfiguration();
@@ -224,6 +224,7 @@ class HorseFeedBreedRegressionTest {
                 Server server = proxy(Server.class, (p, method, args) -> switch (method.getName()) {
                     case "getBukkitVersion", "getMinecraftVersion" -> "1.20.6-R0.1-SNAPSHOT";
                     case "getName" -> "Paper";
+                    case "isOwnedByCurrentRegion" -> true;
                     case "getItemFactory" -> itemFactory;
                     case "getPluginManager" -> pluginManager;
                     case "getLogger" -> java.util.logging.Logger.getLogger("HorseFeedBreedRegressionTest");
@@ -273,7 +274,7 @@ class HorseFeedBreedRegressionTest {
         @Override public void close() throws Exception { pluginField.set(null, oldPlugin); serverField.set(null, oldServer); }
     }
 
-    private static final class Mount {
+    static final class Mount {
         final Map<NamespacedKey, Object> values = new HashMap<>();
         final PersistentDataContainer data;
         final Horse handle;

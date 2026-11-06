@@ -93,6 +93,41 @@ class HorseInspectionManagerTest {
         }
     }
 
+    @Test void replacingInspectionStopsAfterHideCallbackTransfersHorseOwnership() {
+        try (Fixture f = new Fixture()) {
+            assertTrue(f.show());
+            Actor old = f.lastDisplay();
+            f.onHide = () -> { f.horse.region = 2; old.region = 2; };
+            assertFalse(f.show());
+            assertEquals(1, f.displays.size(), "no replacement may spawn using the former region");
+            f.onHide = () -> {};
+            f.runtime.cleanup().fire();
+            assertFalse(old.valid);
+        }
+    }
+
+    @Test void hideMountStopsBeforeReadingPassengersAfterHideCallbackTransfersOwnership() {
+        try (Fixture f = new Fixture()) {
+            assertTrue(f.show());
+            Actor old = f.lastDisplay();
+            f.onHide = () -> { f.horse.region = 2; old.region = 2; };
+            assertDoesNotThrow(() -> f.manager.hideMount(f.horse.horse()));
+            f.onHide = () -> {};
+            f.runtime.cleanup().fire();
+            assertFalse(old.valid);
+        }
+    }
+
+    @Test void replacingInspectionRechecksEligibilityAfterHideCallback() {
+        try (Fixture f = new Fixture()) {
+            assertTrue(f.show());
+            f.onHide = () -> f.horse.tamed = false;
+            assertFalse(f.show());
+            assertEquals(1, f.displays.size());
+            assertEquals(0, f.runtime.active());
+        }
+    }
+
     @Test void displayIsPrivateBeforeInsertionAndExpiresOnItsOwnEntityScheduler() {
         try (Fixture f = new Fixture()) {
             assertTrue(f.show());
@@ -350,6 +385,7 @@ class HorseInspectionManagerTest {
         final Server previous;
         boolean enabled = true;
         String failure = "";
+        Runnable onHide = () -> {};
         Fixture() {
             current = this;
             previous = Bukkit.getServer();
@@ -438,7 +474,7 @@ class HorseInspectionManagerTest {
                         yield true;
                     }
                     case "showEntity" -> { if (f.failure.equals("reveal")) throw new IllegalStateException("reveal failed"); reveals++; yield null; }
-                    case "hideEntity" -> { hides++; yield null; }
+                    case "hideEntity" -> { hides++; f.onHide.run(); yield null; }
                     case "remove" -> {
                         removeCalls++;
                         if (removalFailures-- > 0) throw new IllegalStateException("transient removal failure");

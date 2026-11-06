@@ -66,6 +66,7 @@ class NeuteringGateTest {
             PluginDescriptionFile description = new PluginDescriptionFile("BetterHorses", "test", TestPlugin.class.getName());
             field(JavaPlugin.class, "description").set(plugin, description);
             field(JavaPlugin.class, "pluginMeta").set(plugin, description);
+            field(JavaPlugin.class, "isEnabled").setBoolean(plugin, true);
             instance.set(null, plugin);
             Map<NamespacedKey, Object> values = new HashMap<>();
             values.put(BetterHorseKeys.GENDER, "male");
@@ -89,7 +90,7 @@ class NeuteringGateTest {
             });
             Player player = proxy(Player.class, (target, method, arguments) -> switch (method.getName()) {
                 case "getInventory" -> inventory;
-                case "hasPermission" -> true;
+                case "hasPermission", "isOnline" -> true;
                 case "getName" -> "TestPlayer";
                 default -> defaultValue(method.getReturnType());
             });
@@ -101,7 +102,8 @@ class NeuteringGateTest {
                 return defaultValue(method.getReturnType());
             });
             serverField.set(null, proxy(Server.class, (target, method, arguments) ->
-                    method.getName().equals("getPluginManager") ? manager : defaultValue(method.getReturnType())));
+                    method.getName().equals("getPluginManager") ? manager :
+                            method.getName().equals("isOwnedByCurrentRegion") ? true : defaultValue(method.getReturnType())));
             assertTrue(HorseNeuterCommand.handle(player));
             assertEquals(1, events.get());
             assertEquals(0, inventoryWrites.get());

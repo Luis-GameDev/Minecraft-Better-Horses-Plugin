@@ -195,6 +195,8 @@ public class BetterHorsesAPI {
     public static @Nullable AbstractHorse toHorse(@Nonnull ItemStack item, @Nonnull Player player) {
         requireOwnedThread(player, "toHorse");
         normalizeStoredStats(item, player);
+        // Lore formatting can call PlaceholderAPI expansions that move the player.
+        if (!Bukkit.isOwnedByCurrentRegion(player)) return null;
         ItemMeta meta = item.getItemMeta();
         if (meta == null) return null;
 
@@ -275,7 +277,13 @@ public class BetterHorsesAPI {
             return null;
         }
 
-        if (horse == null || !horse.isValid()) {
+        if (horse == null) return null;
+        // Native spawn listeners can teleport the player or the pending mount.
+        if (!Bukkit.isOwnedByCurrentRegion(player) || !Bukkit.isOwnedByCurrentRegion(horse)) {
+            me.luisgamedev.betterhorses.utils.HorseItemTransaction.removeTemporary(BetterHorses.getInstance(), horse);
+            return null;
+        }
+        if (!horse.isValid()) {
             return null;
         }
 
@@ -386,7 +394,7 @@ public class BetterHorsesAPI {
         return horse;
         } catch (RuntimeException exception) {
             BetterHorses.getInstance().getLogger().warning("Could not restore mount: " + exception.getMessage());
-            horse.remove();
+            me.luisgamedev.betterhorses.utils.HorseItemTransaction.removeTemporary(BetterHorses.getInstance(), horse);
             return null;
         }
     }
@@ -432,8 +440,6 @@ public class BetterHorsesAPI {
             growthStage = 10;
         }
 
-        String genderSymbol = gender.equalsIgnoreCase("male") ? lang.getRaw(ownerOverride, "messages.gender-male") : gender.equalsIgnoreCase("female") ? lang.getRaw(ownerOverride, "messages.gender-female") : "?";
-
         TraitRegistry.revertDashBoostIfActive(horse);
         TrainingManager.ensureBaseStats(horse);
 
@@ -474,27 +480,9 @@ public class BetterHorsesAPI {
         PersistentDataContainer itemData = meta.getPersistentDataContainer();
 
         itemData.set(genderKey, PersistentDataType.STRING, gender);
-        String name = horse.getCustomName() != null ? horse.getCustomName() : mountType.getDisplayName(lang, ownerOverride);
-        meta.setDisplayName(formatHorseItemName(lang, ownerOverride, name, genderSymbol));
-
-        List<String> lore = buildHorseLore(
-                plugin.getConfig(),
-                lang,
-                ownerOverride,
-                data,
-                genderSymbol,
-                currentHealth,
-                maxHealth,
-                speed,
-                jump,
-                growthStage,
-                trait,
-                isNeutered
-        );
-        meta.setLore(lore);
-
-        if (horse.getCustomName() != null) {
-            itemData.set(BetterHorseKeys.NAME, PersistentDataType.STRING, horse.getCustomName());
+        String customName = horse.getCustomName();
+        if (customName != null) {
+            itemData.set(BetterHorseKeys.NAME, PersistentDataType.STRING, customName);
         }
         itemData.set(BetterHorseKeys.HEALTH, PersistentDataType.DOUBLE, maxHealth);
         itemData.set(BetterHorseKeys.CURRENT_HEALTH, PersistentDataType.DOUBLE, currentHealth);
@@ -551,10 +539,39 @@ public class BetterHorsesAPI {
         }
         applyResolvedTextureData(meta, readTextureData(data));
 
+        // Complete every live read before PlaceholderAPI gets control. Lore reads only
+        // the detached item metadata, so a callback cannot leave us reading foreign PDC.
+        if (!captureFormattingAllowed(plugin, horse, ownerOverride)) return null;
+        String genderSymbol = gender.equalsIgnoreCase("male") ? lang.getRaw(ownerOverride, "messages.gender-male")
+                : gender.equalsIgnoreCase("female") ? lang.getRaw(ownerOverride, "messages.gender-female") : "?";
+        if (!captureFormattingAllowed(plugin, horse, ownerOverride)) return null;
+        String name = customName;
+        if (name == null) {
+            name = mountType.getDisplayName(lang, ownerOverride);
+            if (!captureFormattingAllowed(plugin, horse, ownerOverride)) return null;
+        }
+        if (name == null || name.isBlank()) {
+            name = lang.getRaw(ownerOverride, "messages.horse");
+            if (!captureFormattingAllowed(plugin, horse, ownerOverride)) return null;
+        }
+        String formattedName = lang.getFormattedRaw(ownerOverride, "messages.horse-item-name",
+                "%name%", name, "%gender%", genderSymbol);
+        if (!captureFormattingAllowed(plugin, horse, ownerOverride)) return null;
+        meta.setDisplayName(formattedName);
+        List<String> lore = buildHorseLore(plugin.getConfig(), lang, ownerOverride, itemData,
+                genderSymbol, currentHealth, maxHealth, speed, jump, growthStage, trait, isNeutered);
+        if (!captureFormattingAllowed(plugin, horse, ownerOverride)) return null;
+        meta.setLore(lore);
         item.setItemMeta(meta);
         return item;
     }
 
+
+    private static boolean captureFormattingAllowed(BetterHorses plugin, AbstractHorse horse, @Nullable Player viewer) {
+        return plugin.isEnabled() && Bukkit.isOwnedByCurrentRegion(horse)
+                && (viewer == null || Bukkit.isOwnedByCurrentRegion(viewer))
+                && horse.isValid() && !horse.isDead();
+    }
 
     private static boolean isCarryingChest(AbstractHorse horse) {
         return horse instanceof ChestedHorse chestedHorse && chestedHorse.isCarryingChest();
@@ -719,6 +736,10 @@ public class BetterHorsesAPI {
         copyGeneticStat(source, target, BetterHorseKeys.UNDEAD_ORIGINAL_JUMP);
         copyPdcKey(source, target, BetterHorseKeys.UNDEAD_ORIGINAL_COLOR, PersistentDataType.STRING);
         copyPdcKey(source, target, BetterHorseKeys.UNDEAD_ORIGINAL_STYLE, PersistentDataType.STRING);
+        copyPdcKey(source, target, BetterHorseKeys.UNDEAD_ORIGINAL_AGE, PersistentDataType.INTEGER);
+        copyPdcKey(source, target, BetterHorseKeys.UNDEAD_ORIGINAL_AGE_LOCK, PersistentDataType.BYTE);
+        copyPdcKey(source, target, BetterHorseKeys.UNDEAD_ORIGINAL_LLAMA_STRENGTH, PersistentDataType.INTEGER);
+        copyPdcKey(source, target, BetterHorseKeys.UNDEAD_ORIGINAL_LLAMA_COLOR, PersistentDataType.STRING);
         copyPdcKey(source, target, BetterHorseKeys.UNDEAD_ARMOR_DATA, PersistentDataType.BYTE_ARRAY);
         copyPdcKey(source, target, BetterHorseKeys.UNDEAD_CHESTED, PersistentDataType.BYTE);
         copyPdcKey(source, target, BetterHorseKeys.UNDEAD_CHEST_CONTENTS, PersistentDataType.STRING);

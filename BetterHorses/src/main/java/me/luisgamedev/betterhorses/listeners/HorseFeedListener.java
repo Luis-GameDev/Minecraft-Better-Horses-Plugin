@@ -48,9 +48,14 @@ public class HorseFeedListener implements Listener, ListenerLifecycle {
             event.setCancelled(true);
             return;
         }
-        if (!horse.isTamed() || !horse.isAdult() || player.hasPermission(PermissionUtils.COOLDOWN_BYPASS)) return;
+        if (!horse.isTamed() || !horse.isAdult()) return;
         long cooldownMillis = milliseconds(config.getLong("settings.breeding-cooldown", 0L));
-        if (cooldownMillis == 0L) return;
+        if (player.hasPermission(PermissionUtils.COOLDOWN_BYPASS) || cooldownMillis == 0L) {
+            // Vanilla installs its own positive breeding age after the birth event.
+            // Exemptions must clear that wait before the next native food interaction.
+            if (horse.getAge() > 0) horse.setAge(0);
+            return;
+        }
         PersistentDataContainer data = horse.getPersistentDataContainer();
         String gender = data.getOrDefault(BetterHorseKeys.GENDER, PersistentDataType.STRING, "UNKNOWN");
         if (config.getBoolean("settings.male-ignore-cooldown", false) && "male".equalsIgnoreCase(gender)) {
