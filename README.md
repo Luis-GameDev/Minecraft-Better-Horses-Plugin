@@ -2,7 +2,7 @@
 
 Persistent mount items, genetic breeding, training, traits, custom growth and individual hidden size variation for Minecraft servers.
 
-The complete, reviewable [7.1 documentation](https://github.com/Luis-GameDev/Minecraft-Better-Horses-Plugin/blob/main/docs/wiki/Home.md) is kept under `docs/wiki` on main. Branch-specific source is in [Standard](https://github.com/Luis-GameDev/Minecraft-Better-Horses-Plugin/tree/version/7.1) and [Folia](https://github.com/Luis-GameDev/Minecraft-Better-Horses-Plugin/tree/folia/version/7.1). The [published GitHub wiki](https://github.com/Luis-GameDev/Minecraft-Better-Horses-Plugin/wiki) is a separate Git repository; [wiki synchronization instructions](https://github.com/Luis-GameDev/Minecraft-Better-Horses-Plugin/blob/main/docs/WIKI_SYNC.md) explain how reviewed source pages become live there.
+The [published GitHub wiki](https://github.com/Luis-GameDev/Minecraft-Better-Horses-Plugin/wiki) covers installation, configuration, commands and the API. Branch-specific source is in [Standard](https://github.com/Luis-GameDev/Minecraft-Better-Horses-Plugin/tree/version/7.1) and [Folia](https://github.com/Luis-GameDev/Minecraft-Better-Horses-Plugin/tree/folia/version/7.1).
 
 ## Builds and compatibility
 
@@ -11,7 +11,7 @@ The complete, reviewable [7.1 documentation](https://github.com/Luis-GameDev/Min
 | `version/7.1` | Standard Bukkit/Spigot or Paper, Minecraft 1.20.4+ with feature API limits | `./gradlew shadowJar` | `BetterHorses-7.1-all.jar` |
 | `folia/version/7.1` | Folia | `./gradlew verifyPluginJar` | `BetterHorses-7.0-Folia.jar` |
 
-Both require **Java 21**. The Folia branch retains version 7.0 in its current build metadata despite its 7.1 development branch name. Install the matching shaded artifact from `BetterHorses/build/libs/`; install one artifact at a time. See [Installation](https://github.com/Luis-GameDev/Minecraft-Better-Horses-Plugin/blob/main/docs/wiki/installation.md) for optional PlaceholderAPI, resource-pack requirements and legacy equipment conversion.
+Both require **Java 21**. The Folia branch retains version 7.0 in its current build metadata despite its 7.1 development branch name. Install the matching shaded artifact from `BetterHorses/build/libs/`; install one artifact at a time. See [Installation](https://github.com/Luis-GameDev/Minecraft-Better-Horses-Plugin/wiki/installation) for optional PlaceholderAPI, resource-pack requirements and legacy equipment conversion.
 
 Visible growth/random size needs `SCALE`, which Minecraft 1.20.4 does not expose; size data remains saved. Optional postprocessing requires Minecraft **26.3** and the supported Paper/Folia API. Other forks/releases require their own runtime validation; compilation does not certify every combination.
 
@@ -42,7 +42,7 @@ When global neutering is false, new neutering is blocked through commands, shear
 
 Enable shears neutering, then sneak/right-click a tamed owned mount with main-hand shears. `betterhorses.neuter` is required; `betterhorses.bypass` permits another owner's mount. Normal durability, Unbreaking, unbreakable tools and Creative mode are respected; event cancellation prevents state, wear and feedback. Sneak/right-click with an empty main hand opens the private inspection card when `horse-inspection.enabled` and `betterhorses.inspect` allow it. Inspection is limited to tamed mounts by default; set `horse-inspection.only-tamed: false` to allow untamed mounts. See [Neutering](https://github.com/Luis-GameDev/Minecraft-Better-Horses-Plugin/wiki/command_neuter) and [Configuration](https://github.com/Luis-GameDev/Minecraft-Better-Horses-Plugin/wiki/config.yml#horse-inspection).
 
-The size multiplier is omitted from item lore and inspection. Missing legacy values are initialized once; capture/respawn, restart and undead transformation preserve it. Changing the factor does not reroll existing data. Disabling sizing keeps stored values and stops applying its own variation while preserving unrelated external changes. See [Random size](https://github.com/Luis-GameDev/Minecraft-Better-Horses-Plugin/blob/main/docs/wiki/random-size.md).
+The size multiplier is omitted from item lore and inspection. Missing legacy values are initialized once; capture/respawn, restart and undead transformation preserve it. Changing the factor does not reroll existing data. Disabling sizing keeps stored values and stops applying its own variation while preserving unrelated external changes. See [Random size](https://github.com/Luis-GameDev/Minecraft-Better-Horses-Plugin/wiki/Growth#individual-random-size).
 
 ## Commands
 
@@ -60,11 +60,11 @@ The size multiplier is omitted from item lore and inspection. Missing legacy val
 /horsecreate 20 0.3 0.7 null null null null donkey null
 ```
 
-All six optional arguments accept case-insensitive `null`, keeping their position and using the omitted default. Required numbers remain raw finite positive stats. Defaults are random gender, localized horse name, configured random trait selection, growth 10, horse type and not neutered. See [Command reference](https://github.com/Luis-GameDev/Minecraft-Better-Horses-Plugin/blob/main/docs/wiki/command_horsecreate.md) and [Permissions](https://github.com/Luis-GameDev/Minecraft-Better-Horses-Plugin/blob/main/docs/wiki/Permissions.md).
+All six optional arguments accept case-insensitive `null`, keeping their position and using the omitted default. Required numbers remain raw finite positive stats. Defaults are random gender, localized horse name, configured random trait selection, growth 10, horse type and not neutered. See [Command reference](https://github.com/Luis-GameDev/Minecraft-Better-Horses-Plugin/wiki/command_horsecreate) and [Permissions](https://github.com/Luis-GameDev/Minecraft-Better-Horses-Plugin/wiki/Permissions).
 
 ## Configuration and API
 
-Edit `plugins/BetterHorses/config.yml` and `language.yml`, then `/horse reload`. See the complete [config reference](https://github.com/Luis-GameDev/Minecraft-Better-Horses-Plugin/blob/main/docs/wiki/config.yml.md), [language reference](https://github.com/Luis-GameDev/Minecraft-Better-Horses-Plugin/blob/main/docs/wiki/language.yml.md), [training](https://github.com/Luis-GameDev/Minecraft-Better-Horses-Plugin/blob/main/docs/wiki/training.md), [growth](https://github.com/Luis-GameDev/Minecraft-Better-Horses-Plugin/blob/main/docs/wiki/Growth.md), and [shader guide](https://github.com/Luis-GameDev/Minecraft-Better-Horses-Plugin/blob/main/docs/wiki/postprocessing‐shaders.md). The obsolete `sand-slowness` setting is replaced by `settings.block-speed-effects`.
+Edit `plugins/BetterHorses/config.yml` and `language.yml`, then `/horse reload`. See the complete [config reference](https://github.com/Luis-GameDev/Minecraft-Better-Horses-Plugin/wiki/config.yml), [language reference](https://github.com/Luis-GameDev/Minecraft-Better-Horses-Plugin/wiki/language.yml), [training](https://github.com/Luis-GameDev/Minecraft-Better-Horses-Plugin/wiki/training), [growth](https://github.com/Luis-GameDev/Minecraft-Better-Horses-Plugin/wiki/Growth), and [shader guide](https://github.com/Luis-GameDev/Minecraft-Better-Horses-Plugin/wiki/postprocessing‐shaders). The obsolete `sand-slowness` setting is replaced by `settings.block-speed-effects`.
 
 ```java
 ItemStack item = BetterHorsesAPI.createHorseItem(
@@ -77,4 +77,4 @@ if (horse != null) {
 }
 ```
 
-`getBetterHorse` returns a nullable direct wrapper. Creation has 12- and 13-argument overloads, with the last overload adding texture data. Synchronous entity/inventory operations require their owning thread on Folia. For custom spawns, use the cancellation-returning dispatcher and roll back before consuming the source when cancelled. Unified neuter events require item/entity target guards; trample events expose damage, knockback and cooldown overrides. The [API reference](https://github.com/Luis-GameDev/Minecraft-Better-Horses-Plugin/blob/main/docs/wiki/API.md) covers these contracts and shader refresh methods.
+`getBetterHorse` returns a nullable direct wrapper. Creation has 12- and 13-argument overloads, with the last overload adding texture data. Synchronous entity/inventory operations require their owning thread on Folia. For custom spawns, use the cancellation-returning dispatcher and roll back before consuming the source when cancelled. Unified neuter events require item/entity target guards; trample events expose damage, knockback and cooldown overrides. The [API reference](https://github.com/Luis-GameDev/Minecraft-Better-Horses-Plugin/wiki/API) covers these contracts and shader refresh methods.

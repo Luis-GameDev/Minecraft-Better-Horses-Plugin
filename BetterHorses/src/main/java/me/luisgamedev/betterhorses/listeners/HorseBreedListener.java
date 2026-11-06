@@ -11,8 +11,10 @@ import me.luisgamedev.betterhorses.training.TrainingManager;
 import me.luisgamedev.betterhorses.utils.MountConfig;
 import me.luisgamedev.betterhorses.utils.PermissionUtils;
 import me.luisgamedev.betterhorses.utils.SupportedMountType;
+import me.luisgamedev.betterhorses.utils.WorldAccessPolicy;
 import org.bukkit.Bukkit;
 import me.luisgamedev.betterhorses.utils.AttributeResolver;
+import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
@@ -80,14 +82,7 @@ public class HorseBreedListener implements Listener {
 
         if (childType == null || fatherType == null || motherType == null) return;
         if (!childType.isEnabled(config)) return;
-        if (!childType.equals(fatherType) || !childType.equals(motherType)) {
-            // Vanilla crossbreeds retain their native stats, but are still public-API mounts.
-            PersistentDataContainer childData = child.getPersistentDataContainer();
-            childData.set(BetterHorseKeys.MOUNT_TYPE, PersistentDataType.STRING, childType.getEntityType().name());
-            childData.set(BetterHorseKeys.GENDER, PersistentDataType.STRING, Math.random() < 0.5 ? "male" : "female");
-            TrainingManager.ensureBaseStats(child);
-            return;
-        }
+        boolean crossbreed = !childType.equals(fatherType) || !childType.equals(motherType);
 
         Player breeder = event.getBreeder() instanceof Player player ? player : null;
         if (breeder != null && !breeder.hasPermission(PermissionUtils.BREED)) {
@@ -96,7 +91,8 @@ public class HorseBreedListener implements Listener {
         }
 
         // A parent can be neutered after entering love mode but before this event.
-        if (isNeutered(father) || isNeutered(mother)) {
+        if (isNeutered(father) || isNeutered(mother)
+                || isOnBreedingCooldown(father, config, breeder) || isOnBreedingCooldown(mother, config, breeder)) {
             event.setCancelled(true);
             return;
         }
@@ -122,9 +118,11 @@ public class HorseBreedListener implements Listener {
         double maxSpeed = MountConfig.getMaxStat(config, childType, "speed");
         double maxJump = MountConfig.getMaxStat(config, childType, "jump");
 
-        double childHealth = mutate(avg(getHealth(father), getHealth(mother)), mutationHealth, maxHealth);
-        double childSpeed = mutate(avg(getSpeed(father), getSpeed(mother)), mutationSpeed, maxSpeed);
-        double childJump = mutate(avg(getJump(father), getJump(mother)), mutationJump, maxJump);
+        // The vanilla child already contains crossbreed inheritance. Shared policy and
+        // API hooks still apply, without replacing those stats with same-type genetics.
+        double childHealth = crossbreed ? nativeBase(child, AttributeResolver.generic("MAX_HEALTH"), getHealth(child)) : mutate(avg(getHealth(father), getHealth(mother)), mutationHealth, maxHealth);
+        double childSpeed = crossbreed ? nativeBase(child, AttributeResolver.generic("MOVEMENT_SPEED"), getSpeed(child)) : mutate(avg(getSpeed(father), getSpeed(mother)), mutationSpeed, maxSpeed);
+        double childJump = crossbreed ? nativeBase(child, AttributeResolver.horseJumpStrength(), getJump(child)) : mutate(avg(getJump(father), getJump(mother)), mutationJump, maxJump);
 
         String gender = Math.random() < 0.5 ? "male" : "female";
         String selectedTrait = null;
@@ -153,7 +151,20 @@ public class HorseBreedListener implements Listener {
 
         BetterHorseBreedEvent betterBreedEvent = new BetterHorseBreedEvent(child, father, mother, childHealth, childSpeed, childJump, gender, selectedTrait);
         Bukkit.getPluginManager().callEvent(betterBreedEvent);
-        if (event.isCancelled() || betterBreedEvent.isCancelled() || isNeutered(father) || isNeutered(mother)) {
+        // API listeners may teleport participants, revoke eligibility or cancel the birth.
+        // Ownership must be checked before any live read after their callbacks.
+        if (!owns(child) || !owns(father) || !owns(mother) || (breeder != null && !owns(breeder))) {
+            event.setCancelled(true);
+            return;
+        }
+        config = BetterHorses.getInstance().getConfig();
+        if (event.isCancelled() || betterBreedEvent.isCancelled() || child.isDead() || father.isDead() || mother.isDead()
+                || !father.isValid() || !mother.isValid()
+                || !WorldAccessPolicy.isEnabled(child.getWorld()) || !childType.isEnabled(config) || (breeder != null && !breeder.hasPermission(PermissionUtils.BREED))
+                || isNeutered(father) || isNeutered(mother)
+                || isOnBreedingCooldown(father, config, breeder) || isOnBreedingCooldown(mother, config, breeder)
+                || (!config.getBoolean("settings.allow-same-gender-breeding", false)
+                    && getGender(father).equalsIgnoreCase(getGender(mother)))) {
             event.setCancelled(true);
             return;
         }
@@ -206,6 +217,8 @@ public class HorseBreedListener implements Listener {
         mother.setAge(0);
     }
 
+    private boolean owns(org.bukkit.entity.Entity entity) { return true; }
+
     private boolean isOnBreedingCooldown(AbstractHorse horse, FileConfiguration config, Player breeder) {
         PersistentDataContainer data = horse.getPersistentDataContainer();
         Long last = data.get(BetterHorseKeys.COOLDOWN, PersistentDataType.LONG);
@@ -217,7 +230,8 @@ public class HorseBreedListener implements Listener {
             return false;
         }
 
-        long cooldownMillis = config.getLong("settings.breeding-cooldown", 0) * 1000L;
+        long seconds = config.getLong("settings.breeding-cooldown", 0);
+        long cooldownMillis = seconds <= 0L ? 0L : seconds > Long.MAX_VALUE / 1000L ? Long.MAX_VALUE : seconds * 1000L;
         return cooldownMillis > 0 && (System.currentTimeMillis() - last) < cooldownMillis;
     }
 
@@ -235,6 +249,12 @@ public class HorseBreedListener implements Listener {
     private boolean isNeutered(AbstractHorse horse) {
         PersistentDataContainer data = horse.getPersistentDataContainer();
         return data.has(BetterHorseKeys.NEUTERED, PersistentDataType.BYTE) && data.get(BetterHorseKeys.NEUTERED, PersistentDataType.BYTE) == (byte) 1;
+    }
+
+    private double nativeBase(AbstractHorse horse, Attribute attribute, double fallback) {
+        AttributeInstance instance = horse.getAttribute(attribute);
+        double value = instance == null ? fallback : instance.getBaseValue();
+        return Double.isFinite(value) && value > 0.0D ? value : fallback;
     }
 
     private double avg(double a, double b) {

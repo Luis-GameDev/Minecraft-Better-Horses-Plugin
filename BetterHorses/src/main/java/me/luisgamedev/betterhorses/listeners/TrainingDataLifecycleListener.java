@@ -25,6 +25,7 @@ import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerSwapHandItemsEvent;
 import org.bukkit.event.world.EntitiesLoadEvent;
 import org.bukkit.inventory.Inventory;
+import org.bukkit.inventory.InventoryView;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
@@ -35,18 +36,26 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.function.BiFunction;
 
 /** Reconciles persisted training data when it becomes available or configuration changes. */
 public final class TrainingDataLifecycleListener implements Listener, ListenerLifecycle {
     private final BetterHorses plugin;
     private final NamespacedKey statModelKey;
+    private final BiFunction<ItemStack, Player, Boolean> normalizer;
+    private long revision;
     private final Map<UUID, BukkitTask> horses = new HashMap<>();
     private final Map<UUID, BukkitTask> players = new HashMap<>();
     private BukkitTask reconciliation;
     private boolean active;
 
     public TrainingDataLifecycleListener(BetterHorses plugin) {
+        this(plugin, BetterHorsesAPI::normalizeStoredStats);
+    }
+
+    TrainingDataLifecycleListener(BetterHorses plugin, BiFunction<ItemStack, Player, Boolean> normalizer) {
         this.plugin = Objects.requireNonNull(plugin, "plugin");
+        this.normalizer = Objects.requireNonNull(normalizer, "normalizer");
         this.statModelKey = new NamespacedKey(plugin, "training_stat_model");
     }
 
@@ -59,11 +68,13 @@ public final class TrainingDataLifecycleListener implements Listener, ListenerLi
 
     @Override
     public void onConfigurationReload() {
+        revision++;
         if (active) requestReconciliation();
     }
 
     @Override
     public void shutdown() {
+        revision++;
         active = false;
         if (reconciliation != null) reconciliation.cancel();
         reconciliation = null;
@@ -160,23 +171,57 @@ public final class TrainingDataLifecycleListener implements Listener, ListenerLi
             @Override
             public void run() {
                 players.remove(id);
-                if (!active || !player.isOnline() || !WorldAccessPolicy.isEnabled(player.getWorld())) return;
-                Inventory inventory = player.getInventory();
-                normalizeInventory(inventory, player);
-                if (!active) return;
-                Inventory top = player.getOpenInventory().getTopInventory();
-                if (top != inventory) normalizeInventory(top, player);
-                if (!active) return;
-                ItemStack cursor = player.getItemOnCursor();
-                if (BetterHorsesAPI.normalizeStoredStats(cursor, player)) player.setItemOnCursor(cursor);
+                normalizePlayer(player);
             }
         }.runTask(plugin));
     }
 
+    private void normalizePlayer(Player player) {
+        long expectedRevision = revision;
+        if (!active || !plugin.isEnabled()) return;
+        World world = player.getWorld();
+        if (!current(player, world, expectedRevision)) return;
+        Inventory inventory = player.getInventory();
+        normalizeInventory(inventory, player);
+        if (!current(player, world, expectedRevision)) return;
+        Inventory top = player.getOpenInventory().getTopInventory();
+        if (top != inventory) normalizeInventory(top, player);
+        if (!current(player, world, expectedRevision)) return;
+        // Normalization invokes PlaceholderAPI. Work on a detached copy and commit
+        // only while the same cursor, view and owner are still accessible.
+        InventoryView cursorView = player.getOpenInventory();
+        ItemStack cursor = player.getItemOnCursor();
+        if (cursor == null) return;
+        ItemStack snapshot = cursor.clone();
+        ItemStack normalized = snapshot.clone();
+        if (normalizer.apply(normalized, player) && current(player, world, expectedRevision)
+                && player.getOpenInventory() == cursorView
+                && snapshot.equals(player.getItemOnCursor())) player.setItemOnCursor(normalized);
+    }
+
+    private boolean current(Player player, World world, long expectedRevision) {
+        return active && plugin.isEnabled() && revision == expectedRevision && player.isOnline()
+                && player.getWorld() == world && WorldAccessPolicy.isEnabled(world);
+    }
+
+    private boolean accessible(Inventory inventory, Player player, World world, long expectedRevision) {
+        if (!current(player, world, expectedRevision)) return false;
+        if (inventory == player.getInventory()) return true;
+        return inventory == player.getOpenInventory().getTopInventory();
+    }
+
     private void normalizeInventory(Inventory inventory, Player player) {
-        for (int slot = 0; active && slot < inventory.getSize(); slot++) {
+        long expectedRevision = revision;
+        if (!active || !plugin.isEnabled()) return;
+        World world = player.getWorld();
+        for (int slot = 0; accessible(inventory, player, world, expectedRevision) && slot < inventory.getSize(); slot++) {
             ItemStack item = inventory.getItem(slot);
-            if (BetterHorsesAPI.normalizeStoredStats(item, player)) inventory.setItem(slot, item);
+            if (item == null) continue;
+            ItemStack snapshot = item.clone();
+            ItemStack normalized = snapshot.clone();
+            if (normalizer.apply(normalized, player)
+                    && accessible(inventory, player, world, expectedRevision)
+                    && snapshot.equals(inventory.getItem(slot))) inventory.setItem(slot, normalized);
         }
     }
 }
