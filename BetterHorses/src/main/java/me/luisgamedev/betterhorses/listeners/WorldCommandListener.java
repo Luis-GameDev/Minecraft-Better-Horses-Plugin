@@ -35,7 +35,8 @@ public final class WorldCommandListener implements Listener {
 
     private Set<String> commandNames() {
         Set<String> names = new HashSet<>(Set.of("horse", "horsecreate"));
-        names.addAll(BetterHorses.getInstance().getConfig().getStringList("command-aliases"));
+        org.bukkit.command.PluginCommand command = BetterHorses.getInstance().getCommand("horse");
+        if (command != null) names.addAll(command.getAliases());
         Set<String> normalizedNames = new HashSet<>();
         for (String name : names) normalizedNames.add(name.toLowerCase(Locale.ROOT));
         return normalizedNames;

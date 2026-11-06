@@ -20,6 +20,8 @@ public final class BetterHorseKeys {
     public static final NamespacedKey STYLE = key("style");
     public static final NamespacedKey COLOR = key("color");
     public static final NamespacedKey GROWTH_STAGE = key("growth_stage");
+    public static final NamespacedKey RANDOM_SIZE_MULTIPLIER = key("random_size_multiplier");
+    public static final NamespacedKey RANDOM_SIZE_APPLIED_SCALE = key("random_size_applied_scale");
     public static final NamespacedKey VANILLA_AGE = key("vanilla_age");
     public static final NamespacedKey MOUNT_TYPE = key("mount_type");
     public static final NamespacedKey CAMEL_HUSK = key("camel_husk");
@@ -60,6 +62,10 @@ public final class BetterHorseKeys {
     public static final NamespacedKey UNDEAD_ORIGINAL_JUMP = key("undead_original_jump");
     public static final NamespacedKey UNDEAD_ORIGINAL_COLOR = key("undead_original_color");
     public static final NamespacedKey UNDEAD_ORIGINAL_STYLE = key("undead_original_style");
+    public static final NamespacedKey UNDEAD_ORIGINAL_AGE = key("undead_original_age");
+    public static final NamespacedKey UNDEAD_ORIGINAL_AGE_LOCK = key("undead_original_age_lock");
+    public static final NamespacedKey UNDEAD_ORIGINAL_LLAMA_STRENGTH = key("undead_original_llama_strength");
+    public static final NamespacedKey UNDEAD_ORIGINAL_LLAMA_COLOR = key("undead_original_llama_color");
     public static final NamespacedKey UNDEAD_ARMOR_DATA = key("undead_armor_data");
     public static final NamespacedKey UNDEAD_CHESTED = key("undead_chested");
     public static final NamespacedKey UNDEAD_CHEST_CONTENTS = key("undead_chest_contents");

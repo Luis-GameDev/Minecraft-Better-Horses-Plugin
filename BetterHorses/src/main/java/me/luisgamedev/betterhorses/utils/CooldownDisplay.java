@@ -3,6 +3,7 @@ package me.luisgamedev.betterhorses.utils;
 import me.luisgamedev.betterhorses.BetterHorses;
 import me.luisgamedev.betterhorses.language.LanguageManager;
 import org.bukkit.Bukkit;
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.boss.*;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
@@ -96,6 +97,11 @@ public class CooldownDisplay {
         bossbarTasks.put(uuid, task);
     }
 
+    private static void sendActionBar(Player player, String message) {
+        BetterHorses.getInstance().getAudiences().player(player)
+                .sendActionBar(LegacyComponentSerializer.legacySection().deserialize(message));
+    }
+
     private static void showHotbarMessage(Player player, String abilityName, double secondsLeft, LanguageManager lang) {
         UUID uuid = player.getUniqueId();
         double updateInterval = 0.1;
@@ -108,7 +114,7 @@ public class CooldownDisplay {
             @Override
             public void run() {
                 if (!player.isOnline() || secondsShown >= displayTime || secondsLeft - secondsShown <= 0) {
-                    player.sendActionBar("");
+                    sendActionBar(player, "");
                     hotbarTasks.remove(uuid);
                     cancel();
                     return;
@@ -120,7 +126,7 @@ public class CooldownDisplay {
                         "%value%", abilityName,
                         "%remaining%", String.format(Locale.US, "%.1f", secondsLeft - secondsShown)
                 );
-                player.sendActionBar(message);
+                sendActionBar(player, message);
                 secondsShown += updateInterval;
             }
         };

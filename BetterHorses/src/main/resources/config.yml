@@ -18,6 +18,38 @@ world-filter:
 stats:
   display-mode: RAW
 
+# Sneak + right-click a supported horse with an empty main hand to inspect it.
+# Only the inspecting player can see the display. Text and colors are in language.yml.
+# Displays follow the horse as passengers and are never saved to the world.
+# Inspections close before mounting or breeding and are unavailable during love mode.
+horse-inspection:
+  enabled: true
+  # Only allow inspection of tamed mounts.
+  only-tamed: true
+  duration-seconds: 10
+  # Extra vertical offset above the horse's passenger position (0-8 blocks).
+  height-offset: 0.5
+  # Maximum distance from the horse before the inspection closes (1-64 blocks).
+  view-range: 16
+
+# Optional irreversible interaction: sneak + right-click your tamed horse with shears.
+# Requires betterhorses.neuter; betterhorses.bypass allows neutering another owner's horse.
+# Uses one durability point, honoring Unbreaking, unbreakable tools, and Creative mode.
+horse-neutering:
+  # Disables every new neutering action and unregisters /horse neuter when false.
+  # Existing neutered horses keep their permanent status. Reload to refresh commands.
+  enabled: true
+  shears-enabled: false
+
+# A private size multiplier, applied after the growth-stage size calculation.
+# Each new horse receives its own value; foals do not inherit their parents' sizes.
+# Missing values are assigned once, then retained on the horse and its item.
+# The multiplier is never shown in item lore or the inspection display.
+random-size-factor:
+  enabled: true
+  # 0.1 allows 10% smaller to 10% bigger. Valid range: 0.0 to 0.99.
+  factor: 0.1
+
 # Configure custom aliases for the /horse command
 command-aliases:
   # - bh
@@ -119,7 +151,7 @@ max-stats:
 horse-growth-settings:
 
   # If false, baby horses use vanilla aging, feeding, and size.
-  # Custom growth requires Paper 1.20.6 & Java 21 or above.
+  # Java 21 is required. Visible growth needs the server SCALE attribute, absent on 1.20.4.
   enabled: true
   mount-types:
     skeleton-horses: true
@@ -137,9 +169,9 @@ horse-growth-settings:
   # Baby model compensation follows the mount type and Minecraft version.
   ride-and-breed-threshhold: 7
 
-  # The maximum size a horse can reach, this is the scale applied to a vanilla sized horse
+  # Stage-10 baseline size, before the optional individual random-size multiplier.
   # If the value remains 1, an adult horse will be vanilla sized
-  # Newborns start at 50% of this value, then grow in nine equal steps to 100%.
+  # Newborns start at 50% of this baseline, then grow in nine equal steps to 100%.
   max-size: 1.3 # 30% bigger than vanilla
 
 # General settings
@@ -361,6 +393,8 @@ traits:
 
 # Horse training system
 training:
+  # Bonuses apply only during gameplay. Displayed/stored stats and breeding use
+  # the horse's original stats; training progress can still be shown separately.
   # Master toggle for all training categories
   enabled: true
 

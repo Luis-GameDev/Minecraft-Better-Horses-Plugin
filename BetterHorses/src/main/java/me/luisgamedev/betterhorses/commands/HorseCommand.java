@@ -1,6 +1,7 @@
 package me.luisgamedev.betterhorses.commands;
 
 import me.luisgamedev.betterhorses.BetterHorses;
+import me.luisgamedev.betterhorses.utils.NeuteringPolicy;
 import me.luisgamedev.betterhorses.utils.WorldAccessPolicy;
 import me.luisgamedev.betterhorses.language.LanguageManager;
 import me.luisgamedev.betterhorses.utils.PermissionUtils;
@@ -10,7 +11,53 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.function.Function;
+
 public class HorseCommand implements CommandExecutor {
+    private volatile Map<String, PlayerSubcommand> playerSubcommands;
+
+    public HorseCommand() {
+        synchronizeSubcommands();
+    }
+
+    HorseCommand(boolean neuteringEnabled, boolean debugEnabled) {
+        synchronizeSubcommands(neuteringEnabled, debugEnabled);
+    }
+
+    /** Rebuild the registered routes after configuration reload, without registering disabled actions. */
+    public void synchronizeSubcommands() {
+        BetterHorses plugin = BetterHorses.getInstance();
+        synchronizeSubcommands(NeuteringPolicy.isEnabled(plugin.getConfig()), plugin.isDebugModeEnabled());
+    }
+
+    void synchronizeSubcommands(boolean neuteringEnabled, boolean debugEnabled) {
+        Map<String, PlayerSubcommand> commands = new LinkedHashMap<>();
+        commands.put("spawn", new PlayerSubcommand(PermissionUtils.SPAWN_COMMAND, "SPAWN", RespawnCommand::spawnHorseFromItem));
+        commands.put("despawn", new PlayerSubcommand(PermissionUtils.DESPAWN, "DESPAWN", DespawnCommand::despawnHorseToItem));
+        if (neuteringEnabled) commands.put("neuter", new PlayerSubcommand("betterhorses.neuter", "NEUTER", HorseNeuterCommand::handle));
+        if (debugEnabled) commands.put("info", new PlayerSubcommand(PermissionUtils.INFO, "INFO", HorseInfoCommand::handle));
+        playerSubcommands = java.util.Collections.unmodifiableMap(commands);
+    }
+
+    /** The subcommands exposed by this executor; /horse remains registered when neutering is disabled. */
+    public List<String> getRegisteredSubcommands() {
+        List<String> commands = new ArrayList<>(playerSubcommands.keySet());
+        int info = commands.indexOf("info");
+        commands.add(info < 0 ? commands.size() : info, "reload");
+        return List.copyOf(commands);
+    }
+
+    public List<String> getAvailableSubcommands(CommandSender sender) {
+        Map<String, PlayerSubcommand> snapshot = playerSubcommands;
+        return getRegisteredSubcommands().stream().filter(name -> name.equals("reload")
+                ? sender.hasPermission("betterhorses.reload")
+                : snapshot.containsKey(name) && sender.hasPermission(snapshot.get(name).permission())).toList();
+    }
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
@@ -20,11 +67,11 @@ public class HorseCommand implements CommandExecutor {
         OfflinePlayer audience = sender instanceof Player senderPlayer ? senderPlayer : null;
 
         if (args.length == 0) {
-            lang.send(sender, audience, "messages.horse-usage");
+            sendHelp(sender, audience, "messages.horse-usage");
             return true;
         }
 
-        String subcommand = args[0].toLowerCase();
+        String subcommand = args[0].toLowerCase(Locale.ROOT);
         plugin.debugLog("HORSE_COMMAND", "RECEIVED", true,
                 "Sender=" + sender.getName() + ", subcommand=" + subcommand);
 
@@ -43,6 +90,14 @@ public class HorseCommand implements CommandExecutor {
             return true;
         }
 
+        PlayerSubcommand registered = playerSubcommands.get(subcommand);
+        if (registered == null) {
+            sendHelp(sender, audience, "messages.unknown-subcommand");
+            plugin.debugLog("HORSE_COMMAND", "UNKNOWN_SUBCOMMAND", false,
+                    "Sender " + sender.getName() + " used unknown subcommand: " + subcommand);
+            return true;
+        }
+
         if (!(sender instanceof Player player)) {
             lang.send(sender, audience, "messages.only-players");
             plugin.debugLog("HORSE_COMMAND", "PLAYER_REQUIRED", false,
@@ -50,54 +105,25 @@ public class HorseCommand implements CommandExecutor {
             return true;
         }
 
-        switch (subcommand) {
-            case "spawn":
-                if (!player.hasPermission(PermissionUtils.SPAWN_COMMAND)) {
-                    lang.sendFormatted(player, "messages.insufficient-permission", "%command%", "/horse spawn");
-                    plugin.debugLog("HORSE_COMMAND", "SPAWN_PERMISSION", false,
-                            "Player " + player.getName() + " lacks betterhorses.spawn.command");
-                    return true;
-                }
-                return RespawnCommand.spawnHorseFromItem(player);
+        if (!player.hasPermission(registered.permission())) {
+            lang.sendFormatted(player, "messages.insufficient-permission", "%command%", "/horse " + subcommand);
+            plugin.debugLog("HORSE_COMMAND", registered.debugPrefix() + "_PERMISSION", false,
+                    "Player " + player.getName() + " lacks " + registered.permission());
+            return true;
+        }
+        return registered.action().apply(player);
+    }
 
-            case "despawn":
-                if (!player.hasPermission(PermissionUtils.DESPAWN)) {
-                    lang.sendFormatted(player, "messages.insufficient-permission", "%command%", "/horse despawn");
-                    plugin.debugLog("HORSE_COMMAND", "DESPAWN_PERMISSION", false,
-                            "Player " + player.getName() + " lacks betterhorses.despawn");
-                    return true;
-                }
-                return DespawnCommand.despawnHorseToItem(player);
-
-            case "neuter":
-                if (!player.hasPermission("betterhorses.neuter")) {
-                    lang.sendFormatted(player, "messages.insufficient-permission", "%command%", "/horse neuter");
-                    plugin.debugLog("HORSE_COMMAND", "NEUTER_PERMISSION", false,
-                            "Player " + player.getName() + " lacks betterhorses.neuter");
-                    return true;
-                }
-                return HorseNeuterCommand.handle(player);
-
-            case "info":
-                if (!player.hasPermission(PermissionUtils.INFO)) {
-                    lang.sendFormatted(player, "messages.insufficient-permission", "%command%", "/horse info");
-                    plugin.debugLog("HORSE_COMMAND", "INFO_PERMISSION", false,
-                            "Player " + player.getName() + " lacks betterhorses.info");
-                    return true;
-                }
-                if (!plugin.isDebugModeEnabled()) {
-                    lang.send(player, "messages.unknown-subcommand");
-                    plugin.debugLog("HORSE_COMMAND", "INFO_DEBUG_DISABLED", false,
-                            "Player " + player.getName() + " used /horse info while debug mode is disabled.");
-                    return true;
-                }
-                return HorseInfoCommand.handle(player);
-
-            default:
-                lang.send(player, "messages.unknown-subcommand");
-                plugin.debugLog("HORSE_COMMAND", "UNKNOWN_SUBCOMMAND", false,
-                        "Player " + player.getName() + " used unknown subcommand: " + subcommand);
-                return true;
+    private void sendHelp(CommandSender sender, OfflinePlayer audience, String key) {
+        LanguageManager lang = BetterHorses.getInstance().getLang();
+        String subcommands = String.join("|", getRegisteredSubcommands());
+        if (!playerSubcommands.containsKey("neuter")) {
+            // Keep existing customized language files with the original literal command list usable.
+            lang.sendFormatted(sender, audience, key, "%subcommands%", subcommands, "|neuter", "", "neuter|", "");
+        } else {
+            lang.sendFormatted(sender, audience, key, "%subcommands%", subcommands);
         }
     }
+
+    private record PlayerSubcommand(String permission, String debugPrefix, Function<Player, Boolean> action) { }
 }

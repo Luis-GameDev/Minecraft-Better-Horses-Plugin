@@ -41,7 +41,7 @@ public class TraitParticleTask implements Runnable {
                         spawn(horse, TraitParticleResolver.getTraitParticle("hellmare", Particle.FLAME), 4, 0.3, 0.1, 0.3);
                         break;
                     case "ghosthorse":
-                        spawn(horse, TraitParticleResolver.getTraitParticle("ghosthorse", Particle.SMOKE), 4, 0.25, 0.2, 0.25);
+                        spawn(horse, TraitParticleResolver.getTraitParticle("ghosthorse", "SMOKE", "SMOKE_NORMAL"), 4, 0.25, 0.2, 0.25);
                         break;
                     case "dashboost":
                         spawn(horse, TraitParticleResolver.getTraitParticle("dashboost", Particle.SWEEP_ATTACK), 2, 0.2, 0.1, 0.2);

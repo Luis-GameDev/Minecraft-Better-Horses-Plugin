@@ -16,6 +16,7 @@ import org.bukkit.inventory.Inventory;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 import java.util.stream.Collectors;
 
 public class CustomHorseCommand implements CommandExecutor {
@@ -49,12 +50,17 @@ public class CustomHorseCommand implements CommandExecutor {
             double health = Double.parseDouble(args[0]);
             double speed = Double.parseDouble(args[1]);
             double jump = Double.parseDouble(args[2]);
-            String gender = args.length >= 4 ? args[3].toLowerCase() : (Math.random() < 0.5 ? "male" : "female");
-            String name = args.length >= 5 ? args[4] : lang.getRaw(player, "messages.horse");
-            String trait = args.length >= 6 ? args[5].toLowerCase() : null;
-            int growthStage = args.length >= 7 ? Integer.parseInt(args[6]) : 10;
-            String mountTypeArg = args.length >= 8 ? args[7] : null;
-            boolean isNeutered = args.length >= 9 ? Boolean.parseBoolean(args[8]) : false;
+            String genderArg = optionalArgument(args, 3);
+            String nameArg = optionalArgument(args, 4);
+            String traitArg = optionalArgument(args, 5);
+            String growthArg = optionalArgument(args, 6);
+            String mountTypeArg = optionalArgument(args, 7);
+            String neuteredArg = optionalArgument(args, 8);
+            String gender = genderArg == null ? (Math.random() < 0.5 ? "male" : "female") : genderArg.toLowerCase(Locale.ROOT);
+            String name = nameArg == null ? lang.getRaw(player, "messages.horse") : nameArg;
+            String trait = traitArg == null ? null : traitArg.toLowerCase(Locale.ROOT);
+            int growthStage = growthArg == null ? 10 : Integer.parseInt(growthArg);
+            boolean isNeutered = neuteredArg != null && Boolean.parseBoolean(neuteredArg);
 
             if (!HorseDataValidator.isValid(health, health, speed, jump, gender, growthStage)) {
                 lang.send(player, "messages.invalid-number-format");
@@ -105,6 +111,11 @@ public class CustomHorseCommand implements CommandExecutor {
             plugin.debugLog("HORSE_CREATE", "PARSE", false, "Invalid numeric argument from " + player.getName() + ": " + e.getMessage());
             return true;
         }
+    }
+
+    /** A null placeholder occupies its optional position while using the omitted value's default. */
+    private static String optionalArgument(String[] args, int index) {
+        return args.length <= index || "null".equalsIgnoreCase(args[index]) ? null : args[index];
     }
 
     private String getEnabledMountTypes(FileConfiguration config) {

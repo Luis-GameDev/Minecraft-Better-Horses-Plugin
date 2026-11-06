@@ -1,6 +1,7 @@
 package me.luisgamedev.betterhorses.listeners;
 
 import me.luisgamedev.betterhorses.BetterHorses;
+import me.luisgamedev.betterhorses.inspection.HorseInspectionManager;
 import me.luisgamedev.betterhorses.language.LanguageManager;
 import me.luisgamedev.betterhorses.traits.TraitRegistry;
 import me.luisgamedev.betterhorses.utils.PermissionUtils;
@@ -30,8 +31,9 @@ public class HorseJumpListener implements Listener, ListenerLifecycle {
     private final Map<AbstractHorse, BukkitTask> landingTasks = new HashMap<>();
     private final NamespacedKey traitKey = new NamespacedKey(BetterHorses.getInstance(), "trait");
 
-    @EventHandler
+    @EventHandler(ignoreCancelled = true)
     public void onHorseJump(HorseJumpEvent event) {
+        if (event.isCancelled()) return;
         if (!(event.getEntity() instanceof AbstractHorse horse)) return;
         if (!SupportedMountType.isSupported(horse)) return;
         if (hasHeavenHoovesTrait(horse) && !horse.getPassengers().isEmpty()) {
@@ -111,6 +113,7 @@ public class HorseJumpListener implements Listener, ListenerLifecycle {
 
     @EventHandler
     public void onDismount(VehicleExitEvent event) {
+        if (HorseInspectionManager.isInspectionDisplay(event.getExited())) return;
         if (event.getVehicle() instanceof AbstractHorse horse) {
             if (SupportedMountType.isSupported(horse)) {
                 clear(horse);

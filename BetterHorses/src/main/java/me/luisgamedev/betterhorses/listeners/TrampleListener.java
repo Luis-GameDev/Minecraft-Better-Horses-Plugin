@@ -3,6 +3,7 @@ package me.luisgamedev.betterhorses.listeners;
 import me.luisgamedev.betterhorses.utils.WorldAccessPolicy;
 
 import me.luisgamedev.betterhorses.BetterHorses;
+import me.luisgamedev.betterhorses.api.events.HorseTrampleEvent;
 import me.luisgamedev.betterhorses.utils.PermissionUtils;
 import me.luisgamedev.betterhorses.utils.SupportedMountType;
 import org.bukkit.Bukkit;
@@ -132,7 +133,7 @@ public class TrampleListener implements Listener, ListenerLifecycle {
             }
 
             LivingEntity target = (LivingEntity) entity;
-            applyTrample(rider, horseLocation, target, config, currentTick);
+            applyTrample(rider, horse, horseLocation, target, config, currentTick);
         }
     }
 
@@ -171,25 +172,56 @@ public class TrampleListener implements Listener, ListenerLifecycle {
         return dot >= minimumDot;
     }
 
-    private void applyTrample(Player rider, Location horseLocation, LivingEntity target, FileConfiguration config, long currentTick) {
-        double damage = Math.max(0.0, config.getDouble("trample.damage", 4.0));
-        double knockbackStrength = Math.max(0.0, config.getDouble("trample.knockback", 1.2));
-
-        int cooldownTicks = Math.max(0, config.getInt("trample.cooldown-ticks", 20));
-        targetCooldowns.put(target.getUniqueId(), currentTick + cooldownTicks);
-
-        if (damage > 0.0) {
-            target.damage(damage, rider);
-        }
-
-        if (knockbackStrength > 0.0) {
-            Vector knockback = target.getLocation().toVector().subtract(horseLocation.toVector());
+    private void applyTrample(Player rider, AbstractHorse horse, Location horseLocation, LivingEntity target,
+                              FileConfiguration config, long currentTick) {
+        if (!canApply(rider, horse, target, config) || isOnCooldown(target, currentTick)) return;
+        double damage = nonNegative(config.getDouble("trample.damage", 4.0));
+        double strength = nonNegative(config.getDouble("trample.knockback", 1.2));
+        Vector knockback = new Vector();
+        if (strength > 0.0) {
+            knockback = target.getLocation().toVector().subtract(horseLocation.toVector());
             if (knockback.lengthSquared() > 0.0) {
-                knockback.normalize().multiply(knockbackStrength);
+                knockback.normalize().multiply(strength);
                 knockback.setY(Math.max(0.2, knockback.getY() + 0.2));
-                target.setVelocity(knockback);
             }
         }
+
+        HorseTrampleEvent event = new HorseTrampleEvent(rider, horse, target, damage, knockback,
+                Math.max(0, config.getInt("trample.cooldown-ticks", 20)));
+        Bukkit.getPluginManager().callEvent(event);
+        if (event.isCancelled() || !canApply(rider, horse, target, plugin.getConfig())) return;
+
+        // Cancellation never consumes a hit cooldown or applies either part of the hit.
+        targetCooldowns.put(target.getUniqueId(), currentTick + event.getCooldownTicks());
+        if (event.getDamage() > 0.0) target.damage(event.getDamage(), rider);
+        Vector velocity = event.getKnockback();
+        if (target.isValid() && !target.isDead() && velocity.lengthSquared() > 0.0) target.setVelocity(velocity);
+    }
+
+    private boolean canApply(Player rider, AbstractHorse horse, LivingEntity target, FileConfiguration config) {
+        SupportedMountType type = SupportedMountType.fromEntity(horse).orElse(null);
+        return task != null && config.getBoolean("trample.enabled", true) && rider.isOnline() && !rider.isDead()
+                && horse.isValid() && !horse.isDead() && rider.getVehicle() == horse
+                && rider.hasPermission(PermissionUtils.TRAMPLE) && WorldAccessPolicy.isEnabled(horse.getWorld())
+                && target.getWorld() == horse.getWorld() && type != null && type.isEnabled(config)
+                && isTrampleEnabled(config, type) && isValidTarget(target, rider, horse, config)
+                && isInHitArea(horse, target, config);
+    }
+
+    private boolean isInHitArea(AbstractHorse horse, LivingEntity target, FileConfiguration config) {
+        double radius = nonNegative(config.getDouble("trample.radius", 1.2));
+        if (radius <= 0.0 || !horse.getBoundingBox().expand(radius).overlaps(target.getBoundingBox())) return false;
+        Location location = horse.getLocation();
+        Vector forward = location.getDirection();
+        if (forward.lengthSquared() == 0.0) return false;
+        double angle = config.getDouble("trample.hit-angle-degrees", 90.0);
+        if (!Double.isFinite(angle)) angle = 90.0;
+        return isInsideHitCone(location, forward.normalize(), target, angle,
+                Math.cos(Math.toRadians(Math.max(0.0, Math.min(360.0, angle)) / 2.0)));
+    }
+
+    private static double nonNegative(double value) {
+        return Double.isFinite(value) ? Math.max(0.0, value) : 0.0;
     }
 
     private void cleanupCooldowns(long currentTick) {

@@ -33,9 +33,16 @@ public final class GrowthScale {
 
     /** SCALE attribute value normalized to the baby model's approximate standing height. */
     public static double forStage(int stage, double maxScale, boolean adult, double babyScale) {
+        return Math.max(MIN_ATTRIBUTE_SCALE, Math.min(MAX_ATTRIBUTE_SCALE,
+                forStageUnclamped(stage, maxScale, adult, babyScale)));
+    }
+
+    /** Raw growth result for composing individual variation before the server attribute bounds. */
+    public static double forStageUnclamped(int stage, double maxScale, boolean adult, double babyScale) {
         double factor = Double.isFinite(babyScale) && babyScale > 0.0D ? babyScale : BABY_SCALE;
         double attributeScale = forStage(stage, maxScale) / (adult ? 1.0D : factor);
-        return Math.max(MIN_ATTRIBUTE_SCALE, Math.min(MAX_ATTRIBUTE_SCALE, attributeScale));
+        // Saturate arithmetic overflow/underflow without applying the server bounds yet.
+        return Math.max(Double.MIN_VALUE, Math.min(Double.MAX_VALUE, attributeScale));
     }
 
     /** Modern foal meshes change proportions, so this normalizes height rather than every body part. */
