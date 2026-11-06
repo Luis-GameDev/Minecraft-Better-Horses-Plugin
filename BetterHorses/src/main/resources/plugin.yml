@@ -50,6 +50,8 @@ permissions:
       betterhorses.reload: true
       betterhorses.spawn.command: true
       betterhorses.despawn: true
+      betterhorses.automaticmounting: true
+      betterhorses.automaticdismounting: true
 
   betterhorses.trait.*:
     description: Grants access to all traits

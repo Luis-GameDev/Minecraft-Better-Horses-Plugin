@@ -207,10 +207,10 @@ settings:
   # If enabled, players riding a horse cant be hit
   rider-invulnerable: false
 
-  # Automatically mount the horse when spawning it (hold shift to bypass)
+  # Automatically mount the horse when spawning it (hold shift or the sneak button to bypass)
   allow-automatic-mounting: false
 
-  # Automatically despawn the horse back to item when dismounting
+  # Automatically despawn the horse back to an item when dismounting
   allow-automatic-dismount: false
 
   # Fixes a vanilla bug where horses cant automatically climb from a path block onto a full block
