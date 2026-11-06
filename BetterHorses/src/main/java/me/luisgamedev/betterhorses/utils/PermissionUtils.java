@@ -41,6 +41,8 @@ public final class PermissionUtils {
     public static final String INFO = "betterhorses.info";
     public static final String SPAWN_COMMAND = "betterhorses.spawn.command";
     public static final String DESPAWN = "betterhorses.despawn";
+    public static final String AUTOMATIC_MOUNTING = "betterhorses.automaticmounting";
+    public static final String AUTOMATIC_DISMOUNTING = "betterhorses.automaticdismounting";
 
     public static boolean has(CommandSender sender, String permission) {
         return sender.hasPermission(permission);
