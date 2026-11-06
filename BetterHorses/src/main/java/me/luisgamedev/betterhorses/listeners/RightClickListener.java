@@ -87,6 +87,15 @@ public class RightClickListener implements Listener {
         }
 
         item.setAmount(hasStoredChest && item.getAmount() > 1 ? 0 : item.getAmount() - 1);
+
+        if (
+            config.getBoolean("settings.allow-automatic-mounting")
+            && player.hasPermission(PermissionUtils.AUTOMATIC_MOUNTING)
+            && !player.isSneaking()
+        ) {
+            horse.addPassenger(player);
+        }
+
         lang.sendFormatted(player, "messages.horse-respawned", "%mount%", mountName);
     }
 }

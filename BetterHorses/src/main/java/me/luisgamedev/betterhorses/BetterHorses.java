@@ -280,6 +280,7 @@ public class BetterHorses extends JavaPlugin {
         // Mount permission enforcement is always active; owner restriction is an optional
         // second responsibility inside this same listener.
         defineCore("horse-mount", HorseMountListener::new);
+        defineCore("horse-dismount", HorseDismountListener::new);
         defineCore("horse-permission", HorsePermissionListener::new);
         listenerRegistrationManager.define("world-command", WorldCommandListener::new, () -> true,
                 listener -> getServer().getPluginManager().registerEvents(listener, this));
