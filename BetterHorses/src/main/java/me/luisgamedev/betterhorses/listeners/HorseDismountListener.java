@@ -20,7 +20,7 @@ public class HorseDismountListener implements Listener {
 
         Player player = event.getPlayer();
 
-        if (!player.hasPermission(PermissionUtils.AUTOMATIC_MOUNTING)) return;
+        if (!player.hasPermission(PermissionUtils.AUTOMATIC_DISMOUNTING)) return;
         if (!player.hasPermission(PermissionUtils.DESPAWN)) return;
 
         if (!(player.getVehicle() instanceof AbstractHorse)) return;
