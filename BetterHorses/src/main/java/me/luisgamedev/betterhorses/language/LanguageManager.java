@@ -45,7 +45,9 @@ public class LanguageManager {
     private final BetterHorses plugin;
     private final BukkitAudiences audiences;
     private final MiniMessage miniMessage = MiniMessage.miniMessage();
-    private final LegacyComponentSerializer legacySerializer = LegacyComponentSerializer.legacySection();
+    // Bukkit's String-only item/entity APIs still need legacy text, but must retain RGB.
+    private final LegacyComponentSerializer legacySerializer = LegacyComponentSerializer.builder()
+            .character('§').hexColors().useUnusualXRepeatedCharacterHexFormat().build();
     private FileConfiguration lang;
 
     public LanguageManager(BetterHorses plugin, BukkitAudiences audiences) {
@@ -179,6 +181,28 @@ public class LanguageManager {
             char current = message.charAt(i);
             if ((current == '&' || current == '§') && i + 1 < message.length()) {
                 char code = Character.toLowerCase(message.charAt(i + 1));
+                if (code == '#' && i + 7 < message.length()) {
+                    String hex = message.substring(i + 2, i + 8);
+                    if (hex.chars().allMatch(value -> Character.digit(value, 16) >= 0)) {
+                        converted.append("<#").append(hex).append('>');
+                        i += 7;
+                        continue;
+                    }
+                }
+                if (code == 'x' && i + 13 < message.length()) {
+                    StringBuilder hex = new StringBuilder(6);
+                    for (int offset = 2; offset <= 12; offset += 2) {
+                        char marker = message.charAt(i + offset);
+                        char digit = message.charAt(i + offset + 1);
+                        if ((marker != '&' && marker != '§') || Character.digit(digit, 16) < 0) break;
+                        hex.append(digit);
+                    }
+                    if (hex.length() == 6) {
+                        converted.append("<#").append(hex).append('>');
+                        i += 13;
+                        continue;
+                    }
+                }
                 if (code == 'r') {
                     converted.append("<reset>");
                     i++;

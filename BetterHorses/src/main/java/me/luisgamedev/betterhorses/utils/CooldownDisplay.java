@@ -2,9 +2,8 @@ package me.luisgamedev.betterhorses.utils;
 
 import me.luisgamedev.betterhorses.BetterHorses;
 import me.luisgamedev.betterhorses.language.LanguageManager;
-import org.bukkit.Bukkit;
-import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
-import org.bukkit.boss.*;
+import net.kyori.adventure.bossbar.BossBar;
+import net.kyori.adventure.text.Component;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
@@ -37,7 +36,7 @@ public class CooldownDisplay {
                 bossbarTasks.remove(uuid);
             }
             if (bossbars.containsKey(uuid)) {
-                bossbars.get(uuid).removeAll();
+                BetterHorses.getInstance().getAudiences().player(player).hideBossBar(bossbars.get(uuid));
                 bossbars.remove(uuid);
             }
             showBossbarCooldown(player, abilityName, remainingSeconds, fullCooldownSeconds, lang);
@@ -59,18 +58,11 @@ public class CooldownDisplay {
         double maxDisplayDuration = 5.0;
         double displayTime = Math.min(maxDisplayDuration, remaining);
 
-        String title = lang.getFormattedRaw(player, "messages.cooldown-message-bossbar", "%value%", abilityName);
-
-        BossBar bar = Bukkit.createBossBar(
-                title,
-                BarColor.YELLOW,
-                BarStyle.SOLID
-        );
-
         double initialProgress = Math.max(0.0, Math.min(1.0, remaining / fullCooldown));
-        bar.setProgress(initialProgress);
-        bar.addPlayer(player);
-        bar.setVisible(true);
+        BossBar bar = BossBar.bossBar(lang.getFormattedRawComponent(player,
+                "messages.cooldown-message-bossbar", "%value%", abilityName),
+                (float) initialProgress, BossBar.Color.YELLOW, BossBar.Overlay.PROGRESS);
+        BetterHorses.getInstance().getAudiences().player(player).showBossBar(bar);
         bossbars.put(uuid, bar);
 
         BukkitRunnable task = new BukkitRunnable() {
@@ -79,8 +71,7 @@ public class CooldownDisplay {
             @Override
             public void run() {
                 if (!player.isOnline() || secondsShown >= displayTime || remaining - secondsShown <= 0) {
-                    bar.removePlayer(player);
-                    bar.setVisible(false);
+                    BetterHorses.getInstance().getAudiences().player(player).hideBossBar(bar);
                     bossbars.remove(uuid);
                     bossbarTasks.remove(uuid);
                     cancel();
@@ -88,7 +79,7 @@ public class CooldownDisplay {
                 }
 
                 double progress = Math.max(0.0, Math.min(1.0, (remaining - secondsShown) / fullCooldown));
-                bar.setProgress(progress);
+                bar.progress((float) progress);
                 secondsShown += updateInterval;
             }
         };
@@ -97,9 +88,9 @@ public class CooldownDisplay {
         bossbarTasks.put(uuid, task);
     }
 
-    private static void sendActionBar(Player player, String message) {
+    private static void sendActionBar(Player player, Component message) {
         BetterHorses.getInstance().getAudiences().player(player)
-                .sendActionBar(LegacyComponentSerializer.legacySection().deserialize(message));
+                .sendActionBar(message);
     }
 
     private static void showHotbarMessage(Player player, String abilityName, double secondsLeft, LanguageManager lang) {
@@ -114,13 +105,13 @@ public class CooldownDisplay {
             @Override
             public void run() {
                 if (!player.isOnline() || secondsShown >= displayTime || secondsLeft - secondsShown <= 0) {
-                    sendActionBar(player, "");
+                    sendActionBar(player, Component.empty());
                     hotbarTasks.remove(uuid);
                     cancel();
                     return;
                 }
 
-                String message = lang.getFormattedRaw(
+                Component message = lang.getFormattedRawComponent(
                         player,
                         "messages.cooldown-message-hotbar",
                         "%value%", abilityName,

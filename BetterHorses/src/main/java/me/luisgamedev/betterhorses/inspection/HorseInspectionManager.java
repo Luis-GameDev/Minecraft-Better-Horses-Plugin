@@ -294,6 +294,11 @@ public final class HorseInspectionManager implements Listener, ListenerLifecycle
 
     private void cleanStale(Entity entity) {
         if (!isInspectionDisplay(entity)) return;
+        // Older tagged leftovers must not be saved again if their removal needs a retry.
+        try { entity.setPersistent(false); }
+        catch (RuntimeException | LinkageError failure) {
+            plugin.getLogger().log(Level.FINE, "Could not clear stale inspection persistence; still attempting removal", failure);
+        }
         boolean active = inspections.values().stream().anyMatch(inspection -> inspection.displayId.equals(entity.getUniqueId()));
         if (!active) removeDisplay((TextDisplay) entity);
     }

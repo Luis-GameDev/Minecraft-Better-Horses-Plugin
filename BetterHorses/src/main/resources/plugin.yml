@@ -117,6 +117,14 @@ permissions:
     description: Allows spawning a horse by rightclicking the horse item
     default: true
 
+  betterhorses.automaticmounting:
+    description: Allows automatic mounting after spawning an eligible horse
+    default: true
+
+  betterhorses.automaticdismounting:
+    description: Allows storing a ridden horse by starting to sneak
+    default: true
+
   betterhorses.training:
     description: Allows for the players horse to be trained by the player
     default: true
