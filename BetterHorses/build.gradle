@@ -4,6 +4,7 @@ plugins {
 }
 
 shadowJar {
+    mergeServiceFiles()
     relocate 'net.kyori', 'me.luisgamedev.betterhorses.libs.kyori'
 }
 

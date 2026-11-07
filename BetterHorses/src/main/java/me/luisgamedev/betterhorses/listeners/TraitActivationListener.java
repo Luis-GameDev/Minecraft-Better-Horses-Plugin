@@ -20,8 +20,9 @@ public class TraitActivationListener implements Listener {
 
     private final NamespacedKey traitKey = new NamespacedKey(BetterHorses.getInstance(), "trait");
 
-    @EventHandler
+    @EventHandler(ignoreCancelled = true)
     public void onTraitKeyPressed(PlayerSwapHandItemsEvent event) {
+        if (event.isCancelled()) return;
         Player player = event.getPlayer();
         BetterHorses plugin = BetterHorses.getInstance();
         if (!plugin.getConfig().getBoolean("traits.enabled", true)) return;
@@ -43,6 +44,9 @@ public class TraitActivationListener implements Listener {
 
         BetterHorseAbilityUseEvent abilityEvent = new BetterHorseAbilityUseEvent(player, mount, trait.toLowerCase());
         Bukkit.getPluginManager().callEvent(abilityEvent);
+        event.setCancelled(true); // The ability gesture never swaps the held items.
+        if (!plugin.isEnabled() || !player.isOnline() || !mount.isValid() || player.getVehicle() != mount
+                || !plugin.getConfig().getBoolean("traits.enabled", true)) return;
         if (abilityEvent.isCancelled()) {
             plugin.debugLog("TRAIT_ACTIVATION", "EVENT", false, "Ability use cancelled for " + player.getName() + " trait=" + trait + ".");
             event.setCancelled(true);
@@ -50,6 +54,7 @@ public class TraitActivationListener implements Listener {
         }
 
         String selectedTrait = normalizeTraitKey(abilityEvent.getTraitKey());
+        if (!PermissionUtils.canUseTrait(player, selectedTrait)) return;
         plugin.debugLog("TRAIT_ACTIVATION", "TRIGGER", true, "Player " + player.getName() + " activated trait " + selectedTrait + ".");
         switch (selectedTrait) {
             case "hellmare":

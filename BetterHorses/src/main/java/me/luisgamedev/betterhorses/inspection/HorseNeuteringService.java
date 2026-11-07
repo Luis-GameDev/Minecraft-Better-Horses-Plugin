@@ -78,7 +78,7 @@ public final class HorseNeuteringService {
     }
 
     private boolean canNeuter(Player player, AbstractHorse horse, EquipmentSlot hand, boolean feedback) {
-        if (!NeuteringPolicy.isEnabled(plugin.getConfig())) return false;
+        if (!plugin.isEnabled() || !NeuteringPolicy.isEnabled(plugin.getConfig())) return false;
         if (player == null || horse == null || hand != EquipmentSlot.HAND || !player.isSneaking()
                 || !horse.isValid() || horse.isDead() || !player.isOnline() || player.isDead()
                 || !plugin.getConfig().getBoolean("horse-neutering.shears-enabled", false)
