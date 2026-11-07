@@ -4,7 +4,6 @@ import me.luisgamedev.betterhorses.BetterHorses;
 import me.luisgamedev.betterhorses.api.BetterHorseKeys;
 import me.luisgamedev.betterhorses.utils.AttributeResolver;
 import me.luisgamedev.betterhorses.traits.TraitRegistry;
-import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.attribute.Attribute;
@@ -298,17 +297,16 @@ public final class TrainingManager {
     }
 
     private static String completeText(FileConfiguration language) {
-        String filledColor = color(language.getString("training-lore.progress-bar.filled-color", "&b"));
-        String complete = color(language.getString("training-lore.complete", "completed"));
-        return filledColor + ChatColor.stripColor(complete);
+        return color(language.getString("training-lore.progress-bar.filled-color", "&b")
+                + language.getString("training-lore.complete", "completed"));
     }
 
     private static String progressBar(FileConfiguration config, FileConfiguration language, double percent) {
         int length = Math.max(5, config.getInt("training.lore.progress-bar.length", 20));
         char filledChar = language.getString("training-lore.progress-bar.filled-char", "■").charAt(0);
         char emptyChar = language.getString("training-lore.progress-bar.empty-char", "■").charAt(0);
-        String filledColor = color(language.getString("training-lore.progress-bar.filled-color", "&b"));
-        String emptyColor = color(language.getString("training-lore.progress-bar.empty-color", "&8"));
+        String filledColor = language.getString("training-lore.progress-bar.filled-color", "&b");
+        String emptyColor = language.getString("training-lore.progress-bar.empty-color", "&8");
 
         int filled = (int) Math.round((percent / 100.0) * length);
         StringBuilder builder = new StringBuilder();
@@ -316,7 +314,7 @@ public final class TrainingManager {
         for (int i = 0; i < filled; i++) builder.append(filledChar);
         builder.append(emptyColor);
         for (int i = filled; i < length; i++) builder.append(emptyChar);
-        return builder.toString();
+        return color(builder.toString());
     }
 
     private static void saveBaseIfMissing(AbstractHorse horse, PersistentDataContainer data, Attribute attribute,
@@ -330,6 +328,6 @@ public final class TrainingManager {
     }
 
     private static String color(String value) {
-        return ChatColor.translateAlternateColorCodes('&', value == null ? "" : value);
+        return BetterHorses.getInstance().getLang().parseToString(null, value == null ? "" : value);
     }
 }
