@@ -9,9 +9,9 @@ The [published GitHub wiki](https://github.com/Luis-GameDev/Minecraft-Better-Hor
 | Branch | Server | Build task | Current deployable filename |
 | --- | --- | --- | --- |
 | `version/7.1` | Standard Bukkit/Spigot or Paper, Minecraft 1.20.4+ with feature API limits | `./gradlew shadowJar` | `BetterHorses-7.1-all.jar` |
-| `folia/version/7.1` | Folia | `./gradlew verifyPluginJar` | `BetterHorses-7.0-Folia.jar` |
+| `folia/version/7.1` | Folia | `./gradlew verifyPluginJar` | `BetterHorses-7.1-Folia.jar` |
 
-Both require **Java 21**. The Folia branch retains version 7.0 in its current build metadata despite its 7.1 development branch name. Install the matching shaded artifact from `BetterHorses/build/libs/`; install one artifact at a time. See [Installation](https://github.com/Luis-GameDev/Minecraft-Better-Horses-Plugin/wiki/installation) for optional PlaceholderAPI, resource-pack requirements and legacy equipment conversion.
+Both require **Java 21**. Install the matching shaded artifact from `BetterHorses/build/libs/`; install one artifact at a time. See [Installation](https://github.com/Luis-GameDev/Minecraft-Better-Horses-Plugin/wiki/installation) for optional PlaceholderAPI, resource-pack requirements and legacy equipment conversion.
 
 Visible growth/random size needs `SCALE`, which Minecraft 1.20.4 does not expose; size data remains saved. Optional postprocessing requires Minecraft **26.3** and the supported Paper/Folia API. Other forks/releases require their own runtime validation; compilation does not certify every combination.
 

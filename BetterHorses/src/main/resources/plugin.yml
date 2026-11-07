@@ -1,6 +1,6 @@
 name: BetterHorses
 main: me.luisgamedev.betterhorses.BetterHorses
-version: 7.0
+version: 7.1
 api-version: 1.20
 folia-supported: true
 softdepend: [ PlaceholderAPI ]
@@ -52,6 +52,8 @@ permissions:
       betterhorses.reload: true
       betterhorses.spawn.command: true
       betterhorses.despawn: true
+      betterhorses.automaticmounting: true
+      betterhorses.automaticdismounting: true
 
   betterhorses.trait.*:
     description: Grants access to all traits
@@ -114,6 +116,14 @@ permissions:
 
   betterhorses.spawn.rightclick:
     description: Allows spawning a horse by rightclicking the horse item
+    default: true
+
+  betterhorses.automaticmounting:
+    description: Allows automatic mounting after spawning an eligible horse
+    default: true
+
+  betterhorses.automaticdismounting:
+    description: Allows storing a ridden horse by starting to sneak
     default: true
 
   betterhorses.training:

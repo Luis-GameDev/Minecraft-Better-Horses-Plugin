@@ -7,6 +7,7 @@ import me.luisgamedev.betterhorses.api.events.BetterHorseSpawnEvent;
 import me.luisgamedev.betterhorses.language.LanguageManager;
 import me.luisgamedev.betterhorses.utils.SupportedMountType;
 import me.luisgamedev.betterhorses.utils.HorseItemTransaction;
+import me.luisgamedev.betterhorses.utils.AutomaticMounting;
 import org.bukkit.Material;
 import org.bukkit.entity.AbstractHorse;
 import org.bukkit.entity.Player;
@@ -86,6 +87,7 @@ public class RespawnCommand {
             HorseItemTransaction.removeTemporary(plugin, horse);
             return true;
         }
+        AutomaticMounting.tryMount(player, horse);
         lang.sendFormatted(player, "messages.horse-respawned", "%mount%", mountName);
         plugin.debugLog("HORSE_RESPAWN", "COMPLETE", true, "Spawned " + mountName + ".");
         return true;

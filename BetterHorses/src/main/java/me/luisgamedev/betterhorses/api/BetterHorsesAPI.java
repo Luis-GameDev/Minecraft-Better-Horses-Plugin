@@ -364,7 +364,7 @@ public class BetterHorsesAPI {
         }
 
         if (customName != null && !customName.isBlank()) {
-            horse.setCustomName(customName);
+            horse.setCustomName(BetterHorses.getInstance().getLang().parseToString(player, customName));
             horse.setCustomNameVisible(true);
         }
 
@@ -970,7 +970,7 @@ public class BetterHorsesAPI {
             case "blank" -> sectionLines.add("");
             default -> {
                 if (part.startsWith("literal:")) {
-                    sectionLines.add(ChatColor.translateAlternateColorCodes('&', rawPart.substring("literal:".length())));
+                    sectionLines.add(lang.parseToString(player, rawPart.substring("literal:".length())));
                 }
             }
         }
@@ -1108,7 +1108,7 @@ public class BetterHorsesAPI {
         String path = "traits." + raw.toLowerCase();
 
         if (lang.getConfig().contains(path)) {
-            return ChatColor.translateAlternateColorCodes('&', lang.getConfig().getString(path));
+            return lang.parseToString(null, lang.getConfig().getString(path));
         }
 
         return raw.substring(0, 1).toUpperCase() + raw.substring(1);

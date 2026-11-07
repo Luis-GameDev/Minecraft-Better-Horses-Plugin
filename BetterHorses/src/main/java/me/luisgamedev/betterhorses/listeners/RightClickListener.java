@@ -8,6 +8,7 @@ import me.luisgamedev.betterhorses.language.LanguageManager;
 import me.luisgamedev.betterhorses.training.TrainingManager;
 import me.luisgamedev.betterhorses.utils.PermissionUtils;
 import me.luisgamedev.betterhorses.utils.HorseItemTransaction;
+import me.luisgamedev.betterhorses.utils.AutomaticMounting;
 import me.luisgamedev.betterhorses.utils.SupportedMountType;
 import org.bukkit.Material;
 import org.bukkit.configuration.file.FileConfiguration;
@@ -112,6 +113,7 @@ public class RightClickListener implements Listener {
             HorseItemTransaction.removeTemporary(plugin, horse);
             return;
         }
+        AutomaticMounting.tryMount(player, horse);
         lang.sendFormatted(player, "messages.horse-respawned", "%mount%", mountName);
     }
 }
