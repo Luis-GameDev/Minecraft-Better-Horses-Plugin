@@ -26,6 +26,8 @@ public final class PermissionUtils {
     }
 
     public static final String MOUNT = "betterhorses.mount";
+    public static final String AUTOMATIC_MOUNTING = "betterhorses.automaticmounting";
+    public static final String AUTOMATIC_DISMOUNTING = "betterhorses.automaticdismounting";
     public static final String FEED = "betterhorses.feed";
     public static final String BREED = "betterhorses.breed";
     public static final String TAME = "betterhorses.tame";

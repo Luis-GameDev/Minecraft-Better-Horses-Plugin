@@ -237,6 +237,14 @@ settings:
   # If enabled, players riding a horse cant be hit
   rider-invulnerable: false
 
+  # Automatically mount an adult horse after right-click or /horse spawn (sneak to bypass).
+  # Growth riding thresholds, world restrictions, and normal mounting permissions still apply.
+  allow-automatic-mounting: false
+
+  # Store the ridden horse when starting to sneak, after other plugins can cancel sneaking.
+  # Other dismount causes (such as death or teleportation) do not trigger storage.
+  allow-automatic-dismount: false
+
   # Fixes a vanilla bug where horses cant automatically climb from a path block onto a full block
   # because it exceeds their 1-block step height, only applies to mounted horses
   fix-step-height: true

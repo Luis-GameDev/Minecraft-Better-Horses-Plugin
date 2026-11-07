@@ -3,10 +3,7 @@ package me.luisgamedev.betterhorses.utils;
 import me.luisgamedev.betterhorses.BetterHorses;
 import me.luisgamedev.betterhorses.language.LanguageManager;
 import me.luisgamedev.betterhorses.scheduler.ScheduledTaskHandle;
-import org.bukkit.Bukkit;
-import org.bukkit.boss.BarColor;
-import org.bukkit.boss.BarStyle;
-import org.bukkit.boss.BossBar;
+import net.kyori.adventure.bossbar.BossBar;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 
@@ -30,9 +27,10 @@ public final class CooldownDisplay {
         boolean boss = config.getBoolean("settings.cooldown-display.show-bossbar-indicator", false);
         boolean hotbar = config.getBoolean("settings.cooldown-display.show-hotbar-indicator", true);
         LanguageManager lang = plugin.getLang();
-        BossBar bar = boss ? Bukkit.createBossBar(lang.getFormattedRaw(player,
-                "messages.cooldown-message-bossbar", "%value%", ability), BarColor.YELLOW, BarStyle.SOLID) : null;
-        if (bar != null) { bar.addPlayer(player); bar.setVisible(true); }
+        BossBar bar = boss ? BossBar.bossBar(lang.getFormattedRawComponent(player,
+                "messages.cooldown-message-bossbar", "%value%", ability),
+                (float) Math.max(0, Math.min(1, remaining / full)), BossBar.Color.YELLOW, BossBar.Overlay.PROGRESS) : null;
+        if (bar != null) plugin.getAudiences().player(player).showBossBar(bar);
         long started = System.nanoTime();
         ScheduledTaskHandle task = plugin.scheduler().entityRepeating(player, 1L, 2L, scheduled -> {
             double elapsed = (System.nanoTime() - started) / 1_000_000_000.0;
@@ -41,11 +39,11 @@ public final class CooldownDisplay {
                 scheduled.cancel();
                 return;
             }
-            if (bar != null) bar.setProgress(Math.max(0, Math.min(1, (remaining - elapsed) / full)));
-            if (hotbar) player.sendActionBar(lang.getFormattedRaw(player, "messages.cooldown-message-hotbar",
+            if (bar != null) bar.progress((float) Math.max(0, Math.min(1, (remaining - elapsed) / full)));
+            if (hotbar) plugin.getAudiences().player(player).sendActionBar(lang.getFormattedRawComponent(player, "messages.cooldown-message-hotbar",
                     "%value%", ability, "%remaining%", String.format(Locale.US, "%.1f", remaining - elapsed)));
         }, () -> DISPLAYS.remove(id));
-        DISPLAYS.put(id, new Display(task, bar));
+        DISPLAYS.put(id, new Display(task, bar, player));
     }
 
     public static void cleanup(Player player) { remove(player.getUniqueId()); }
@@ -56,8 +54,8 @@ public final class CooldownDisplay {
         Display display = DISPLAYS.remove(id);
         if (display == null) return;
         display.task.cancel();
-        if (display.bar != null) { display.bar.removeAll(); display.bar.setVisible(false); }
+        if (display.bar != null) BetterHorses.getInstance().getAudiences().player(display.player).hideBossBar(display.bar);
     }
 
-    private record Display(ScheduledTaskHandle task, BossBar bar) { }
+    private record Display(ScheduledTaskHandle task, BossBar bar, Player player) { }
 }
