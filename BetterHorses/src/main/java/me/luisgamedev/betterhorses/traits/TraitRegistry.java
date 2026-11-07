@@ -103,6 +103,7 @@ public class TraitRegistry {
                     for (int dz = -radius; dz <= radius; dz++) {
                         Location fireLoc = center.clone().add(dx, 0, dz);
                         BetterHorses.getInstance().scheduler().region(fireLoc, 1L, ignored -> {
+                            if (!pendingBlockAllowed(world, "hellmare")) return;
                             Block ground = fireLoc.getBlock();
                             Block above = ground.getRelative(0, 1, 0);
                             if (!ground.getType().isSolid() || above.getType() != Material.AIR) return;
@@ -112,7 +113,8 @@ public class TraitRegistry {
                                     player
                             );
                             Bukkit.getPluginManager().callEvent(igniteEvent);
-                            if (!igniteEvent.isCancelled()) {
+                            if (!igniteEvent.isCancelled() && pendingBlockAllowed(world, "hellmare")
+                                    && ground.getType().isSolid() && above.getType() == Material.AIR) {
                                 above.setType(Material.FIRE);
                             }
                         });
@@ -426,6 +428,7 @@ public class TraitRegistry {
             for (int z = -radius; z <= radius; z++) {
                 Location loc = center.clone().add(x, 0, z);
                 BetterHorses.getInstance().scheduler().region(loc, 1L, ignored -> {
+                    if (!pendingBlockAllowed(loc.getWorld(), "frosthooves")) return;
                     Block block = loc.getBlock();
                     if (block.getType() != Material.WATER) return;
                     EntityChangeBlockEvent frostEvent = new EntityChangeBlockEvent(
@@ -435,7 +438,8 @@ public class TraitRegistry {
                     );
                     Bukkit.getPluginManager().callEvent(frostEvent);
 
-                    if (!frostEvent.isCancelled()) {
+                    if (!frostEvent.isCancelled() && pendingBlockAllowed(loc.getWorld(), "frosthooves")
+                            && block.getType() == Material.WATER) {
                         block.setType(Material.FROSTED_ICE);
                         Location restoreAt = block.getLocation();
                         BetterHorses.getInstance().scheduler().region(restoreAt, 20L * 15L, restoreTask -> {
@@ -446,6 +450,13 @@ public class TraitRegistry {
                 });
             }
         }
+    }
+
+    private static boolean pendingBlockAllowed(World world, String trait) {
+        // This callback owns the block's region, which need not own the rider or mount.
+        return BetterHorses.getInstance().isEnabled() && WorldAccessPolicy.isEnabled(world)
+                && config().getBoolean("traits.enabled", true)
+                && config().getBoolean("traits." + trait + ".enabled", false);
     }
 
     private static boolean pendingHitAllowed(Player player, AbstractHorse horse, LivingEntity target,

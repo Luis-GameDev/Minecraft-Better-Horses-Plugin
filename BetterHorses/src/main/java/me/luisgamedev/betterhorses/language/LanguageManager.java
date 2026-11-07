@@ -177,14 +177,41 @@ public class LanguageManager {
 
     private String convertLegacyFormatting(String message) {
         StringBuilder converted = new StringBuilder(message.length());
+        boolean inTag = false;
+        char quote = 0;
         for (int i = 0; i < message.length(); i++) {
             char current = message.charAt(i);
+            // Tag arguments are data: an ampersand in a URL or command is not a color code.
+            if (inTag) {
+                converted.append(current);
+                if (quote != 0 && current == '\\' && i + 1 < message.length()
+                        && (message.charAt(i + 1) == quote || message.charAt(i + 1) == '\\')) {
+                    converted.append(message.charAt(++i));
+                } else if (quote != 0) {
+                    if (current == quote) quote = 0;
+                } else if (current == '\'' || current == '"') {
+                    quote = current;
+                } else if (current == '>') {
+                    inTag = false;
+                }
+                continue;
+            }
+            if (current == '\\' && i + 1 < message.length()
+                    && (message.charAt(i + 1) == '<' || message.charAt(i + 1) == '\\')) {
+                converted.append(current).append(message.charAt(++i));
+                continue;
+            }
+            if (current == '<' && startsTag(message, i + 1)) {
+                converted.append(current);
+                inTag = true;
+                continue;
+            }
             if ((current == '&' || current == '§') && i + 1 < message.length()) {
                 char code = Character.toLowerCase(message.charAt(i + 1));
                 if (code == '#' && i + 7 < message.length()) {
                     String hex = message.substring(i + 2, i + 8);
                     if (hex.chars().allMatch(value -> Character.digit(value, 16) >= 0)) {
-                        converted.append("<#").append(hex).append('>');
+                        appendLegacyColor(converted, "#" + hex);
                         i += 7;
                         continue;
                     }
@@ -198,7 +225,7 @@ public class LanguageManager {
                         hex.append(digit);
                     }
                     if (hex.length() == 6) {
-                        converted.append("<#").append(hex).append('>');
+                        appendLegacyColor(converted, "#" + hex);
                         i += 13;
                         continue;
                     }
@@ -210,7 +237,8 @@ public class LanguageManager {
                 }
                 String tag = LEGACY_MINIMESSAGE_TAGS.get(code);
                 if (tag != null) {
-                    converted.append('<').append(tag).append('>');
+                    if (Character.digit(code, 16) >= 0) appendLegacyColor(converted, tag);
+                    else converted.append('<').append(tag).append('>');
                     i++;
                     continue;
                 }
@@ -218,6 +246,25 @@ public class LanguageManager {
             converted.append(current);
         }
         return converted.toString();
+    }
+
+    private static boolean startsTag(String message, int start) {
+        int position = start;
+        if (position < message.length() && (message.charAt(position) == '/' || message.charAt(position) == '!')) position++;
+        int nameStart = position;
+        while (position < message.length()) {
+            char character = message.charAt(position);
+            if (!Character.isLetterOrDigit(character) && character != '_' && character != '-' && character != '#') break;
+            position++;
+        }
+        return position > nameStart && position < message.length()
+                && (message.charAt(position) == ':' || message.charAt(position) == '>');
+    }
+
+    private static void appendLegacyColor(StringBuilder converted, String color) {
+        // Legacy colors clear decorations, but must retain enclosing MiniMessage events/styles.
+        converted.append('<').append(color).append('>')
+                .append("<!bold><!italic><!underlined><!strikethrough><!obfuscated>");
     }
 
     private String serialize(Component component) {

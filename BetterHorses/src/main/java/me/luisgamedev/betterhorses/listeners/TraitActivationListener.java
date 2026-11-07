@@ -20,8 +20,9 @@ public class TraitActivationListener implements Listener {
 
     private final NamespacedKey traitKey = new NamespacedKey(BetterHorses.getInstance(), "trait");
 
-    @EventHandler
+    @EventHandler(ignoreCancelled = true)
     public void onTraitKeyPressed(PlayerSwapHandItemsEvent event) {
+        if (event.isCancelled()) return;
         Player player = event.getPlayer();
         if (!Bukkit.isOwnedByCurrentRegion(player)) return;
         BetterHorses plugin = BetterHorses.getInstance();

@@ -13,21 +13,27 @@ import org.bukkit.entity.*;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDismountEvent;
 import org.bukkit.event.entity.EntityMountEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.util.Vector;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 /** Runs only while an eligible player is mounted; target changes execute on target schedulers. */
 public final class TrampleListener implements Listener, ListenerLifecycle {
     private final BetterHorses plugin;
+    private final ThreadLocal<DamageAttempt> pendingDamage = new ThreadLocal<>();
     private final ConcurrentMap<UUID, RiderState> riders = new ConcurrentHashMap<>();
     private final ConcurrentMap<UUID, Long> targetCooldowns = new ConcurrentHashMap<>();
     private volatile boolean stopped;
+    private final AtomicLong lastCooldownCleanup = new AtomicLong();
 
     public TrampleListener(BetterHorses plugin) { this.plugin = plugin; }
 
@@ -59,6 +65,7 @@ public final class TrampleListener implements Listener, ListenerLifecycle {
     }
 
     private void tick(Player rider, AbstractHorse horse) {
+        cleanupCooldowns(System.currentTimeMillis());
         if (stopped || !Bukkit.isOwnedByCurrentRegion(horse) || !Bukkit.isOwnedByCurrentRegion(rider)) {
             stop(rider.getUniqueId());
             return;
@@ -117,12 +124,48 @@ public final class TrampleListener implements Listener, ListenerLifecycle {
         Bukkit.getPluginManager().callEvent(event);
         if (event.isCancelled() || !canApply(rider, horse, target)) return;
 
+        if (!acceptedNativeDamage(rider, target, event.getDamage()) || !canApply(rider, horse, target)) return;
         // Target callbacks run serially on its owning region. Only accepted hits consume cooldown.
         targetCooldowns.put(target.getUniqueId(), System.currentTimeMillis() + event.getCooldownTicks() * 50L);
-        if (event.getDamage() > 0.0) target.damage(event.getDamage(), rider);
         velocity = event.getKnockback();
         if (Bukkit.isOwnedByCurrentRegion(target) && target.isValid() && !target.isDead()
                 && velocity.lengthSquared() > 0.0) target.setVelocity(velocity);
+    }
+
+    /** Observe the real native event, including cancellations, without dispatching a second hit. */
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onNativeDamage(EntityDamageByEntityEvent event) {
+        DamageAttempt attempt = pendingDamage.get();
+        if (attempt != null && event.getEntity() == attempt.target && event.getDamager() == attempt.rider) {
+            attempt.events.add(event);
+        }
+    }
+
+    private boolean acceptedNativeDamage(Player rider, LivingEntity target, double damage) {
+        DamageAttempt previous = pendingDamage.get();
+        DamageAttempt attempt = new DamageAttempt(rider, target);
+        pendingDamage.set(attempt);
+        try {
+            // Zero-damage trample still asks native protection before applying its custom push.
+            target.damage(damage, rider);
+        } finally {
+            if (previous == null) pendingDamage.remove();
+            else pendingDamage.set(previous);
+        }
+        // Keep event references: even a later MONITOR decision is visible after damage returns.
+        // Reentrant damage must not let an accepted nested hit conceal a cancelled outer hit.
+        return !attempt.events.isEmpty() && attempt.events.stream().noneMatch(EntityDamageByEntityEvent::isCancelled);
+    }
+
+    private static final class DamageAttempt {
+        final Player rider;
+        final LivingEntity target;
+        final List<EntityDamageByEntityEvent> events = new ArrayList<>();
+
+        DamageAttempt(Player rider, LivingEntity target) {
+            this.rider = rider;
+            this.target = target;
+        }
     }
 
     private boolean canApply(Player rider, AbstractHorse horse, LivingEntity target) {
@@ -154,6 +197,13 @@ public final class TrampleListener implements Listener, ListenerLifecycle {
         Vector delta = target.getLocation().toVector().subtract(origin.toVector());
         return delta.lengthSquared() == 0.0 || forward.normalize().dot(delta.normalize())
                 >= Math.cos(Math.toRadians(Math.min(360.0, Math.max(0.0, angle))) / 2.0);
+    }
+
+    private void cleanupCooldowns(long now) {
+        long previous = lastCooldownCleanup.get();
+        if (now >= previous && now - previous < 1000L) return;
+        if (!lastCooldownCleanup.compareAndSet(previous, now)) return;
+        targetCooldowns.entrySet().removeIf(entry -> entry.getValue() <= now);
     }
 
     private static double nonNegative(double value) {

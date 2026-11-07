@@ -29,11 +29,16 @@ class HorseItemTransactionRegressionTest {
     @Override public void send(Player p,String key){}
     @Override public void sendFormatted(Player p,String key,Object... replacements){}
   }
+  static void initializeParser(LanguageManager language) throws Exception {
+    field(LanguageManager.class,"miniMessage").set(language,net.kyori.adventure.text.minimessage.MiniMessage.miniMessage());
+    field(LanguageManager.class,"legacySerializer").set(language,net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer.builder().character('§').hexColors().useUnusualXRepeatedCharacterHexFormat().build());
+  }
   static void prepareApi(Fixture f) throws Exception {
     f.config.set("settings.horse-item-lore-layout",List.of());
     // Exercise the supported invalid-material fallback without a native registry bootstrap.
     f.config.set("settings.horse-item", "TEST_UNKNOWN_MATERIAL");
     f.plugin.language=(AuditLanguage)((Unsafe)field(Unsafe.class,"theUnsafe").get(null)).allocateInstance(AuditLanguage.class);
+    initializeParser(f.plugin.language);
     ItemFactory factory=proxy(ItemFactory.class,(target,method,args)->switch(method.getName()){
       case "getItemMeta" -> {
         PersistentDataContainer pdc=data(new HashMap<>()); Map<String,Object> values=new HashMap<>();
@@ -286,7 +291,8 @@ class HorseItemTransactionRegressionTest {
         f.config.set("training.enabled",true);
         f.config.set("settings.horse-item-lore-layout",List.of("health","riding","feeding"));
         CaptureTransferLanguage language=(CaptureTransferLanguage)((Unsafe)field(Unsafe.class,"theUnsafe").get(null)).allocateInstance(CaptureTransferLanguage.class);
-        language.configuration=new org.bukkit.configuration.file.YamlConfiguration();
+        initializeParser(language);
+      language.configuration=new org.bukkit.configuration.file.YamlConfiguration();
         language.trigger=trigger;language.transfer=()->f.foreign.add(f.horse.id);
         f.plugin.language=language;
         PersistentDataContainer guardedData=proxy(PersistentDataContainer.class,(target,method,args)-> {
@@ -313,6 +319,7 @@ class HorseItemTransactionRegressionTest {
       f.config.set("training.enabled",true);
       f.config.set("settings.horse-item-lore-layout",List.of("health","riding","feeding"));
       CaptureTransferLanguage language=(CaptureTransferLanguage)((Unsafe)field(Unsafe.class,"theUnsafe").get(null)).allocateInstance(CaptureTransferLanguage.class);
+      initializeParser(language);
       language.configuration=new org.bukkit.configuration.file.YamlConfiguration();
       language.trigger="unused";language.transfer=()->{throw new AssertionError();};
       f.plugin.language=language;
