@@ -82,7 +82,7 @@ public class CustomHorseCommand implements CommandExecutor {
                 return true;
             }
 
-            String validatedTrait = null;
+            String validatedTrait = trait;
 
             if (trait != null && !trait.equalsIgnoreCase("none")) {
                 if (!config.getBoolean("traits.enabled", false)) {

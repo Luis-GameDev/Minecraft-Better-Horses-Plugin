@@ -87,7 +87,7 @@ public class BetterHorsesAPI {
         SupportedMountType targetMountType = mountType == null ? SupportedMountType.HORSE : mountType;
         isNeutered = isNeutered && NeuteringPolicy.isEnabled(plugin.getConfig());
 
-        String genderSymbol = gender.equals("male") ? lang.getRaw(owner, "messages.gender-male") : gender.equals("female") ? lang.getRaw(owner, "messages.gender-female") : "?";
+        String genderSymbol = "male".equalsIgnoreCase(gender) ? lang.getRaw(owner, "messages.gender-male") : "female".equalsIgnoreCase(gender) ? lang.getRaw(owner, "messages.gender-female") : "?";
 
         String materialName = plugin.getConfig().getString("settings.horse-item", "SADDLE");
         Material material = Material.getMaterial(materialName.toUpperCase());

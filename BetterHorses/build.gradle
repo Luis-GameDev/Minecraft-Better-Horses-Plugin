@@ -4,6 +4,7 @@ plugins {
 }
 
 shadowJar {
+    mergeServiceFiles()
     archiveClassifier.set('Folia')
     relocate 'net.kyori', 'me.luisgamedev.betterhorses.libs.kyori'
 }
