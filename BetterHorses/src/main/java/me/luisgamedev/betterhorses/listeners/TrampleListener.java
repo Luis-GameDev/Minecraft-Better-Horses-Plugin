@@ -19,10 +19,17 @@ import org.bukkit.entity.Player;
 import org.bukkit.entity.Projectile;
 import org.bukkit.entity.Vehicle;
 import org.bukkit.event.Listener;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
+import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.util.Vector;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -31,6 +38,7 @@ import java.util.UUID;
 public class TrampleListener implements Listener, ListenerLifecycle {
 
     private final BetterHorses plugin;
+    private final ThreadLocal<DamageAttempt> pendingDamage = new ThreadLocal<>();
     private final Map<UUID, Location> previousHorseLocations = new HashMap<>();
     private final Map<UUID, Long> targetCooldowns = new HashMap<>();
     private long currentTick = 0L;
@@ -64,12 +72,15 @@ public class TrampleListener implements Listener, ListenerLifecycle {
     private void tickTrample() {
         FileConfiguration config = plugin.getConfig();
         if (!config.getBoolean("trample.enabled", true)) {
+            previousHorseLocations.clear();
+            targetCooldowns.clear();
             return;
         }
 
         currentTick++;
         cleanupCooldowns(currentTick);
 
+        Set<UUID> activeHorses = new HashSet<>();
         for (Player rider : Bukkit.getOnlinePlayers()) {
             if (!WorldAccessPolicy.isEnabled(rider.getWorld())) continue;
             if (!(rider.getVehicle() instanceof AbstractHorse horse)) {
@@ -83,6 +94,7 @@ public class TrampleListener implements Listener, ListenerLifecycle {
                 continue;
             }
 
+            activeHorses.add(horse.getUniqueId());
             Location currentLocation = horse.getLocation();
             Location previousLocation = previousHorseLocations.put(horse.getUniqueId(), currentLocation.clone());
             if (previousLocation == null || previousLocation.getWorld() != currentLocation.getWorld()) {
@@ -101,6 +113,7 @@ public class TrampleListener implements Listener, ListenerLifecycle {
 
             trampleNearbyTargets(rider, horse, currentLocation, config, currentTick);
         }
+        previousHorseLocations.keySet().retainAll(activeHorses);
     }
 
     private boolean isTrampleEnabled(FileConfiguration config, SupportedMountType mountType) {
@@ -191,11 +204,47 @@ public class TrampleListener implements Listener, ListenerLifecycle {
         Bukkit.getPluginManager().callEvent(event);
         if (event.isCancelled() || !canApply(rider, horse, target, plugin.getConfig())) return;
 
-        // Cancellation never consumes a hit cooldown or applies either part of the hit.
+        if (!acceptedNativeDamage(rider, target, event.getDamage())
+                || !canApply(rider, horse, target, plugin.getConfig())) return;
         targetCooldowns.put(target.getUniqueId(), currentTick + event.getCooldownTicks());
-        if (event.getDamage() > 0.0) target.damage(event.getDamage(), rider);
         Vector velocity = event.getKnockback();
         if (target.isValid() && !target.isDead() && velocity.lengthSquared() > 0.0) target.setVelocity(velocity);
+    }
+
+    /** Observe the real native event, including cancellations, without dispatching a second hit. */
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onNativeDamage(EntityDamageByEntityEvent event) {
+        DamageAttempt attempt = pendingDamage.get();
+        if (attempt != null && event.getEntity() == attempt.target && event.getDamager() == attempt.rider) {
+            attempt.events.add(event);
+        }
+    }
+
+    private boolean acceptedNativeDamage(Player rider, LivingEntity target, double damage) {
+        DamageAttempt previous = pendingDamage.get();
+        DamageAttempt attempt = new DamageAttempt(rider, target);
+        pendingDamage.set(attempt);
+        try {
+            // Zero-damage trample still asks native protection before applying its custom push.
+            target.damage(damage, rider);
+        } finally {
+            if (previous == null) pendingDamage.remove();
+            else pendingDamage.set(previous);
+        }
+        // Keep event references: even a later MONITOR decision is visible after damage returns.
+        // Reentrant damage must not let an accepted nested hit conceal a cancelled outer hit.
+        return !attempt.events.isEmpty() && attempt.events.stream().noneMatch(EntityDamageByEntityEvent::isCancelled);
+    }
+
+    private static final class DamageAttempt {
+        final Player rider;
+        final LivingEntity target;
+        final List<EntityDamageByEntityEvent> events = new ArrayList<>();
+
+        DamageAttempt(Player rider, LivingEntity target) {
+            this.rider = rider;
+            this.target = target;
+        }
     }
 
     private boolean canApply(Player rider, AbstractHorse horse, LivingEntity target, FileConfiguration config) {

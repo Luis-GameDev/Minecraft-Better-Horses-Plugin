@@ -18,6 +18,7 @@ import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.ProjectileLaunchEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
+import org.bukkit.event.inventory.ClickType;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerItemConsumeEvent;
 import org.bukkit.inventory.AbstractHorseInventory;
@@ -81,21 +82,27 @@ public class HorseItemBlockerListener implements Listener {
     @EventHandler
     public void onInventoryClick(InventoryClickEvent event) {
         if (!(event.getWhoClicked() instanceof Player player)) return;
-
         InventoryView view = event.getView();
-        ItemStack current = event.getCurrentItem();
-        ItemStack cursor = event.getCursor();
-
-        boolean blockedItem = isHorseItem(current) || isHorseItem(cursor);
-        if (!blockedItem) return;
-
-        if (isMountTop(view)) {
-            event.setCancelled(true);
-            player.updateInventory();
-            return;
-        }
-
-        if (event.isShiftClick() && isMountTop(view) && isHorseItem(current)) {
+        if (!isMountTop(view)) return;
+        int rawSlot = event.getRawSlot();
+        int topSize = view.getTopInventory().getSize();
+        boolean horseSlot = rawSlot >= 0 && rawSlot < topSize;
+        // Block only transfers into the horse. Existing stored items must remain recoverable.
+        boolean insertsHorseItem = switch (event.getAction()) {
+            case PLACE_ALL, PLACE_SOME, PLACE_ONE, SWAP_WITH_CURSOR, UNKNOWN ->
+                    horseSlot && isHorseItem(event.getCursor());
+            case MOVE_TO_OTHER_INVENTORY ->
+                    rawSlot >= topSize && isHorseItem(event.getCurrentItem());
+            case HOTBAR_SWAP -> {
+                ItemStack source = event.getClick() == ClickType.SWAP_OFFHAND
+                        ? player.getInventory().getItemInOffHand()
+                        : event.getHotbarButton() >= 0 && event.getHotbarButton() < 9
+                            ? player.getInventory().getItem(event.getHotbarButton()) : null;
+                yield horseSlot && isHorseItem(source);
+            }
+            default -> false;
+        };
+        if (insertsHorseItem) {
             event.setCancelled(true);
             player.updateInventory();
         }
@@ -112,7 +119,7 @@ public class HorseItemBlockerListener implements Listener {
 
         int topSize = top.getSize();
         for (int rawSlot : event.getRawSlots()) {
-            if (rawSlot < topSize) {
+            if (rawSlot >= 0 && rawSlot < topSize) {
                 event.setCancelled(true);
                 player.updateInventory();
                 return;

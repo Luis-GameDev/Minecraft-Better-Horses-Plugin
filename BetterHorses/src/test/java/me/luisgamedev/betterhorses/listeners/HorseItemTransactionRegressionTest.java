@@ -29,11 +29,16 @@ class HorseItemTransactionRegressionTest {
     @Override public void send(Player p,String key){}
     @Override public void sendFormatted(Player p,String key,Object... replacements){}
   }
+  static void initializeParser(LanguageManager language) throws Exception {
+    field(LanguageManager.class,"miniMessage").set(language,net.kyori.adventure.text.minimessage.MiniMessage.miniMessage());
+    field(LanguageManager.class,"legacySerializer").set(language,net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer.builder().character('§').hexColors().useUnusualXRepeatedCharacterHexFormat().build());
+  }
   static void prepareApi(Fixture f) throws Exception {
     f.config.set("settings.horse-item-lore-layout",List.of());
     // Exercise the supported invalid-material fallback without a native registry bootstrap.
     f.config.set("settings.horse-item", "TEST_UNKNOWN_MATERIAL");
     f.plugin.language=(AuditLanguage)((Unsafe)field(Unsafe.class,"theUnsafe").get(null)).allocateInstance(AuditLanguage.class);
+    initializeParser(f.plugin.language);
     ItemFactory factory=proxy(ItemFactory.class,(target,method,args)->switch(method.getName()){
       case "getItemMeta" -> {
         PersistentDataContainer pdc=data(new HashMap<>()); Map<String,Object> values=new HashMap<>();
