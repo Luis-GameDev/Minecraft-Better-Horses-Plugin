@@ -40,7 +40,7 @@ public final class CooldownDisplay {
                 return;
             }
             if (bar != null) bar.progress((float) Math.max(0, Math.min(1, (remaining - elapsed) / full)));
-            if (hotbar) plugin.getAudiences().player(player).sendActionBar(lang.getFormattedRawComponent(player, "messages.cooldown-message-hotbar",
+            if (hotbar) ActionBarSender.send(player, lang.getFormattedRawComponent(player, "messages.cooldown-message-hotbar",
                     "%value%", ability, "%remaining%", String.format(Locale.US, "%.1f", remaining - elapsed)));
         }, () -> DISPLAYS.remove(id));
         DISPLAYS.put(id, new Display(task, bar, player));

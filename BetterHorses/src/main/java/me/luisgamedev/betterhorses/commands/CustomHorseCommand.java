@@ -57,7 +57,7 @@ public class CustomHorseCommand implements CommandExecutor {
             String mountTypeArg = optionalArgument(args, 7);
             String neuteredArg = optionalArgument(args, 8);
             String gender = genderArg == null ? (Math.random() < 0.5 ? "male" : "female") : genderArg.toLowerCase(Locale.ROOT);
-            String name = nameArg == null ? lang.getRaw(player, "messages.horse") : nameArg;
+            String name = nameArg == null ? lang.getRaw("messages.horse") : nameArg;
             String trait = traitArg == null ? null : traitArg.toLowerCase(Locale.ROOT);
             int growthStage = growthArg == null ? 10 : Integer.parseInt(growthArg);
             boolean isNeutered = neuteredArg != null && Boolean.parseBoolean(neuteredArg);

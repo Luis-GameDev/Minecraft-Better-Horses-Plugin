@@ -102,7 +102,7 @@ public final class HorseNeuteringService {
             return false;
         }
         if (!player.hasPermission("betterhorses.bypass") && !player.getUniqueId().equals(ownerId(horse))) {
-            if (feedback) plugin.getLang().sendFormatted(player, "messages.not-horse-owner", "%mount%", type.getDisplayName(plugin.getLang(), player));
+            if (feedback) plugin.getLang().sendFormatted(player, "messages.not-horse-owner", "%mount%", type.getDisplayNameTemplate(plugin.getLang()));
             return false;
         }
         if (Byte.valueOf((byte) 1).equals(horse.getPersistentDataContainer().get(BetterHorseKeys.NEUTERED, PersistentDataType.BYTE))) {

@@ -66,7 +66,7 @@ public class RightClickListener implements Listener {
         String gender = meta.getPersistentDataContainer().get(BetterHorseKeys.GENDER, PersistentDataType.STRING);
         String mountTypeName = meta.getPersistentDataContainer().get(BetterHorseKeys.MOUNT_TYPE, PersistentDataType.STRING);
         SupportedMountType mountType = SupportedMountType.fromNameOrDefault(mountTypeName);
-        String mountName = mountType.getDisplayName(lang, player);
+        String mountName = mountType.getDisplayNameTemplate(lang);
         if (!transaction.matches()) return;
 
         if (health == null || speed == null || jump == null || gender == null || !mountType.isEnabled(config)) {

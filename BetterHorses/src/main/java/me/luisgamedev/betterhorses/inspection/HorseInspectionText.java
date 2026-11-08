@@ -9,6 +9,8 @@ import me.luisgamedev.betterhorses.utils.MountConfig;
 import me.luisgamedev.betterhorses.utils.SupportedMountType;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
+import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.ChatColor;
 import org.bukkit.Bukkit;
@@ -34,7 +36,6 @@ import java.util.regex.Pattern;
 /** Reads a mount on its owning thread; rendering never initializes or changes its data. */
 public final class HorseInspectionText {
     private static final Pattern PLACEHOLDER = Pattern.compile("%([a-zA-Z0-9_]+)%");
-    private static final Pattern INSERTION = Pattern.compile("bhinspectiontoken[0-9]+end");
     private static final List<String> DEFAULT_LINES = List.of(
             "<dark_gray>────────────────────────</dark_gray>",
             "<gold><bold>%name%</bold></gold> <dark_gray>·</dark_gray> %gender%",
@@ -63,9 +64,9 @@ public final class HorseInspectionText {
         FileConfiguration config = plugin.getConfig();
         PersistentDataContainer data = horse.getPersistentDataContainer();
         Map<String, Component> values = new LinkedHashMap<>();
-        Function<String, Component> parse = text -> {
+        TemplateParser parse = (text, placeholders) -> {
             requireOwned(viewer, horse);
-            Component result = language.parse(viewer, text);
+            Component result = language.parse(viewer, text, placeholders);
             // Placeholder expansions may teleport entities or reload the plugin.
             // Stop before the next live read if their ownership changed.
             requireOwned(viewer, horse);
@@ -80,9 +81,9 @@ public final class HorseInspectionText {
         values.put("gender_id", plain(gender));
         String name = horse.getCustomName();
         values.put("name", name == null || name.isBlank()
-                ? parse.apply(type.getDisplayName(language, viewer)) : plain(name));
+                ? parse.apply(type.getDisplayNameTemplate(language)) : plain(name));
         values.put("mount_type", plain(type.name()));
-        values.put("mount_name", parse.apply(type.getDisplayName(language, viewer)));
+        values.put("mount_name", parse.apply(type.getDisplayNameTemplate(language)));
         String storedOwner = data.get(BetterHorseKeys.OWNER, PersistentDataType.STRING);
         AnimalTamer nativeOwner = horse.getOwner();
         String ownerId = nativeOwner == null ? storedOwner : nativeOwner.getUniqueId().toString();
@@ -179,7 +180,7 @@ public final class HorseInspectionText {
 
     private static void addTraining(Map<String, Component> values, LanguageManager language,
                                     FileConfiguration config, PersistentDataContainer data,
-                                    Function<String, Component> parse) {
+                                    TemplateParser parse) {
         String[] categories = {"riding", "brushing", "feeding"};
         NamespacedKey[] keys = {BetterHorseKeys.TRAINING_RIDING_UNITS,
                 BetterHorseKeys.TRAINING_BRUSHING_UNITS, BetterHorseKeys.TRAINING_FEEDING_UNITS};
@@ -224,7 +225,7 @@ public final class HorseInspectionText {
     }
 
     private static Component progressBar(LanguageManager language, FileConfiguration config, double percent,
-                                         Function<String, Component> parse) {
+                                         TemplateParser parse) {
         int length = Math.max(5, Math.min(200, config.getInt("training.lore.progress-bar.length", 20)));
         int filled = (int) Math.round(percent / 100.0 * length);
         String filledChar = firstCharacter(language.getConfig().getString("training-lore.progress-bar.filled-char", "■"));
@@ -242,7 +243,7 @@ public final class HorseInspectionText {
     private static String titleCase(String value) { return Character.toUpperCase(value.charAt(0)) + value.substring(1); }
 
     private static Component statLine(LanguageManager language, boolean speed, boolean blocks,
-                                      Component value, Function<String, Component> parse) {
+                                      Component value, TemplateParser parse) {
         String stat = speed ? "speed" : "jump";
         String fallback = titleCase(stat) + ": %value%" + (blocks ? (speed ? " b/s" : " blocks") : "");
         return formatted(language, "messages.lore-" + stat + (blocks ? "-blocks" : ""), fallback,
@@ -250,29 +251,35 @@ public final class HorseInspectionText {
     }
 
     private static Component formatted(LanguageManager language, String key, String fallback,
-                                       Map<String, Component> values, Function<String, Component> parse) {
+                                       Map<String, Component> values, TemplateParser parse) {
         return renderTemplate(language.getConfig().getString(key, fallback), values, parse);
     }
 
-    private static Component localized(LanguageManager language, String key, String fallback, Function<String, Component> parse) {
+    private static Component localized(LanguageManager language, String key, String fallback, TemplateParser parse) {
         return parse.apply(language.getConfig().getString(key, fallback));
     }
 
-    /** Insert components after parsing trusted formatting, so mount data never becomes markup or PAPI input. */
-    static Component renderTemplate(String template, Map<String, Component> values, Function<String, Component> parse) {
+    /** Insert protected data during the final parse, so gradients see its actual characters. */
+    static Component renderTemplate(String template, Map<String, Component> values, TemplateParser parse) {
         Matcher matcher = PLACEHOLDER.matcher(template);
         StringBuffer protectedTemplate = new StringBuffer();
-        Map<String, Component> insertions = new LinkedHashMap<>();
+        TagResolver.Builder insertions = TagResolver.builder();
+        int nextToken = 0;
         while (matcher.find()) {
             Component value = values.get(matcher.group(1));
             if (value == null) continue;
-            String token = "bhinspectiontoken" + insertions.size() + "end";
-            insertions.put(token, value);
-            matcher.appendReplacement(protectedTemplate, token);
+            String token = "bhinspectiontoken" + nextToken++;
+            insertions.resolver(Placeholder.component(token, value));
+            matcher.appendReplacement(protectedTemplate, "<" + token + ">");
         }
         matcher.appendTail(protectedTemplate);
-        return parse.apply(protectedTemplate.toString()).replaceText(builder -> builder.match(INSERTION)
-                .replacement((match, original) -> insertions.getOrDefault(match.group(), original.build())));
+        return parse.parse(protectedTemplate.toString(), insertions.build());
+    }
+
+    @FunctionalInterface
+    interface TemplateParser extends Function<String, Component> {
+        Component parse(String text, TagResolver placeholders);
+        @Override default Component apply(String text) { return parse(text, TagResolver.empty()); }
     }
 
     static double trainingPercent(double units, double unitsPerPercent) {

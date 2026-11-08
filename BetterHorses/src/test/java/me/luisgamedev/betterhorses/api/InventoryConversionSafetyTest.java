@@ -194,6 +194,8 @@ class InventoryConversionSafetyTest {
 
     public static final class TestLanguage extends LanguageManager {
         public TestLanguage() { super(null, null); }
+        @Override public String getRaw(String key) { return getRaw((OfflinePlayer) null, key); }
+
         @Override public String getRaw(OfflinePlayer player, String key) { return key; }
     }
 

@@ -169,6 +169,7 @@ class HorseNeuteringServiceTest {
     public static final class MessageLanguage extends LanguageManager {
         Fixture fixture;
         private MessageLanguage() { super(null, null); }
+        @Override public String getRaw(String key) { return "Horse"; }
         @Override public String getRaw(OfflinePlayer player, String key) { return "Horse"; }
         @Override public void send(Player player, String key) { if (key.equals("messages.successfully-castrated")) fixture.feedback++; }
         @Override public void sendFormatted(Player player, String key, Object... replacements) { }

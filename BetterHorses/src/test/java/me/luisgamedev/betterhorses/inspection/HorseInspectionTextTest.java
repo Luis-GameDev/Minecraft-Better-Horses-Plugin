@@ -17,9 +17,9 @@ class HorseInspectionTextTest {
         String name = "<click:run_command:'/op stranger'><red>Horse</red></click> %player_name% &c";
         AtomicReference<String> parserInput = new AtomicReference<>();
         Component rendered = HorseInspectionText.renderTemplate("<gold>%name%</gold> %other_expansion%",
-                Map.of("name", Component.text(name)), input -> {
+                Map.of("name", Component.text(name)), (input, placeholders) -> {
                     parserInput.set(input);
-                    return MiniMessage.miniMessage().deserialize(input.replace("%other_expansion%", "External value"));
+                    return MiniMessage.miniMessage().deserialize(input.replace("%other_expansion%", "External value"), placeholders);
                 });
 
         assertEquals(name + " External value", PlainTextComponentSerializer.plainText().serialize(rendered));
@@ -34,6 +34,13 @@ class HorseInspectionTextTest {
                 MiniMessage.miniMessage()::deserialize);
 
         assertEquals("bhinspectiontoken1end %owner% / Owner", PlainTextComponentSerializer.plainText().serialize(rendered));
+    }
+
+    @Test
+    void gradientsUseExpandedDataInsteadOfPlaceholderTokens() {
+        Component rendered = HorseInspectionText.renderTemplate("<gradient:red:blue>%name%</gradient>",
+                Map.of("name", Component.text("123456")), MiniMessage.miniMessage()::deserialize);
+        assertEquals(MiniMessage.miniMessage().deserialize("<gradient:red:blue>123456</gradient>"), rendered);
     }
 
     @Test
