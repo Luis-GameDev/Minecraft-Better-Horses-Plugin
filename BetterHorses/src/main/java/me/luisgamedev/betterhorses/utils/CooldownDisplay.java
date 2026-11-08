@@ -89,8 +89,7 @@ public class CooldownDisplay {
     }
 
     private static void sendActionBar(Player player, Component message) {
-        BetterHorses.getInstance().getAudiences().player(player)
-                .sendActionBar(message);
+        ActionBarSender.send(player, message);
     }
 
     private static void showHotbarMessage(Player player, String abilityName, double secondsLeft, LanguageManager lang) {

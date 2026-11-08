@@ -43,7 +43,7 @@ public class RespawnCommand {
         String gender = itemData.get(BetterHorseKeys.GENDER, PersistentDataType.STRING);
         String mountTypeName = itemData.get(BetterHorseKeys.MOUNT_TYPE, PersistentDataType.STRING);
         SupportedMountType mountType = SupportedMountType.fromNameOrDefault(mountTypeName);
-        String mountName = mountType.getDisplayName(lang, player);
+        String mountName = mountType.getDisplayNameTemplate(lang);
         if (!transaction.matches()) return true;
 
         if (health == null || speed == null || jump == null || gender == null || !mountType.isEnabled(BetterHorses.getInstance().getConfig())) {
