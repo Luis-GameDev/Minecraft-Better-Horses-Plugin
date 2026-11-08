@@ -35,7 +35,30 @@ public final class TrampleListener implements Listener, ListenerLifecycle {
     private volatile boolean stopped;
     private final AtomicLong lastCooldownCleanup = new AtomicLong();
 
-    public TrampleListener(BetterHorses plugin) { this.plugin = plugin; }
+    public TrampleListener(BetterHorses plugin) {
+        this.plugin = plugin;
+        onConfigurationReload();
+    }
+
+    @Override public void onConfigurationReload() {
+        if (stopped || !plugin.isEnabled()) return;
+        // Registration/reload need not produce a mount event for existing riders.
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            plugin.scheduler().entity(player, 1L, ignored -> {
+                if (stopped || !Bukkit.isOwnedByCurrentRegion(player) || !player.isOnline() || player.isDead()) return;
+                if (!(player.getVehicle() instanceof AbstractHorse horse) || !Bukkit.isOwnedByCurrentRegion(horse)
+                        || !horse.isValid() || horse.isDead()) return;
+                FileConfiguration config = plugin.getConfig();
+                SupportedMountType type = SupportedMountType.fromEntity(horse).orElse(null);
+                if (!config.getBoolean("trample.enabled", true) || !WorldAccessPolicy.isEnabled(horse.getWorld())
+                        || !player.hasPermission(PermissionUtils.TRAMPLE) || type == null || !type.isEnabled(config)
+                        || !config.getBoolean("trample.mount-types." + type.getConfigKey(), true)) return;
+                RiderState current = riders.get(player.getUniqueId());
+                if (current == null || !current.horse.equals(horse.getUniqueId())
+                        || current.task == null || current.task.isDone()) start(player, horse);
+            }, null);
+        }
+    }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onMount(EntityMountEvent event) {
