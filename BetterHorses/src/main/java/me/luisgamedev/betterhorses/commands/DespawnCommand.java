@@ -30,7 +30,7 @@ public class DespawnCommand {
             lang.send(player, "messages.invalid-vehicle");
             return true;
         }
-        String mountName = mountType.getDisplayName(lang, player);
+        String mountName = mountType.getDisplayNameTemplate(lang);
         if (!current(plugin, player, horse, mountType)) return true;
         if (!ownerAllowed(plugin, player, horse)) {
             lang.sendFormatted(player, "messages.not-horse-owner", "%mount%", mountName);

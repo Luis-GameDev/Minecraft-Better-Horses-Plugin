@@ -24,6 +24,7 @@ import static me.luisgamedev.betterhorses.listeners.TraitLifecycleRegressionTest
 class HorseItemTransactionRegressionTest {
   public static class AuditLanguage extends LanguageManager {
     public AuditLanguage(){super(null,null);}
+    @Override public String getRaw(String key){return getRaw((OfflinePlayer)null,key);}
     @Override public String getRaw(OfflinePlayer p,String key){return switch(key){case "messages.gender-male"->"male";case "messages.gender-female"->"female";default->key;};}
     @Override public String getFormattedRaw(OfflinePlayer p,String key,Object... replacements){String value=key.equals("messages.horse-item-name")?"%name% %gender%":key;for(int i=0;i+1<replacements.length;i+=2)value=value.replace(String.valueOf(replacements[i]),String.valueOf(replacements[i+1]));return value;}
     @Override public void send(Player p,String key){}
