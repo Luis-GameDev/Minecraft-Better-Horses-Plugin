@@ -447,7 +447,7 @@ public class TraitRegistry {
         long now = System.currentTimeMillis();
         long until = horse.getPersistentDataContainer().getOrDefault(cooldownKey(key), PersistentDataType.LONG, 0L);
         double secondsLeft = (until - now) / 1000.0;
-        String name = lang().getRaw(player, "traits." + key);
+        String name = lang().getRaw("traits." + key);
         if (!allowed(player, horse)) return;
 
         if (secondsLeft > 0) {
