@@ -376,7 +376,6 @@ traits:
     cooldown: 30
     duration: 10
 
-
   undead:
     enabled: true
     chance: 0.01
