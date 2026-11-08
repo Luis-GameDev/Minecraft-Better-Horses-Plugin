@@ -27,6 +27,36 @@ import static me.luisgamedev.betterhorses.listeners.TraitLifecycleRegressionTest
 import static org.junit.jupiter.api.Assertions.*;
 
 class HorseItemBlockerListenerTest {
+    @Test void storedHorseItemsCannotBeDispensedOrEquippedByDispensers() throws Exception {
+        try (Case c = new Case()) {
+            org.bukkit.block.Block block = proxy(org.bukkit.block.Block.class,
+                    (target, method, args) -> method.getName().equals("getWorld") ? c.fixture.world : zero(method.getReturnType()));
+            for (Material material : List.of(Material.SADDLE, Material.APPLE)) {
+                ItemStack stored = storedHorse(material);
+                var plain = new org.bukkit.event.block.BlockDispenseEvent(block, stored, new org.bukkit.util.Vector());
+                var equip = new org.bukkit.event.block.BlockDispenseArmorEvent(block, stored, c.fixture.horse.handle);
+                c.listener.onDispense(plain);
+                c.listener.onDispense(equip);
+                assertTrue(plain.isCancelled());
+                assertTrue(equip.isCancelled());
+                assertSame(plain.getHandlers(), equip.getHandlers());
+            }
+        }
+    }
+
+    @Test void ordinarySaddleDispensingIsStillAllowed() throws Exception {
+        try (Case c = new Case()) {
+            org.bukkit.block.Block block = proxy(org.bukkit.block.Block.class,
+                    (target, method, args) -> method.getName().equals("getWorld") ? c.fixture.world : zero(method.getReturnType()));
+            var plain = new org.bukkit.event.block.BlockDispenseEvent(block, new ItemStack(Material.SADDLE), new org.bukkit.util.Vector());
+            var equip = new org.bukkit.event.block.BlockDispenseArmorEvent(block, new ItemStack(Material.SADDLE), c.fixture.horse.handle);
+            c.listener.onDispense(plain);
+            c.listener.onDispense(equip);
+            assertFalse(plain.isCancelled());
+            assertFalse(equip.isCancelled());
+        }
+    }
+
     @Test void numberKeysCannotEquipAStoredHorseFromTheHotbar() throws Exception {
         try (Case c = new Case()) {
             c.bottom[0] = storedHorse(Material.SADDLE);
