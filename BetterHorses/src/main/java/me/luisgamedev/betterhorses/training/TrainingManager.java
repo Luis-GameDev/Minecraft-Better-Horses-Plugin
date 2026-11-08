@@ -5,6 +5,7 @@ import me.luisgamedev.betterhorses.api.BetterHorseKeys;
 import me.luisgamedev.betterhorses.utils.AttributeResolver;
 import me.luisgamedev.betterhorses.traits.TraitRegistry;
 import org.bukkit.Material;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.NamespacedKey;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
@@ -194,16 +195,20 @@ public final class TrainingManager {
     }
 
     public static String getTrainingTitleLine(PersistentDataContainer data) {
+        return getTrainingTitleLine(data, null);
+    }
+
+    public static String getTrainingTitleLine(PersistentDataContainer data, OfflinePlayer viewer) {
         FileConfiguration config = BetterHorses.getInstance().getConfig();
         FileConfiguration language = BetterHorses.getInstance().getLang().getConfig();
         if (!isTrainingLoreEnabled(config)) return "";
 
-        String title = color(language.getString("training-lore.title", "&6Training"));
+        String title = language.getString("training-lore.title", "&6Training");
         if (!shouldCollapseToTitleComplete(config, data)) {
-            return title;
+            return color(viewer, title);
         }
 
-        return title + " " + completeText(language);
+        return color(viewer, title + " " + completeText(language));
     }
 
     public static boolean isTrainingLoreEnabled(FileConfiguration config) {
@@ -211,6 +216,10 @@ public final class TrainingManager {
     }
 
     public static String getTrainingCategoryLine(PersistentDataContainer data, String category) {
+        return getTrainingCategoryLine(data, category, null);
+    }
+
+    public static String getTrainingCategoryLine(PersistentDataContainer data, String category, OfflinePlayer viewer) {
         FileConfiguration config = BetterHorses.getInstance().getConfig();
         FileConfiguration language = BetterHorses.getInstance().getLang().getConfig();
         if (!isTrainingLoreEnabled(config) || !isCategoryEnabled(config, category)) return "";
@@ -229,7 +238,7 @@ public final class TrainingManager {
         double percent = getProgressPercent(config, data, category, key);
         int rounded = (int) Math.round(percent);
         if (shouldReplaceWithComplete(config, percent)) {
-            return color(language.getString("training-lore.categories." + category + "-name")) + " " + completeText(language);
+            return color(viewer, language.getString("training-lore.categories." + category + "-name", "") + " " + completeText(language));
         }
 
         String bar = progressBar(config, language, percent);
@@ -241,7 +250,7 @@ public final class TrainingManager {
         };
 
         String format = language.getString("training-lore.categories." + category.toLowerCase(), defaultFormat);
-        return color(format.replace("%bar%", bar).replace("%percent%", String.valueOf(rounded)));
+        return color(viewer, format.replace("%bar%", bar).replace("%percent%", String.valueOf(rounded)));
     }
 
     public static double getProgressPercent(FileConfiguration config, PersistentDataContainer data, String category, NamespacedKey unitsKey) {
@@ -297,8 +306,8 @@ public final class TrainingManager {
     }
 
     private static String completeText(FileConfiguration language) {
-        return color(language.getString("training-lore.progress-bar.filled-color", "&b")
-                + language.getString("training-lore.complete", "completed"));
+        return language.getString("training-lore.progress-bar.filled-color", "&b")
+                + language.getString("training-lore.complete", "completed");
     }
 
     private static String progressBar(FileConfiguration config, FileConfiguration language, double percent) {
@@ -314,7 +323,7 @@ public final class TrainingManager {
         for (int i = 0; i < filled; i++) builder.append(filledChar);
         builder.append(emptyColor);
         for (int i = filled; i < length; i++) builder.append(emptyChar);
-        return color(builder.toString());
+        return builder.toString();
     }
 
     private static void saveBaseIfMissing(AbstractHorse horse, PersistentDataContainer data, Attribute attribute,
@@ -327,7 +336,7 @@ public final class TrainingManager {
         if (value != null && Double.isFinite(value) && value > 0) data.set(baseKey, PersistentDataType.DOUBLE, value);
     }
 
-    private static String color(String value) {
-        return BetterHorses.getInstance().getLang().parseToString(null, value == null ? "" : value);
+    private static String color(OfflinePlayer viewer, String value) {
+        return BetterHorses.getInstance().getLang().parseToString(viewer, value == null ? "" : value);
     }
 }

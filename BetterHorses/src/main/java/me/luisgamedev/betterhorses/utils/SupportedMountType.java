@@ -64,6 +64,11 @@ public enum SupportedMountType {
         return lang.getRaw(player, "messages." + nameKey);
     }
 
+    /** Unrendered localized name for composing a message before its final placeholder/format pass. */
+    public String getDisplayNameTemplate(LanguageManager lang) {
+        return lang.getRaw("messages." + nameKey);
+    }
+
     public AbstractHorse spawn(Location location) throws IllegalArgumentException {
         return location.getWorld().spawn(location, entityClass);
     }

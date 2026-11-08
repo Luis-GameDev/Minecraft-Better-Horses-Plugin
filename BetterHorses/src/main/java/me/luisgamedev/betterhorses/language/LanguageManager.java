@@ -5,6 +5,7 @@ import me.luisgamedev.betterhorses.BetterHorses;
 import net.kyori.adventure.platform.bukkit.BukkitAudiences;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
+import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
@@ -151,8 +152,13 @@ public class LanguageManager {
     }
 
     public Component parse(OfflinePlayer player, String message) {
+        return parse(player, message, TagResolver.empty());
+    }
+
+    /** Resolve external placeholders before the final MiniMessage parse, including protected insertions. */
+    public Component parse(OfflinePlayer player, String message, TagResolver placeholders) {
         String placeholderParsed = parsePlaceholders(player, message);
-        return miniMessage.deserialize(convertLegacyFormatting(placeholderParsed));
+        return miniMessage.deserialize(convertLegacyFormatting(placeholderParsed), placeholders);
     }
 
     public String parseToString(OfflinePlayer player, String message) {
@@ -168,7 +174,7 @@ public class LanguageManager {
         return message;
     }
 
-    private String parsePlaceholders(OfflinePlayer player, String message) {
+    protected String parsePlaceholders(OfflinePlayer player, String message) {
         if (player == null || !Bukkit.getPluginManager().isPluginEnabled("PlaceholderAPI")) {
             return message;
         }

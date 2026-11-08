@@ -87,7 +87,7 @@ public class BetterHorsesAPI {
         SupportedMountType targetMountType = mountType == null ? SupportedMountType.HORSE : mountType;
         isNeutered = isNeutered && NeuteringPolicy.isEnabled(plugin.getConfig());
 
-        String genderSymbol = "male".equalsIgnoreCase(gender) ? lang.getRaw(owner, "messages.gender-male") : "female".equalsIgnoreCase(gender) ? lang.getRaw(owner, "messages.gender-female") : "?";
+        String genderSymbol = "male".equalsIgnoreCase(gender) ? lang.getRaw("messages.gender-male") : "female".equalsIgnoreCase(gender) ? lang.getRaw("messages.gender-female") : "?";
 
         String materialName = plugin.getConfig().getString("settings.horse-item", "SADDLE");
         Material material = Material.getMaterial(materialName.toUpperCase());
@@ -542,16 +542,16 @@ public class BetterHorsesAPI {
         // Complete every live read before PlaceholderAPI gets control. Lore reads only
         // the detached item metadata, so a callback cannot leave us reading foreign PDC.
         if (!captureFormattingAllowed(plugin, horse, ownerOverride)) return null;
-        String genderSymbol = gender.equalsIgnoreCase("male") ? lang.getRaw(ownerOverride, "messages.gender-male")
-                : gender.equalsIgnoreCase("female") ? lang.getRaw(ownerOverride, "messages.gender-female") : "?";
+        String genderSymbol = gender.equalsIgnoreCase("male") ? lang.getRaw("messages.gender-male")
+                : gender.equalsIgnoreCase("female") ? lang.getRaw("messages.gender-female") : "?";
         if (!captureFormattingAllowed(plugin, horse, ownerOverride)) return null;
         String name = customName;
         if (name == null) {
-            name = mountType.getDisplayName(lang, ownerOverride);
+            name = mountType.getDisplayNameTemplate(lang);
             if (!captureFormattingAllowed(plugin, horse, ownerOverride)) return null;
         }
         if (name == null || name.isBlank()) {
-            name = lang.getRaw(ownerOverride, "messages.horse");
+            name = lang.getRaw("messages.horse");
             if (!captureFormattingAllowed(plugin, horse, ownerOverride)) return null;
         }
         String formattedName = lang.getFormattedRaw(ownerOverride, "messages.horse-item-name",
@@ -797,7 +797,7 @@ public class BetterHorsesAPI {
     }
 
     private static String formatHorseItemName(LanguageManager lang, @Nullable Player player, @Nullable String name, String genderSymbol) {
-        String displayName = name == null || name.isBlank() ? lang.getRaw(player, "messages.horse") : name;
+        String displayName = name == null || name.isBlank() ? lang.getRaw("messages.horse") : name;
         return lang.getFormattedRaw(player, "messages.horse-item-name", "%name%", displayName, "%gender%", genderSymbol);
     }
 
@@ -956,13 +956,13 @@ public class BetterHorsesAPI {
                 }
             }
             case "training" -> {
-                String titleLine = TrainingManager.getTrainingTitleLine(data);
+                String titleLine = TrainingManager.getTrainingTitleLine(data, player);
                 if (!titleLine.isEmpty()) {
                     sectionLines.add(titleLine);
                 }
             }
             case "riding", "brushing", "feeding" -> {
-                String line = TrainingManager.getTrainingCategoryLine(data, part);
+                String line = TrainingManager.getTrainingCategoryLine(data, part, player);
                 if (!line.isEmpty()) {
                     sectionLines.add(line);
                 }
@@ -1108,7 +1108,7 @@ public class BetterHorsesAPI {
         String path = "traits." + raw.toLowerCase();
 
         if (lang.getConfig().contains(path)) {
-            return lang.parseToString(null, lang.getConfig().getString(path));
+            return lang.getConfig().getString(path);
         }
 
         return raw.substring(0, 1).toUpperCase() + raw.substring(1);
