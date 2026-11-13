@@ -19,6 +19,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityMountEvent;
 import me.luisgamedev.betterhorses.scheduler.ScheduledTaskHandle;
 import org.bukkit.util.Vector;
+import org.bukkit.util.BoundingBox;
 
 import java.util.Map;
 import java.util.UUID;
@@ -83,19 +84,48 @@ public final class HorseSwimListener implements Listener, ListenerLifecycle {
         Vector movement = now.toVector().subtract(previous.toVector());
         if (!Double.isFinite(movement.getX()) || !Double.isFinite(movement.getY()) || !Double.isFinite(movement.getZ())) return;
         double immersion = Math.min(0.75, horse.getHeight() * 0.5);
-        double error = surfaceError(now, immersion);
-        if (Double.isFinite(error)) horse.setVelocity(HorseSwimPhysics.velocity(movement, error));
+        double error = surfaceError(now, immersion, horse.getBoundingBox());
+        // Leave native bobbing, jumps, gravity, and water drag alone while rising or near the surface.
+        double surfaceMargin = Math.min(0.10, immersion * 0.25);
+        if (Double.isFinite(error) && error > surfaceMargin && movement.getY() <= 0.0) {
+            horse.setVelocity(HorseSwimPhysics.velocity(movement, error));
+        }
     }
 
     /** Sample only the horse's column; never loads or reads an adjacent chunk on Folia. */
-    private static double surfaceError(Location location, double immersion) {
+    private static double surfaceError(Location location, double immersion, BoundingBox horseBounds) {
         World world = location.getWorld();
         int bottom = Math.max(world.getMinHeight(), location.getBlockY());
         int top = Math.min(world.getMaxHeight() - 1, (int) Math.floor(location.getY() + immersion + 1.0));
         double surface = Double.NaN;
+        int surfaceBlockY = bottom;
         for (int y = bottom; y <= top; y++) {
             double height = waterHeight(world.getBlockAt(location.getBlockX(), y, location.getBlockZ()));
-            if (height > 0.0) surface = y + height;
+            if (height <= 0.0 && Double.isFinite(surface)) break;
+            if (height > 0.0) {
+                surface = y + height;
+                surfaceBlockY = y;
+            }
+        }
+        if (!Double.isFinite(surface)) return Double.NaN;
+        // A bounded probe can end inside deep water rather than at its actual surface.
+        if (surfaceBlockY + 1 < world.getMaxHeight()
+                && waterHeight(world.getBlockAt(location.getBlockX(), surfaceBlockY + 1, location.getBlockZ())) > 0.0) {
+            return surface - location.getY() - immersion;
+        }
+        // Shallow water needs vanilla footing rather than flotation, including waterlogged slabs/stairs.
+        for (int y = Math.max(world.getMinHeight(), surfaceBlockY - 1); y <= surfaceBlockY; y++) {
+            Block block = world.getBlockAt(location.getBlockX(), y, location.getBlockZ());
+            for (BoundingBox local : block.getCollisionShape().getBoundingBoxes()) {
+                BoundingBox support = local.clone().shift(location.getBlockX(), y, location.getBlockZ());
+                double depth = surface - support.getMaxY();
+                if (depth >= -1.0E-6 && depth <= 1.0 + 1.0E-6
+                        && support.getMaxY() <= horseBounds.getMinY() + 1.0E-6
+                        && support.getMaxX() > horseBounds.getMinX() && support.getMinX() < horseBounds.getMaxX()
+                        && support.getMaxZ() > horseBounds.getMinZ() && support.getMinZ() < horseBounds.getMaxZ()) {
+                    return Double.NaN;
+                }
+            }
         }
         return surface - location.getY() - immersion;
     }
