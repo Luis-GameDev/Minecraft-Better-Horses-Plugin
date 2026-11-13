@@ -19,6 +19,8 @@ Use `/horse reload` after changing the setting. Already-mounted horses are inclu
 
 - Players steer normally while their mount swims at a limited speed.
 - Releasing the movement keys lets the mount coast gently to a stop.
+- Native upward bobbing and jumps are left alone; buoyancy only assists a sinking mount below the surface.
+- Water up to one block deep over supporting ground uses vanilla movement, so the mount can stand and jump out.
 - A falling horse can dip below the surface before buoyancy brings it upward.
 - The feature applies to horses and other enabled mount types in allowed worlds.
 - Dry-land movement, horse stats, and saved horse data are unchanged.
