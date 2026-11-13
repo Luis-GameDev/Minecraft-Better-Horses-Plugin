@@ -488,11 +488,11 @@ training:
 ### 🧩 Requirements
 
 Up to Version 4.1:
-- Minecraft (Spigot) `1.17` - `1.21.6`
+- Minecraft (Spigot/Paper) `1.17` - `1.21.6`
 - Java `17+`
 
 Version 5.0 and above:
-- Minecraft (Spigot) `1.20.4` - `latest`
+- Minecraft (Spigot/Paper) `1.20.4` - `latest`
 - Java `21+`
 
 ---
