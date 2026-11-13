@@ -328,6 +328,8 @@ public class BetterHorses extends JavaPlugin {
                 () -> trainingCategoryEnabled("brushing"));
         listenerRegistrationManager.define("rider-invulnerable", RiderInvulnerableListener::new,
                 () -> getConfig().getBoolean("settings.rider-invulnerable", false));
+        listenerRegistrationManager.define("horse-swim", () -> new HorseSwimListener(this),
+                () -> getConfig().getBoolean("settings.horse-can-swim", false));
         listenerRegistrationManager.define("step-height", HorseStepHeightListener::new,
                 () -> getConfig().getBoolean("settings.fix-step-height", true));
         listenerRegistrationManager.define("mounted-damage-boost", MountedDamageBoostListener::new,
