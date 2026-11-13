@@ -4,14 +4,20 @@ import org.bukkit.util.Vector;
 
 /** Temporary water movement; never changes a horse's persistent attributes. */
 final class HorseSwimPhysics {
+    private static final double HORIZONTAL_DRAG = 0.90;
+
     private HorseSwimPhysics() {
     }
 
     static Vector velocity(Vector observedMovement, double surfaceError) {
-        double x = observedMovement.getX();
-        double z = observedMovement.getZ();
+        // Do not feed the previous horizontal motion back unchanged after the rider stops steering.
+        double x = observedMovement.getX() * HORIZONTAL_DRAG;
+        double z = observedMovement.getZ() * HORIZONTAL_DRAG;
         double horizontalSpeed = Math.hypot(x, z);
-        if (horizontalSpeed > 0.10) {
+        if (horizontalSpeed < 0.001) {
+            x = 0.0;
+            z = 0.0;
+        } else if (horizontalSpeed > 0.10) {
             double scale = 0.10 / horizontalSpeed;
             x *= scale;
             z *= scale;
