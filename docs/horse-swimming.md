@@ -18,6 +18,7 @@ Use `/horse reload` after changing the setting. Already-mounted horses are inclu
 ## Behavior
 
 - Players steer normally while their mount swims at a limited speed.
+- Releasing the movement keys lets the mount coast gently to a stop.
 - A falling horse can dip below the surface before buoyancy brings it upward.
 - The feature applies to horses and other enabled mount types in allowed worlds.
 - Dry-land movement, horse stats, and saved horse data are unchanged.
