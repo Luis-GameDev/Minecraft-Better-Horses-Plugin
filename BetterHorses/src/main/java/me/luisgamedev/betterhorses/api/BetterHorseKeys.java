@@ -20,6 +20,9 @@ public final class BetterHorseKeys {
     public static final NamespacedKey STYLE = key("style");
     public static final NamespacedKey COLOR = key("color");
     public static final NamespacedKey GROWTH_STAGE = key("growth_stage");
+    public static final NamespacedKey GROWTH_PROGRESS_MILLIS = key("growth_progress_millis");
+    public static final NamespacedKey GROWTH_UPDATED_AT = key("growth_updated_at");
+    public static final NamespacedKey GROWTH_AVAILABILITY = key("growth_availability");
     public static final NamespacedKey RANDOM_SIZE_MULTIPLIER = key("random_size_multiplier");
     public static final NamespacedKey RANDOM_SIZE_APPLIED_SCALE = key("random_size_applied_scale");
     public static final NamespacedKey VANILLA_AGE = key("vanilla_age");

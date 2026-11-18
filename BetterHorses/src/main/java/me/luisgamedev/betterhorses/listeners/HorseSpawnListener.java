@@ -4,6 +4,8 @@ import me.luisgamedev.betterhorses.BetterHorses;
 import me.luisgamedev.betterhorses.api.BetterHorsesAPI;
 import me.luisgamedev.betterhorses.api.events.BetterHorseSpawnEvent;
 import me.luisgamedev.betterhorses.growing.GrowthScale;
+import me.luisgamedev.betterhorses.growing.GrowthState;
+import me.luisgamedev.betterhorses.growing.HorseGrowthData;
 import me.luisgamedev.betterhorses.growing.HorseSize;
 import me.luisgamedev.betterhorses.training.TrainingManager;
 import me.luisgamedev.betterhorses.utils.MountConfig;
@@ -26,7 +28,6 @@ public class HorseSpawnListener implements Listener {
     private static final String[] GENDERS = {"male", "female"};
     private final Random random = new Random();
     private final NamespacedKey genderKey = new NamespacedKey(JavaPlugin.getPlugin(BetterHorses.class), "gender");
-    private final NamespacedKey growthKey = new NamespacedKey(JavaPlugin.getPlugin(BetterHorses.class), "growth_stage");
 
     @EventHandler
     public void onHorseSpawn(CreatureSpawnEvent event) {
@@ -69,7 +70,8 @@ public class HorseSpawnListener implements Listener {
             double maxScale = plugin.getConfig().getDouble("horse-growth-settings.max-size", 1.3);
             HorseSize.apply(horse, GrowthScale.forStageUnclamped(stage, maxScale, horse.isAdult(),
                     GrowthScale.babyScale(mountType.name(), Bukkit.getBukkitVersion())), plugin.getConfig());
-            data.set(growthKey, PersistentDataType.INTEGER, stage);
+            HorseGrowthData.write(data, GrowthState.initial(stage, System.currentTimeMillis()),
+                    HorseGrowthData.Availability.LOADED);
         }
 
         TrainingManager.ensureBaseStats(horse);

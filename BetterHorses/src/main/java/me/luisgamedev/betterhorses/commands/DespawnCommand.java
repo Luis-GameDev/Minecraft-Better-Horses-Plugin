@@ -75,6 +75,7 @@ public class DespawnCommand {
             if (HorseItemTransaction.ready(plugin, player)) lang.send(player, "messages.cant-despawn");
             return true;
         }
+        if (plugin.getHorseGrowthManager() != null) plugin.getHorseGrowthManager().forget(horse);
         delivery.commit();
         if (wasLeashed && HorseItemTransaction.owned(location)) {
             location.getWorld().dropItemNaturally(location, new ItemStack(Material.LEAD));

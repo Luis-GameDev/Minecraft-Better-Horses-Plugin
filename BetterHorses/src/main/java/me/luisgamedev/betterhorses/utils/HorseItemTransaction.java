@@ -4,6 +4,7 @@ import me.luisgamedev.betterhorses.BetterHorses;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.AbstractHorse;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
@@ -55,6 +56,9 @@ public final class HorseItemTransaction {
     public static void removeTemporary(BetterHorses plugin, Entity entity) {
         if (entity == null) return;
         entity.remove();
+        if (entity instanceof AbstractHorse horse && !horse.isValid() && plugin.getHorseGrowthManager() != null) {
+            plugin.getHorseGrowthManager().forget(horse);
+        }
     }
 
     /** Stage delivery before source removal, so a cancelled item spawn leaves the mount intact. */

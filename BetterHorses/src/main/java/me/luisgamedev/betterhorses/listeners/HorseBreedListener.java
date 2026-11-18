@@ -4,6 +4,8 @@ import me.luisgamedev.betterhorses.BetterHorses;
 import me.luisgamedev.betterhorses.api.BetterHorseKeys;
 import me.luisgamedev.betterhorses.api.events.BetterHorseBreedEvent;
 import me.luisgamedev.betterhorses.growing.GrowthScale;
+import me.luisgamedev.betterhorses.growing.GrowthState;
+import me.luisgamedev.betterhorses.growing.HorseGrowthData;
 import me.luisgamedev.betterhorses.growing.HorseSize;
 import me.luisgamedev.betterhorses.utils.HorseStats;
 import me.luisgamedev.betterhorses.utils.HorseDataValidator;
@@ -193,7 +195,8 @@ public class HorseBreedListener implements Listener {
         childData.set(BetterHorseKeys.GENDER, PersistentDataType.STRING, gender.toLowerCase(java.util.Locale.ROOT));
 
         if (MountConfig.isGrowthEnabled(config, childType)) {
-            child.getPersistentDataContainer().set(BetterHorseKeys.GROWTH_STAGE, PersistentDataType.INTEGER, 1);
+            HorseGrowthData.write(childData, GrowthState.initial(1, System.currentTimeMillis()),
+                    HorseGrowthData.Availability.LOADED);
             int threshold = GrowthScale.normalize(config.getInt("horse-growth-settings.ride-and-breed-threshhold", 7));
             if (threshold == 1) child.setAdult(); else child.setBaby();
             child.setAgeLock(!child.isAdult());

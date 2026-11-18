@@ -164,6 +164,17 @@ horse-growth-settings:
   # Minutes from newborn stage 1 to fully grown stage 10 (nine equal time intervals).
   time-until-adult: 3
 
+  # Count time while the horse's entity/chunk is unloaded, including server downtime.
+  # Growth catches up when it loads; chunks are never loaded just to grow a horse.
+  grow-while-unloaded: false
+
+  # Count time while the horse is despawned into a horse item; catch up on respawn.
+  grow-while-despawned: false
+
+  # With either setting disabled, partial progress toward the next stage is saved
+  # and resumes from that exact point when the horse is loaded/respawned again.
+  # Changing a setting applies to the absence interval when the horse returns.
+
   # Growth stage (1-10) at which a horse can be ridden and bred.
   # Becoming rideable adds one normal size step; growth continues to stage 10.
   # Baby model compensation follows the mount type and Minecraft version.

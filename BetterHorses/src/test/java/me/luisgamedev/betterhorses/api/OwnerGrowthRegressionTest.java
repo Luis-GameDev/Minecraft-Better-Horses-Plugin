@@ -2,9 +2,10 @@ package me.luisgamedev.betterhorses.api;
 
 import me.luisgamedev.betterhorses.BetterHorses;
 import me.luisgamedev.betterhorses.growing.HorseGrowthManager;
+import me.luisgamedev.betterhorses.growing.GrowthState;
+import me.luisgamedev.betterhorses.growing.HorseGrowthData;
 import me.luisgamedev.betterhorses.language.LanguageManager;
 import me.luisgamedev.betterhorses.listeners.HorseMountListener;
-import me.luisgamedev.betterhorses.utils.SupportedMountType;
 import org.bukkit.Bukkit;
 import org.bukkit.NamespacedKey;
 import org.bukkit.Server;
@@ -23,7 +24,6 @@ import org.junit.jupiter.api.Test;
 import sun.misc.Unsafe;
 
 import java.lang.reflect.Field;
-import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.util.HashMap;
 import java.util.List;
@@ -119,6 +119,22 @@ class OwnerGrowthRegressionTest {
         }
     }
 
+    @Test void explicitStageChangesResetPartialProgressButRepeatingTheStageKeepsIt() throws Exception {
+        try (Fixture f = new Fixture()) {
+            GrowthState halfway = new GrowthState(5, 10000L, System.currentTimeMillis() - 5000L);
+            HorseGrowthData.write(f.horse.getPersistentDataContainer(), halfway, HorseGrowthData.Availability.LOADED);
+            BetterHorse api = new BetterHorse(f.horse);
+            api.setGrowthStage(5);
+            assertEquals(10000L, f.values.get(BetterHorseKeys.GROWTH_PROGRESS_MILLIS));
+            assertEquals(halfway.updatedAt(), f.values.get(BetterHorseKeys.GROWTH_UPDATED_AT));
+            long started = System.currentTimeMillis();
+            api.setGrowthStage(4);
+            assertEquals(4, f.values.get(BetterHorseKeys.GROWTH_STAGE));
+            assertEquals(0L, f.values.get(BetterHorseKeys.GROWTH_PROGRESS_MILLIS));
+            assertTrue((long) f.values.get(BetterHorseKeys.GROWTH_UPDATED_AT) >= started);
+        }
+    }
+
     @Test void rejectedGrowthStagesCannotChangeMetadataOrNativeAge() throws Exception {
         try (Fixture f = new Fixture()) {
             BetterHorse api = new BetterHorse(f.horse);
@@ -146,10 +162,7 @@ class OwnerGrowthRegressionTest {
             f.values.put(BetterHorseKeys.GROWTH_STAGE, 1);
             f.values.put(new NamespacedKey("betterhorses", "growth_updated_at"), System.currentTimeMillis());
             f.values.put(BetterHorseKeys.RANDOM_SIZE_MULTIPLIER, 1.08D);
-            Method process = HorseGrowthManager.class.getDeclaredMethod("processGrowth",
-                    org.bukkit.entity.AbstractHorse.class, SupportedMountType.class, FileConfiguration.class);
-            process.setAccessible(true);
-            process.invoke(new HorseGrowthManager(f.plugin), f.horse, SupportedMountType.HORSE, f.config);
+            new HorseGrowthManager(f.plugin).reconcile(f.horse);
             assertFalse(f.adult);
             assertTrue(f.ageLocked);
             assertEquals(1, f.values.get(BetterHorseKeys.GROWTH_STAGE));
@@ -163,10 +176,7 @@ class OwnerGrowthRegressionTest {
             f.mounted = true;
             f.values.put(BetterHorseKeys.GROWTH_STAGE, 1);
             f.values.put(new NamespacedKey("betterhorses", "growth_updated_at"), 1L);
-            Method process = HorseGrowthManager.class.getDeclaredMethod("processGrowth",
-                    org.bukkit.entity.AbstractHorse.class, SupportedMountType.class, FileConfiguration.class);
-            process.setAccessible(true);
-            process.invoke(new HorseGrowthManager(f.plugin), f.horse, SupportedMountType.HORSE, f.config);
+            new HorseGrowthManager(f.plugin).reconcile(f.horse);
             assertEquals(1, f.values.get(BetterHorseKeys.GROWTH_STAGE));
             assertFalse(f.adult);
         }
@@ -191,6 +201,7 @@ class OwnerGrowthRegressionTest {
         final FileConfiguration config = new YamlConfiguration();
         final Map<NamespacedKey, Object> values = new HashMap<>();
         final UUID playerId = UUID.randomUUID();
+        final UUID horseId = UUID.randomUUID();
         final TestPlugin plugin;
         final Horse horse;
         final Player player;
@@ -245,10 +256,13 @@ class OwnerGrowthRegressionTest {
                 });
                 horse = proxy(Horse.class, (p, m, a) -> switch (m.getName()) {
                     case "getPersistentDataContainer" -> data;
+                    case "getUniqueId" -> horseId;
                     case "getOwner" -> owner == null ? null : proxy(AnimalTamer.class, (pp, mm, aa) -> mm.getName().equals("getUniqueId") ? owner : defaultValue(mm.getReturnType()));
                     case "getType" -> EntityType.HORSE;
                     case "getAttribute" -> attribute;
                     case "isAdult" -> adult;
+                    case "isValid" -> true;
+                    case "getAgeLock" -> ageLocked;
                     case "setAdult" -> { adult = true; yield null; }
                     case "setBaby" -> { adult = false; yield null; }
                     case "setAgeLock" -> { ageLocked = (boolean) a[0]; yield null; }

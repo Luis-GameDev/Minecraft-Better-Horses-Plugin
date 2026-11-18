@@ -3,6 +3,8 @@ package me.luisgamedev.betterhorses.api;
 import me.luisgamedev.betterhorses.BetterHorses;
 import me.luisgamedev.betterhorses.training.TrainingManager;
 import me.luisgamedev.betterhorses.growing.GrowthScale;
+import me.luisgamedev.betterhorses.growing.GrowthState;
+import me.luisgamedev.betterhorses.growing.HorseGrowthData;
 import me.luisgamedev.betterhorses.growing.HorseSize;
 import me.luisgamedev.betterhorses.utils.MountConfig;
 import me.luisgamedev.betterhorses.utils.SupportedMountType;
@@ -90,9 +92,9 @@ public final class BetterHorse {
         }
         PersistentDataContainer data = handle.getPersistentDataContainer();
         Integer previous = data.get(BetterHorseKeys.GROWTH_STAGE, PersistentDataType.INTEGER);
-        data.set(BetterHorseKeys.GROWTH_STAGE, PersistentDataType.INTEGER, stage);
         boolean changed = previous == null || previous != stage;
-        if (changed) data.set(new NamespacedKey(BetterHorses.getInstance(), "growth_updated_at"), PersistentDataType.LONG, System.currentTimeMillis());
+        if (changed) HorseGrowthData.write(data, GrowthState.initial(stage, System.currentTimeMillis()),
+                HorseGrowthData.Availability.LOADED);
 
         BetterHorses plugin = BetterHorses.getInstance();
         SupportedMountType type = SupportedMountType.fromEntity(handle).orElse(null);
@@ -113,6 +115,9 @@ public final class BetterHorse {
                         config.getDouble("horse-growth-settings.max-size", 1.3D), handle.isAdult(),
                         GrowthScale.babyScale(type.name(), Bukkit.getBukkitVersion())), config);
             }
+        }
+        if (changed && plugin != null && plugin.getHorseGrowthManager() != null) {
+            plugin.getHorseGrowthManager().reconcile(handle);
         }
         if (changed) refreshShaders();
     }

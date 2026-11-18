@@ -56,7 +56,12 @@ import java.util.Optional;
 import java.util.UUID;
 import me.luisgamedev.betterhorses.utils.HorseDataValidator;
 import me.luisgamedev.betterhorses.growing.GrowthScale;
+import me.luisgamedev.betterhorses.growing.GrowthProgress;
+import me.luisgamedev.betterhorses.growing.GrowthState;
+import me.luisgamedev.betterhorses.growing.HorseGrowthData;
+import me.luisgamedev.betterhorses.growing.HorseGrowthData.Availability;
 import me.luisgamedev.betterhorses.growing.HorseSize;
+import me.luisgamedev.betterhorses.inspection.HorseInspectionManager;
 import me.luisgamedev.betterhorses.utils.NeuteringPolicy;
 
 public class BetterHorsesAPI {
@@ -113,7 +118,7 @@ public class BetterHorsesAPI {
         data.set(BetterHorseKeys.NAME, PersistentDataType.STRING, (name == null ? "" : name).replace(ChatColor.GOLD.toString(), ""));
         data.set(BetterHorseKeys.STYLE, PersistentDataType.STRING, Horse.Style.WHITE.name());
         data.set(BetterHorseKeys.COLOR, PersistentDataType.STRING, Horse.Color.CREAMY.name());
-        data.set(BetterHorseKeys.GROWTH_STAGE, PersistentDataType.INTEGER, growth);
+        HorseGrowthData.write(data, GrowthState.initial(growth, System.currentTimeMillis()), Availability.DESPAWNED);
         data.set(BetterHorseKeys.MOUNT_TYPE, PersistentDataType.STRING, targetMountType.getEntityType().name());
         HorseSize.ensure(data, plugin.getConfig());
         if (isNeutered) {
@@ -250,6 +255,18 @@ public class BetterHorsesAPI {
             return null;
         }
 
+        // Calculate on the detached item data. A failed or cancelled spawn must not
+        // consume elapsed time or reset the source item's growth clock.
+        FileConfiguration growthConfig = BetterHorses.getInstance().getConfig();
+        long growthNow = System.currentTimeMillis();
+        long growthInterval = GrowthProgress.intervalMillis(growthConfig.getInt("horse-growth-settings.time-until-adult", 60));
+        GrowthState restoredGrowth = growthStage != (storedStage == null ? 10 : storedStage)
+                ? GrowthState.initial(growthStage, growthNow)
+                : HorseGrowthData.read(data, growthStage, growthNow, growthInterval);
+        restoredGrowth = restoredGrowth.advance(growthNow, growthInterval,
+                MountConfig.isGrowthEnabled(growthConfig, mountType) && Availability.DESPAWNED.accrues(growthConfig));
+        growthStage = restoredGrowth.stage();
+
         // Reject unreadable inventory data before inserting an incomplete replacement into the world.
         try {
             validateStoredInventory(data);
@@ -291,7 +308,7 @@ public class BetterHorsesAPI {
                 horse.setBaby();
                 horse.setAgeLock(true);
             }
-            horse.getPersistentDataContainer().set(BetterHorseKeys.GROWTH_STAGE, PersistentDataType.INTEGER, growthStage);
+            HorseGrowthData.write(horse.getPersistentDataContainer(), restoredGrowth, Availability.LOADED);
         } else if (vanillaAge != null) {
             horse.setAge(vanillaAge);
             horse.setAgeLock(false);
@@ -382,6 +399,9 @@ public class BetterHorsesAPI {
         // Restore gameplay bonuses only after genetic stats, training, and current HP are loaded.
         // Recalculation preserves the stored health fraction and replaces its own modifiers.
         TrainingManager.recalculateAndApplyBonuses(horse);
+        if (BetterHorses.getInstance().getHorseGrowthManager() != null) {
+            BetterHorses.getInstance().getHorseGrowthManager().reconcile(horse);
+        }
         return horse;
         } catch (RuntimeException exception) {
             BetterHorses.getInstance().getLogger().warning("Could not restore mount: " + exception.getMessage());
@@ -407,7 +427,6 @@ public class BetterHorsesAPI {
         NamespacedKey genderKey = BetterHorseKeys.GENDER;
         NamespacedKey traitKey = BetterHorseKeys.TRAIT;
         NamespacedKey neuterKey = BetterHorseKeys.NEUTERED;
-        NamespacedKey growthKey = BetterHorseKeys.GROWTH_STAGE;
         NamespacedKey cooldownKey = BetterHorseKeys.COOLDOWN;
 
         String gender;
@@ -424,8 +443,22 @@ public class BetterHorsesAPI {
         Long cooldown = data.has(cooldownKey, PersistentDataType.LONG) ? data.get(cooldownKey, PersistentDataType.LONG) : null;
 
         int growthStage;
+        GrowthState growthState = null;
         if (MountConfig.isGrowthEnabled(plugin.getConfig(), mountType)) {
-            growthStage = data.has(growthKey, PersistentDataType.INTEGER) ? data.get(growthKey, PersistentDataType.INTEGER) : 10;
+            if (plugin.getHorseGrowthManager() != null) {
+                growthState = plugin.getHorseGrowthManager().snapshot(horse);
+            }
+            if (growthState == null) {
+                long now = System.currentTimeMillis();
+                long interval = GrowthProgress.intervalMillis(plugin.getConfig().getInt("horse-growth-settings.time-until-adult", 60));
+                boolean occupied = horse.getPassengers().stream().anyMatch(passenger -> !HorseInspectionManager.isInspectionDisplay(passenger));
+                int initialStage = horse.isAdult() ? GrowthScale.MAX_STAGE : 1;
+                growthState = occupied && !data.has(BetterHorseKeys.GROWTH_PROGRESS_MILLIS, PersistentDataType.LONG)
+                        ? GrowthState.initial(data.getOrDefault(BetterHorseKeys.GROWTH_STAGE, PersistentDataType.INTEGER, initialStage), now)
+                        : HorseGrowthData.read(data, initialStage, now, interval).advance(now, interval, !occupied);
+                HorseGrowthData.write(data, growthState, occupied ? Availability.MOUNTED : Availability.LOADED);
+            }
+            growthStage = growthState.stage();
         } else {
             growthStage = 10;
         }
@@ -515,7 +548,8 @@ public class BetterHorsesAPI {
 
         itemData.set(BetterHorseKeys.STYLE, PersistentDataType.STRING, style.name());
         itemData.set(BetterHorseKeys.COLOR, PersistentDataType.STRING, color.name());
-        itemData.set(BetterHorseKeys.GROWTH_STAGE, PersistentDataType.INTEGER, growthStage);
+        HorseGrowthData.write(itemData, growthState == null ? GrowthState.initial(growthStage, System.currentTimeMillis()) : growthState,
+                Availability.DESPAWNED);
         HorseSize.copy(data, itemData, plugin.getConfig());
         itemData.set(BetterHorseKeys.VANILLA_AGE, PersistentDataType.INTEGER, horse.getAge());
         itemData.set(BetterHorseKeys.MOUNT_TYPE, PersistentDataType.STRING, mountType.getEntityType().name());

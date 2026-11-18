@@ -1,9 +1,13 @@
 package me.luisgamedev.betterhorses.listeners;
 import me.luisgamedev.betterhorses.api.BetterHorseKeys;
+import me.luisgamedev.betterhorses.growing.GrowthState;
+import me.luisgamedev.betterhorses.growing.HorseGrowthData;
+import me.luisgamedev.betterhorses.growing.HorseGrowthData.Availability;
 import org.bukkit.entity.*;
 import org.bukkit.*;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataContainer;
+import org.bukkit.persistence.PersistentDataType;
 import me.luisgamedev.betterhorses.api.BetterHorsesAPI;
 import me.luisgamedev.betterhorses.language.LanguageManager;
 import me.luisgamedev.betterhorses.commands.DespawnCommand;
@@ -71,6 +75,94 @@ class HorseItemTransactionRegressionTest {
 
   private static ItemStack horseItem(Fixture f) {
     return BetterHorsesAPI.createHorseItem(20,.2,.7,"male","named",null,null,false,"none",false,10,null);
+  }
+  @Test void itemSnapshotPreservesHalfAnIntervalWithoutPausingTheLiveMount() throws Exception {
+    try(Fixture f=new Fixture()) {
+      prepareApi(f);
+      f.config.set("horse-growth-settings.enabled",true);
+      f.config.set("horse-growth-settings.time-until-adult",3);
+      HorseGrowthData.write(f.horse.data,new GrowthState(5,10000L,System.currentTimeMillis()),Availability.MOUNTED);
+      ItemStack item=BetterHorsesAPI.toItem(f.horse.handle,null);
+      assertNotNull(item);
+      PersistentDataContainer stored=item.getItemMeta().getPersistentDataContainer();
+      assertEquals(5,stored.get(BetterHorseKeys.GROWTH_STAGE,PersistentDataType.INTEGER));
+      assertEquals(10000L,stored.get(BetterHorseKeys.GROWTH_PROGRESS_MILLIS,PersistentDataType.LONG));
+      assertEquals(Availability.DESPAWNED,HorseGrowthData.availability(stored));
+      assertEquals(Availability.MOUNTED,HorseGrowthData.availability(f.horse.data));
+      assertTrue(f.horse.valid);
+    }
+  }
+  @Test void respawningWithDespawnedGrowthDisabledRetainsExactlyHalfAnInterval() throws Exception {
+    try(Fixture f=new Fixture()) {
+      prepareApi(f);
+      f.config.set("horse-growth-settings.enabled",true);
+      f.config.set("horse-growth-settings.time-until-adult",3);
+      ItemStack item=BetterHorsesAPI.createHorseItem(20,.2,.7,"male",null,null,null,false,"none",false,5,null);
+      ItemMeta meta=item.getItemMeta();
+      GrowthState paused=new GrowthState(5,10000L,System.currentTimeMillis()-600000L);
+      HorseGrowthData.write(meta.getPersistentDataContainer(),paused,Availability.DESPAWNED);
+      item.setItemMeta(meta);
+      Actor<Horse> restored=f.actor(Horse.class);f.spawnResult=restored;
+      assertSame(restored.handle,BetterHorsesAPI.toHorse(item,f.player.handle));
+      assertEquals(5,restored.values.get(BetterHorseKeys.GROWTH_STAGE));
+      assertEquals(10000L,restored.values.get(BetterHorseKeys.GROWTH_PROGRESS_MILLIS));
+      assertEquals(Availability.LOADED,HorseGrowthData.availability(restored.data));
+      PersistentDataContainer source=item.getItemMeta().getPersistentDataContainer();
+      assertEquals(paused.updatedAt(),source.get(BetterHorseKeys.GROWTH_UPDATED_AT,PersistentDataType.LONG));
+      assertEquals(10000L,source.get(BetterHorseKeys.GROWTH_PROGRESS_MILLIS,PersistentDataType.LONG));
+    }
+  }
+  @Test void snapshottingALegacyOccupiedMountKeepsItsPausedStage() throws Exception {
+    try(Fixture f=new Fixture()) {
+      prepareApi(f);
+      f.config.set("horse-growth-settings.enabled",true);
+      f.horse.values.put(BetterHorseKeys.GROWTH_STAGE,5);
+      f.horse.values.put(BetterHorseKeys.GROWTH_UPDATED_AT,1L);
+      ItemStack item=BetterHorsesAPI.toItem(f.horse.handle,null);
+      assertNotNull(item);
+      assertEquals(5,item.getItemMeta().getPersistentDataContainer().get(BetterHorseKeys.GROWTH_STAGE,PersistentDataType.INTEGER));
+      assertEquals(0L,item.getItemMeta().getPersistentDataContainer().get(BetterHorseKeys.GROWTH_PROGRESS_MILLIS,PersistentDataType.LONG));
+    }
+  }
+  @Test void enablingDespawnedGrowthCatchesUpOnTheReplacementWithoutMutatingItsSource() throws Exception {
+    try(Fixture f=new Fixture()) {
+      prepareApi(f);
+      f.config.set("horse-growth-settings.enabled",true);
+      f.config.set("horse-growth-settings.time-until-adult",3);
+      f.config.set("horse-growth-settings.grow-while-despawned",true);
+      ItemStack item=BetterHorsesAPI.createHorseItem(20,.2,.7,"male",null,null,null,false,"none",false,5,null);
+      ItemMeta meta=item.getItemMeta();
+      GrowthState stored=new GrowthState(5,10000L,System.currentTimeMillis()-35000L);
+      HorseGrowthData.write(meta.getPersistentDataContainer(),stored,Availability.DESPAWNED);
+      item.setItemMeta(meta);
+      Actor<Horse> restored=f.actor(Horse.class);f.spawnResult=restored;
+      assertSame(restored.handle,BetterHorsesAPI.toHorse(item,f.player.handle));
+      assertEquals(7,restored.values.get(BetterHorseKeys.GROWTH_STAGE));
+      long partial=(long)restored.values.get(BetterHorseKeys.GROWTH_PROGRESS_MILLIS);
+      assertTrue(partial>=5000L&&partial<10000L,"Residual progress must survive catch-up: "+partial);
+      assertEquals(5,item.getItemMeta().getPersistentDataContainer().get(BetterHorseKeys.GROWTH_STAGE,PersistentDataType.INTEGER));
+      assertEquals(stored.updatedAt(),item.getItemMeta().getPersistentDataContainer().get(BetterHorseKeys.GROWTH_UPDATED_AT,PersistentDataType.LONG));
+    }
+  }
+  @Test void cancelledSpawnRetainsTheSourceGrowthClockForTheNextAttempt() throws Exception {
+    try(Fixture f=new Fixture()) {
+      prepareApi(f);
+      f.config.set("horse-growth-settings.enabled",true);
+      f.held=BetterHorsesAPI.createHorseItem(20,.2,.7,"male",null,null,null,false,"none",false,5,null);
+      ItemMeta meta=f.held.getItemMeta();
+      GrowthState stored=new GrowthState(5,10000L,System.currentTimeMillis()-600000L);
+      HorseGrowthData.write(meta.getPersistentDataContainer(),stored,Availability.DESPAWNED);
+      f.held.setItemMeta(meta);
+      Actor<Horse> restored=f.actor(Horse.class);f.spawnResult=restored;
+      hookEvent(event->{if(event instanceof BetterHorseSpawnEvent e)e.setCancelled(true);});
+      assertTrue(RespawnCommand.spawnHorseFromItem(f.player.handle));
+      assertFalse(restored.valid);
+      assertEquals(1,f.held.getAmount());
+      PersistentDataContainer source=f.held.getItemMeta().getPersistentDataContainer();
+      assertEquals(stored.updatedAt(),source.get(BetterHorseKeys.GROWTH_UPDATED_AT,PersistentDataType.LONG));
+      assertEquals(10000L,source.get(BetterHorseKeys.GROWTH_PROGRESS_MILLIS,PersistentDataType.LONG));
+      assertEquals(Availability.DESPAWNED,HorseGrowthData.availability(source));
+    }
   }
   @Test void cancelledFullInventoryDropRetainsMountAndItsEquipment() throws Exception {
     try(Fixture f=new Fixture()) {

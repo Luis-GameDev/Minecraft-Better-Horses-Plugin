@@ -55,10 +55,12 @@ public class BetterHorses extends JavaPlugin {
     private HorseCommand horseCommandExecutor;
     private PostProcessingManager postProcessingManager;
     private HorseInspectionManager horseInspectionManager;
+    private HorseGrowthManager horseGrowthManager;
 
 
     @Override
     public void onDisable() {
+        cleanupOnDisable("growth", () -> { if (horseGrowthManager != null) horseGrowthManager.shutdown(); });
         cleanupOnDisable("inspection", () -> { if (horseInspectionManager != null) horseInspectionManager.shutdown(); });
         cleanupOnDisable("postprocessing", () -> { if (postProcessingManager != null) postProcessingManager.shutdown(); });
         cleanupOnDisable("traits", me.luisgamedev.betterhorses.traits.TraitRegistry::shutdown);
@@ -98,7 +100,8 @@ public class BetterHorses extends JavaPlugin {
         getCommand("horsecreate").setExecutor(new CustomHorseCommand());
         getCommand("horsecreate").setTabCompleter(new HorseCreateTabCompleter());
 
-        new HorseGrowthManager(this).start();
+        horseGrowthManager = new HorseGrowthManager(this);
+        horseGrowthManager.start();
         postProcessingManager = new PostProcessingManager(this);
         postProcessingManager.start();
 
@@ -123,6 +126,10 @@ public class BetterHorses extends JavaPlugin {
         return audiences;
     }
 
+    public HorseGrowthManager getHorseGrowthManager() {
+        return horseGrowthManager;
+    }
+
     /** Request a coalesced shader update; safe to call from any thread. */
     public void refreshShaders(org.bukkit.entity.Player player) {
         if (postProcessingManager != null) postProcessingManager.requestUpdate(player);
@@ -142,12 +149,14 @@ public class BetterHorses extends JavaPlugin {
     }
 
     public void reloadPluginConfiguration() {
+        if (horseGrowthManager != null) horseGrowthManager.prepareReload();
         me.luisgamedev.betterhorses.traits.TraitRegistry.cleanupAll();
         HorseStepHeightListener.cleanupAll();
         updateYamlWithMissingSections("config.yml", false);
         updateYamlWithMissingSections("language.yml", true);
         reloadConfig();
         WorldAccessPolicy.reload(this);
+        if (horseGrowthManager != null) horseGrowthManager.reload();
         listenerRegistrationManager.synchronize();
         languageManager.reload();
         if (postProcessingManager != null) postProcessingManager.reload();

@@ -20,6 +20,7 @@ Visible growth/random size needs `SCALE`, which Minecraft 1.20.4 does not expose
 - Store supported ridden mounts as horse items with their genetic stats, health, ownership, training, traits, equipment and relevant cooldowns. Optional chest storage is disabled by default; conversion failure preserves the source.
 - Breed genetic health/speed/jump with configured mutation and maxima. Training supplies separate gameplay bonuses and does not inflate inherited/stored genetic stats.
 - Custom growth progresses from stage 1 to 10 over nine intervals. The default ride/breed threshold is stage 7; size continues increasing to stage 10.
+- Growth schedules only loaded mounts below stage 10. Partial progress is saved across chunk unloading, item storage and restarts. `horse-growth-settings.grow-while-unloaded` and `horse-growth-settings.grow-while-despawned` both default to `false`; enabling either counts that absence when the mount returns, without loading chunks or scanning stored items. Riding pauses also retain partial progress.
 - Hidden individual sizes default to ±10%, persist on horse and item, apply after growth, and are freshly rolled for offspring rather than inherited.
 - Eleven configurable traits cover fire resistance/trails, slow falling, speed boosts, ice, knockback, invisibility, jump abilities, curse retaliation and undead transformation.
 - Optional block speed effects, trample hits, rider buffs, particle/cooldown displays, item textures/lore layouts, MiniMessage and PlaceholderAPI integration.
@@ -65,6 +66,8 @@ All six optional arguments accept case-insensitive `null`, keeping their positio
 ## Configuration and API
 
 Edit `plugins/BetterHorses/config.yml` and `language.yml`, then `/horse reload`. See the complete [config reference](https://github.com/Luis-GameDev/Minecraft-Better-Horses-Plugin/wiki/config.yml), [language reference](https://github.com/Luis-GameDev/Minecraft-Better-Horses-Plugin/wiki/language.yml), [training](https://github.com/Luis-GameDev/Minecraft-Better-Horses-Plugin/wiki/training), [growth](https://github.com/Luis-GameDev/Minecraft-Better-Horses-Plugin/wiki/Growth), and [shader guide](https://github.com/Luis-GameDev/Minecraft-Better-Horses-Plugin/wiki/postprocessing‐shaders). The obsolete `sand-slowness` setting is replaced by `settings.block-speed-effects`.
+
+Changing either absence setting applies its current value when a mount returns. Existing timers are migrated once using their previous elapsed-time behavior because older versions did not record unloaded periods; subsequent growth uses the new settings.
 
 ```java
 ItemStack item = BetterHorsesAPI.createHorseItem(
